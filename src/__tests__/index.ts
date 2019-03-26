@@ -1,9 +1,4 @@
-import {
-  FixedBuffer,
-  SlidingBuffer,
-  DroppingBuffer,
-  Channel,
-} from "../index";
+import { Channel, DroppingBuffer, FixedBuffer, SlidingBuffer } from "../index";
 
 describe("FixedBuffer", () => {
   test("simple", () => {
@@ -56,14 +51,13 @@ describe("DroppingBuffer", () => {
 
 describe("Channel", () => {
   test("no buffer", async () => {
-    const channel = new Channel<number>();
-    setTimeout(async () => {
-      await channel.put(1);
-      await channel.put(2);
-      await channel.put(3);
-      await channel.put(4);
-      await channel.put(5);
-      channel.close();
+    const channel = new Channel<number>(async (put, close) => {
+      await put(1);
+      await put(2);
+      await put(3);
+      await put(4);
+      await put(5);
+      close();
     });
     const result: number[] = [];
     for await (const num of channel) {
@@ -72,21 +66,23 @@ describe("Channel", () => {
     expect(result).toEqual([1, 2, 3, 4, 5]);
   });
 
-  test("fixed buffer", async () => {
-    const channel = new Channel(new FixedBuffer<number>(3));
-    channel.put(1);
-    channel.put(2);
-    channel.put(3);
-    await expect(channel.put(4)).rejects.toBeDefined();
+  test("fixed buffer rejects when full", async () => {
+    new Channel(async (put) => {
+      put(1);
+      put(2);
+      put(3);
+      await expect(put(4)).rejects.toBeDefined();
+    }, new FixedBuffer<number>(3));
   });
 
   test("dropping buffer", async () => {
-    const channel = new Channel(new DroppingBuffer<number>(3));
-    channel.put(1);
-    channel.put(2);
-    channel.put(3);
-    channel.put(4);
-    channel.put(5);
+    const channel = new Channel((put) => {
+      put(1);
+      put(2);
+      put(3);
+      put(4);
+      put(5);
+    }, new DroppingBuffer<number>(3));
     let i = 1;
     for await (const num of channel) {
       expect(num).toEqual(i++);
@@ -98,12 +94,13 @@ describe("Channel", () => {
   });
 
   test("sliding buffer", async () => {
-    const channel = new Channel(new SlidingBuffer<number>(3));
-    channel.put(1);
-    channel.put(2);
-    channel.put(3);
-    channel.put(4);
-    channel.put(5);
+    const channel = new Channel((put) => {
+      put(1);
+      put(2);
+      put(3);
+      put(4);
+      put(5);
+    }, new SlidingBuffer<number>(3));
     let i = 3;
     for await (const num of channel) {
       expect(num).toEqual(i++);
@@ -115,11 +112,12 @@ describe("Channel", () => {
   });
 
   test("throws when pulling multiple values simultaneously", async () => {
-    const channel = new Channel<number>();
-    setTimeout(async () => {
-      await channel.put(1);
-      await channel.put(2);
-      await channel.put(3);
+    const channel = new Channel<number>((put) => {
+      setTimeout(async () => {
+        await put(1);
+        await put(2);
+        await put(3);
+      });
     });
     let result = channel.next();
     expect(await result).toEqual({ value: 1, done: false });
@@ -130,13 +128,12 @@ describe("Channel", () => {
   });
 
   test("early break", async () => {
-    const channel = new Channel<number>();
-    const puts = (async () => {
-      await channel.put(1);
-      await channel.put(2);
-      await channel.put(3);
-      return channel.put(4);
-    })();
+    const channel = new Channel<number>(async (put) => {
+      await put(1);
+      await put(2);
+      await put(3);
+      await expect(put(4)).rejects.toBeDefined();
+    });
     let i = 1;
     for await (const num of channel) {
       expect(num).toEqual(i++);
@@ -144,18 +141,16 @@ describe("Channel", () => {
         break;
       }
     }
-    await expect(puts).rejects.toBeDefined();
     expect(channel.closed).toBe(true);
   });
 
   test("early throw", async () => {
-    const channel = new Channel<number>();
-    const puts = (async () => {
-      await channel.put(1);
-      await channel.put(2);
-      await channel.put(3);
-      return channel.put(4);
-    })();
+    const channel = new Channel<number>(async (put) => {
+      await put(1);
+      await put(2);
+      await put(3);
+      await expect(put(4)).rejects.toBeDefined();
+    });
     let i = 1;
     const error = new Error("Example error");
     try {
@@ -168,26 +163,25 @@ describe("Channel", () => {
     } catch (err) {
       expect(err).toEqual(error);
     }
-    await expect(puts).rejects.toBeDefined();
     expect(channel.closed).toBe(true);
   });
 
   test("throw method", async () => {
-    const channel = new Channel<number>();
+    const channel = new Channel<number>(async (put) => {
+      await put(1);
+      await put(2);
+      await put(3);
+      await expect(put(4)).rejects.toBeDefined();
+    });
     const error = new Error("Example error");
-    const puts = (async () => {
-      await channel.put(1);
-      await channel.put(2);
-      await channel.put(3);
-      await channel.throw(error);
-      return channel.put(4);
-    })();
     let result: number[] = [];
     for await (const num of channel) {
       result.push(num);
+      if (num === 3) {
+        channel.throw(error);
+      }
     }
     expect(result).toEqual([1, 2, 3]);
-    await expect(puts).rejects.toBeDefined();
     expect(channel.closed).toBe(true);
   });
 });

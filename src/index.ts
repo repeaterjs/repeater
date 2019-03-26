@@ -73,9 +73,17 @@ export class DroppingBuffer<T> implements Buffer<T> {
   }
 }
 
+export type PutCallback<T> = (value: T) => Promise<void>;
+export type CloseCallback = (reason?: any) => void;
+export type ChannelExecutor<T> = (
+  put: PutCallback<T>,
+  close: CloseCallback,
+) => Promise<void> | void;
+
 export class Channel<T> implements AsyncIterableIterator<T> {
+  closed = false;
   onclose?: (this: this) => void;
-  public closed = false;
+  onerror?: (this: this, err: any) => void;
   protected onresult?: (result: IteratorResult<T>) => void;
   protected onready?: () => void;
   protected readonly done: IteratorResult<T> = {
@@ -83,32 +91,17 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     done: true,
   };
 
-  constructor(protected buffer: Buffer<T> = new FixedBuffer(1)) {}
-
-  put(value: T): Promise<void> {
-    if (this.closed) {
-      return Promise.reject(new Error("Cannot put to closed channel"));
-    } else if (this.onresult != null) {
-      this.onresult({ value, done: false });
-      delete this.onresult;
-      return Promise.resolve();
-    }
-    try {
-      this.buffer.add(value);
-    } catch (err) {
-      return Promise.reject(err);
-    }
-    if (!this.buffer.full) {
-      return Promise.resolve();
-    }
-    return new Promise((onready) => (this.onready = onready));
-  }
-
-  close(): void {
+  close(reason?: any) {
     this.closed = true;
     if (this.onresult != null) {
       this.onresult({ ...this.done });
       delete this.onresult;
+    }
+    if (this.onerror) {
+      if (reason != null) {
+        this.onerror(reason);
+      }
+      delete this.onerror;
     }
     if (this.onclose != null) {
       this.onclose();
@@ -119,6 +112,37 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       delete this.onready;
     }
     this.buffer.clear();
+  }
+
+  constructor(
+    executor: ChannelExecutor<T>,
+    protected buffer: Buffer<T> = new FixedBuffer(1),
+  ) {
+    const put: PutCallback<T> = (value) => {
+      if (this.closed) {
+        return Promise.reject(new Error("Cannot put to closed channel"));
+      } else if (this.onresult != null) {
+        this.onresult({ value, done: false });
+        delete this.onresult;
+        return Promise.resolve();
+      }
+      try {
+        this.buffer.add(value);
+      } catch (err) {
+        return Promise.reject(err);
+      }
+      if (!this.buffer.full) {
+        return Promise.resolve();
+      }
+      return new Promise((onready) => (this.onready = onready));
+    };
+    try {
+      Promise.resolve(executor(put, this.close.bind(this))).catch((err) => {
+        this.close(err);
+      });
+    } catch (err) {
+      this.close(err);
+    }
   }
 
   next(): Promise<IteratorResult<T>> {
@@ -146,8 +170,8 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     return Promise.resolve({ ...this.done });
   }
 
-  throw(_any?: any): Promise<IteratorResult<T>> {
-    this.close();
+  throw(reason?: any): Promise<IteratorResult<T>> {
+    this.close(reason);
     return Promise.resolve({ ...this.done });
   }
 
