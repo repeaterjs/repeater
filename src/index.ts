@@ -118,14 +118,14 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     const put = (value: T): Promise<IteratorResult<T>> => {
       if (this.closed) {
         return Promise.resolve({ done: true } as IteratorResult<T>);
-      } else if (!this.buffer.full) {
-        this.buffer.add(value);
-        return Promise.resolve({ done: true } as IteratorResult<T>);
       } else if (this.takes.length) {
         const take = this.takes.shift()!;
         const result = { value, done: false };
         take.resolve(result);
         return Promise.resolve(result);
+      } else if (!this.buffer.full) {
+        this.buffer.add(value);
+        return Promise.resolve({ done: true } as IteratorResult<T>);
       } else if (this.puts.length >= this.MAX_QUEUE_LENGTH) {
         throw new Error(`Queue length cannot exceed ${this.MAX_QUEUE_LENGTH}`);
       }
@@ -157,7 +157,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     this.takes = [];
     if (this.onclose != null) {
       this.onclose(reason);
-    } 
+    }
   }
 
   next(): Promise<IteratorResult<T>> {

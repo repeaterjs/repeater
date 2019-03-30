@@ -88,6 +88,16 @@ describe("Channel", () => {
     await expect(channel.next()).rejects.toBe(error);
   });
 
+  test("take then put avoids buffer", async () => {
+    const buffer = new FixedBuffer<number>(1);
+    let put: (value: number) => Promise<IteratorResult<number>>;
+    const channel = new Channel((put1) => (put = put1), buffer);
+    const takeResult = channel.next();
+    put!(1000);
+    expect(buffer.empty).toBe(true);
+    await expect(takeResult).resolves.toEqual({ value: 1000, done: false });
+  });
+
   test("fixed buffer rejects when buffer and queue are full", async () => {
     const channel = new Channel<number>((put, close) => {
       put(1);
