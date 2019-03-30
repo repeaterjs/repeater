@@ -104,8 +104,8 @@ export type ChannelExecutor<T> = (
 export class Channel<T> implements AsyncIterableIterator<T> {
   protected readonly MAX_QUEUE_LENGTH = 1024;
   closed = false;
-  protected error?: any;
-  onclose?: () => void;
+  protected reason?: any;
+  onclose?: (reason?: any) => void;
   protected puts: Put<T>[] = [];
   protected takes: Take<T>[] = [];
 
@@ -142,7 +142,11 @@ export class Channel<T> implements AsyncIterableIterator<T> {
 
   close(reason?: any) {
     this.closed = true;
-    this.error = reason;
+    this.reason = reason;
+    for (const put of this.puts) {
+      put.resolve({ done: true } as IteratorResult<T>);
+    }
+    this.puts = [];
     for (const take of this.takes) {
       if (reason == null) {
         take.resolve({ done: true } as IteratorResult<T>);
@@ -151,10 +155,9 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       }
     }
     this.takes = [];
-    for (const put of this.puts) {
-      put.resolve({ done: true } as IteratorResult<T>);
-    }
-    this.puts = [];
+    if (this.onclose != null) {
+      this.onclose(reason);
+    } 
   }
 
   next(): Promise<IteratorResult<T>> {
@@ -172,10 +175,10 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       put.resolve(result);
       return Promise.resolve(result);
     } else if (this.closed) {
-      if (this.error == null) {
+      if (this.reason == null) {
         return Promise.resolve({ done: true } as IteratorResult<T>);
       } else {
-        return Promise.reject(this.error);
+        return Promise.reject(this.reason);
       }
     } else if (this.takes.length >= this.MAX_QUEUE_LENGTH) {
       throw new Error(`Queue length cannot exceed ${this.MAX_QUEUE_LENGTH}`);

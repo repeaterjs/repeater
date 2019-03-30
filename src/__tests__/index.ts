@@ -73,7 +73,7 @@ describe("Channel", () => {
   });
 
   test("sync error in executor", async () => {
-    const error = new Error("Hi");
+    const error = new Error("Sync error in executor");
     const channel = new Channel<number>(() => {
       throw error;
     });
@@ -81,7 +81,7 @@ describe("Channel", () => {
   });
 
   test("async error in executor", async () => {
-    const error = new Error("Hi");
+    const error = new Error("Async error in executor");
     const channel = new Channel<number>(async () => {
       throw error;
     });
@@ -162,7 +162,7 @@ describe("Channel", () => {
       await put(3);
       await put(4);
     });
-    const error = new Error("Example error");
+    const error = new Error("Early throw error");
     const result = [];
     try {
       for await (const num of channel) {
