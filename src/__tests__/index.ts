@@ -241,3 +241,52 @@ describe("Channel", () => {
     expect(channel.closed).toBe(true);
   });
 });
+
+describe("timers", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+  });
+
+  test("timeout resolves", async () => {
+    const timer = timeout(10000);
+    jest.advanceTimersByTime(10000);
+    const result = await timer.next();
+    expect(result.value).toBeLessThanOrEqual(Date.now());
+    expect(result.done).toBe(false);
+    await expect(timer.next()).resolves.toEqual({ done: true });
+    expect(timer.closed).toBe(true);
+  });
+
+  test("timeout rejects", async () => {
+    const timer = timeout(10000, { reject: true });
+    jest.advanceTimersByTime(10000);
+    await expect(timer.next()).rejects.toBeDefined();
+    await expect(timer.next()).rejects.toBeDefined();
+    expect(timer.closed).toBe(true);
+  });
+
+  test("interval", async () => {
+    const timer = interval(10000);
+    jest.advanceTimersByTime(10000);
+    let result: IteratorResult<number>;
+    result = await timer.next();
+    expect(result.value).toBeLessThanOrEqual(Date.now());
+    expect(result.done).toBe(false);
+    jest.advanceTimersByTime(10000);
+    result = await timer.next();
+    expect(result.value).toBeLessThanOrEqual(Date.now());
+    expect(result.done).toBe(false);
+    jest.advanceTimersByTime(10000);
+    timer.close();
+    result = await timer.next();
+    expect(result.value).toBeLessThanOrEqual(Date.now());
+    expect(result.done).toBe(false);
+    result = await timer.next();
+    expect(result).toEqual({ done: true });
+    expect(timer.closed).toBe(true);
+  });
+});
