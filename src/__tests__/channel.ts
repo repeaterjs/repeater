@@ -1,68 +1,4 @@
-import {
-  Channel,
-  DroppingBuffer,
-  FixedBuffer,
-  SlidingBuffer,
-  interval,
-  timeout,
-} from "../index";
-
-describe("buffers", () => {
-  describe("FixedBuffer", () => {
-    test("simple", () => {
-      const buffer = new FixedBuffer<number>(2);
-      expect([buffer.empty, buffer.full]).toEqual([true, false]);
-      buffer.add(1);
-      expect([buffer.empty, buffer.full]).toEqual([false, false]);
-      buffer.add(2);
-      expect([buffer.empty, buffer.full]).toEqual([false, true]);
-      expect(buffer.remove()).toEqual(1);
-      expect([buffer.empty, buffer.full]).toEqual([false, false]);
-      expect(buffer.remove()).toEqual(2);
-      expect([buffer.empty, buffer.full]).toEqual([true, false]);
-      expect(buffer.remove()).toEqual(undefined);
-    });
-
-    test("throws when full", () => {
-      const buffer = new FixedBuffer<number>(2);
-      expect(buffer.empty).toBe(true);
-      buffer.add(1);
-      buffer.add(2);
-      expect(buffer.full).toBe(true);
-      expect(() => buffer.add(3)).toThrow();
-    });
-  });
-
-  describe("SlidingBuffer", () => {
-    test("simple", () => {
-      const buffer = new SlidingBuffer<number>(2);
-      buffer.add(1);
-      buffer.add(2);
-      buffer.add(3);
-      buffer.add(4);
-      buffer.add(5);
-      expect(buffer.full).toBe(false);
-      expect(buffer.remove()).toEqual(4);
-      expect(buffer.remove()).toEqual(5);
-      expect(buffer.remove()).toEqual(undefined);
-    });
-  });
-
-  describe("DroppingBuffer", () => {
-    test("simple", () => {
-      const buffer = new DroppingBuffer<number>(2);
-      buffer.add(1);
-      buffer.add(2);
-      buffer.add(3);
-      buffer.add(4);
-      buffer.add(5);
-      expect(buffer.full).toBe(false);
-      expect(buffer.remove()).toEqual(1);
-      expect(buffer.remove()).toEqual(2);
-      expect(buffer.remove()).toEqual(undefined);
-    });
-  });
-});
+import { Channel, DroppingBuffer, FixedBuffer, SlidingBuffer } from "../index";
 
 describe("Channel", () => {
   test("no buffer", async () => {
@@ -87,7 +23,6 @@ describe("Channel", () => {
       throw error;
     });
     await expect(channel.next()).rejects.toBe(error);
-    expect(channel.closed).toBe(true);
   });
 
   test("async error in executor", async () => {
@@ -96,7 +31,6 @@ describe("Channel", () => {
       throw error;
     });
     await expect(channel.next()).rejects.toBe(error);
-    expect(channel.closed).toBe(true);
   });
 
   test("take then put avoids buffer", async () => {
@@ -138,7 +72,7 @@ describe("Channel", () => {
       result.push(num);
     }
     expect(result).toEqual([1, 2, 3]);
-    expect(channel.closed).toBe(true);
+    await expect(channel.next()).resolves.toEqual({ done: true });
   });
 
   test("sliding buffer", async () => {
@@ -155,7 +89,7 @@ describe("Channel", () => {
       result.push(num);
     }
     expect(result).toEqual([3, 4, 5]);
-    expect(channel.closed).toBe(true);
+    await expect(channel.next()).resolves.toEqual({ done: true });
   });
 
   test("early break", async () => {
@@ -173,7 +107,7 @@ describe("Channel", () => {
       }
     }
     expect(result).toEqual([1, 2]);
-    expect(channel.closed).toBe(true);
+    await expect(channel.next()).resolves.toEqual({ done: true });
   });
 
   test("early throw", async () => {
@@ -196,7 +130,7 @@ describe("Channel", () => {
       })(),
     ).rejects.toBe(error);
     expect(result).toEqual([1, 2, 3]);
-    expect(channel.closed).toBe(true);
+    await expect(channel.next()).resolves.toEqual({ done: true });
   });
 
   test("return method", async () => {
@@ -210,12 +144,12 @@ describe("Channel", () => {
     for await (const num of channel) {
       result.push(num);
       if (num === 3) {
-        // return will ignore any values passed into it
-        channel.return("POOP");
+        await channel.return("POOP");
       }
     }
     expect(result).toEqual([1, 2, 3]);
-    expect(channel.closed).toBe(true);
+    // TODO: should we return { done: true, value: "POOP" }?
+    await expect(channel.next()).resolves.toEqual({ done: true });
   });
 
   test("throw method", async () => {
@@ -232,61 +166,12 @@ describe("Channel", () => {
         for await (const num of channel) {
           result.push(num);
           if (num === 3) {
-            channel.throw(error);
+            await channel.throw(error);
           }
         }
       })(),
     ).rejects.toBe(error);
     expect(result).toEqual([1, 2, 3]);
-    expect(channel.closed).toBe(true);
-  });
-});
-
-describe("timers", () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.clearAllTimers();
-  });
-
-  test("timeout resolves", async () => {
-    const timer = timeout(10000);
-    jest.advanceTimersByTime(10000);
-    const result = await timer.next();
-    expect(result.value).toBeLessThanOrEqual(Date.now());
-    expect(result.done).toBe(false);
-    await expect(timer.next()).resolves.toEqual({ done: true });
-    expect(timer.closed).toBe(true);
-  });
-
-  test("timeout rejects", async () => {
-    const timer = timeout(10000, { reject: true });
-    jest.advanceTimersByTime(10000);
-    await expect(timer.next()).rejects.toBeDefined();
-    await expect(timer.next()).rejects.toBeDefined();
-    expect(timer.closed).toBe(true);
-  });
-
-  test("interval", async () => {
-    const timer = interval(10000);
-    jest.advanceTimersByTime(10000);
-    let result: IteratorResult<number>;
-    result = await timer.next();
-    expect(result.value).toBeLessThanOrEqual(Date.now());
-    expect(result.done).toBe(false);
-    jest.advanceTimersByTime(10000);
-    result = await timer.next();
-    expect(result.value).toBeLessThanOrEqual(Date.now());
-    expect(result.done).toBe(false);
-    jest.advanceTimersByTime(10000);
-    timer.close();
-    result = await timer.next();
-    expect(result.value).toBeLessThanOrEqual(Date.now());
-    expect(result.done).toBe(false);
-    result = await timer.next();
-    expect(result).toEqual({ done: true });
-    expect(timer.closed).toBe(true);
+    await expect(channel.next()).rejects.toBe(error);
   });
 });

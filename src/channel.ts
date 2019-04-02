@@ -13,12 +13,15 @@ interface TakeOperation<T> {
 export type ChannelExecutor<T> = (
   put: (value: T) => Promise<void>,
   close: (reason?: any) => void,
-) => any;
+  start: Promise<void>,
+  stop: Promise<void>,
+) => void;
 
 export class Channel<T> implements AsyncIterableIterator<T> {
-  closed = false;
-  onclose?: (reason?: any) => void;
+  protected closed = false;
   protected reason?: any;
+  protected onstart?: () => void;
+  protected onstop?: () => void;
   protected puts: PutOperation<T>[] = [];
   protected takes: TakeOperation<T>[] = [];
   protected readonly MAX_QUEUE_LENGTH = 1024;
@@ -27,56 +30,42 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     executor: ChannelExecutor<T>,
     protected buffer: Buffer<T> = new FixedBuffer(0),
   ) {
-    const put = (value: T): Promise<void> => {
-      if (this.closed) {
-        return Promise.resolve();
-      } else if (this.takes.length) {
-        const take = this.takes.shift()!;
-        const result = { value, done: false };
-        take.resolve(result);
-        return Promise.resolve();
-      } else if (!this.buffer.full) {
-        this.buffer.add(value);
-        return Promise.resolve();
-      } else if (this.puts.length >= this.MAX_QUEUE_LENGTH) {
-        throw new Error(`Queue length cannot exceed ${this.MAX_QUEUE_LENGTH}`);
-      }
-      return new Promise((resolve) => this.puts.push({ resolve, value }));
-    };
+    const start = new Promise<void>((resolve) => (this.onstart = resolve));
+    const stop = new Promise<void>((resolve) => (this.onstop = resolve));
     try {
-      Promise.resolve(executor(put, this.close.bind(this))).catch((err) => {
-        this.close(err);
-      });
+      Promise.resolve(
+        executor(this.put.bind(this), this.close.bind(this), start, stop),
+      ).catch((err) => this.close(err));
     } catch (err) {
       this.close(err);
     }
   }
 
-  close(reason?: any): void {
+  protected put(value: T): Promise<void> {
     if (this.closed) {
-      return;
+      return Promise.resolve();
+    } else if (this.takes.length) {
+      const take = this.takes.shift()!;
+      const result = { value, done: false };
+      take.resolve(result);
+      return Promise.resolve();
+    } else if (!this.buffer.full) {
+      this.buffer.add(value);
+      return Promise.resolve();
+    } else if (this.puts.length >= this.MAX_QUEUE_LENGTH) {
+      throw new Error(
+        `Put queue length cannot exceed ${this.MAX_QUEUE_LENGTH}`,
+      );
     }
-    this.closed = true;
-    this.reason = reason;
-    for (const put of this.puts) {
-      put.resolve();
-    }
-    this.puts = [];
-    for (const take of this.takes) {
-      if (reason == null) {
-        take.resolve({ done: true } as IteratorResult<T>);
-      } else {
-        take.reject(reason);
-      }
-    }
-    this.takes = [];
-    if (this.onclose != null) {
-      this.onclose(reason);
-    }
-    Object.freeze(this);
+    return new Promise((resolve) => this.puts.push({ resolve, value }));
   }
 
   next(): Promise<IteratorResult<T>> {
+    if (!this.closed && this.onstart != null) {
+      this.onstart();
+      delete this.onstart;
+    }
+
     if (!this.buffer.empty) {
       const result = { value: this.buffer.remove()!, done: false };
       if (this.puts.length) {
@@ -108,14 +97,39 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     );
   }
 
-  return(_?: any): Promise<IteratorResult<T>> {
+  protected close(reason?: any): void {
+    if (this.closed) {
+      return;
+    }
+    this.closed = true;
+    this.reason = reason;
+    for (const put of this.puts) {
+      put.resolve();
+    }
+    this.puts = [];
+    Object.freeze(this.puts);
+    for (const take of this.takes) {
+      if (reason == null) {
+        take.resolve({ done: true } as IteratorResult<T>);
+      } else {
+        take.reject(reason);
+      }
+    }
+    this.takes = [];
+    Object.freeze(this.takes);
+    this.onstop!();
+    delete this.onstop;
+    Object.freeze(this);
+  }
+
+  return(value?: any): Promise<IteratorResult<T>> {
     this.close();
-    return Promise.resolve({ done: true } as IteratorResult<T>);
+    return Promise.resolve({ done: true, value } as IteratorResult<T>);
   }
 
   throw(reason?: any): Promise<IteratorResult<T>> {
     this.close(reason);
-    return Promise.resolve({ done: true } as IteratorResult<T>);
+    return Promise.reject(reason);
   }
 
   [Symbol.asyncIterator]() {

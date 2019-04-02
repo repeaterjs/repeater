@@ -11,7 +11,7 @@
     "prebench": "yarn build",
     "bench": "NODE_ENV=production node ./bench",
     "develop": "yarn test --watchAll",
-    "test": "jest --verbose",
+    "test": "jest --verbose --detectLeaks",
     "lint": "eslint --ext js,ts src"
   },
   "devDependencies": {
@@ -25,6 +25,7 @@
     "prettier": "^1.16.4",
     "shx": "^0.3.2",
     "ts-jest": "^24.0.0",
-    "typescript": "^3.3.4000"
+    "typescript": "^3.3.4000",
+    "weak": "^1.0.1"
   }
 }

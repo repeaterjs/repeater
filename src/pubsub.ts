@@ -4,26 +4,24 @@ export interface PubSub<T> {
 }
 
 import { Channel } from "./channel";
+
+interface Publisher<T> {
+  put(value: T): void;
+  close(err: any): void;
+}
+
 export class InMemoryPubSub<T> implements PubSub<T> {
-  protected channels: Record<string, Set<Channel<T>>> = {};
-  protected puts: WeakMap<
-    Channel<T>,
-    (value: T) => Promise<void>
-  > = new WeakMap();
+  protected publishers: Record<string, Set<Publisher<T>>> = {};
 
   publish(topic: string, value: T): Promise<void> {
-    const channels = this.channels[topic];
-    if (channels != null) {
-      for (const channel of channels) {
-        const put = this.puts.get(channel);
-        if (put == null) {
-          channel.close();
-          continue;
-        }
+    const publishers = this.publishers[topic];
+    if (publishers != null) {
+      for (const { put, close } of publishers) {
         try {
           put(value);
         } catch (err) {
-          channel.close();
+          // put queue is full or weakmap lost reference to put function
+          close(err);
         }
       }
     }
@@ -31,16 +29,19 @@ export class InMemoryPubSub<T> implements PubSub<T> {
   }
 
   subscribe(topic: string, value?: T): Promise<AsyncIterableIterator<T>> {
-    const channels = this.channels[topic] || new Set();
-    let put: (value: T) => Promise<void>;
-    const channel: Channel<T> = new Channel((put1) => (put = put1));
-    channels.add(channel);
-    this.puts.set(channel, put!);
-    if (value != null) {
-      put!(value);
+    if (this.publishers[topic] == null) {
+      this.publishers[topic] = new Set();
     }
-    channel.onclose = () => channels.delete(channel);
-    this.channels[topic] = channels;
-    return Promise.resolve(channel);
+    const chan: Channel<T> = new Channel(async (put, close, start, stop) => {
+      if (value != null) {
+        put(value);
+      }
+      await start;
+      const publisher = { put, close };
+      this.publishers[topic].add(publisher);
+      await stop;
+      this.publishers[topic].delete(publisher);
+    });
+    return Promise.resolve(chan);
   }
 }
