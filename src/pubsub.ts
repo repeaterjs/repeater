@@ -1,12 +1,12 @@
-export interface PubSub<T> {
-  publish(topic: string, value: T): Promise<void>;
-  subscribe(topic: string, value?: T): Promise<AsyncIterableIterator<T>>;
-}
-
 import { Channel } from "./channel";
 
+export interface PubSub<T> {
+  publish(topic: string, value: T): Promise<void>;
+  subscribe(topic: string): Promise<AsyncIterableIterator<T>>;
+}
+
 interface Publisher<T> {
-  put(value: T): void;
+  push(value: T): void;
   close(err: any): void;
 }
 
@@ -16,11 +16,11 @@ export class InMemoryPubSub<T> implements PubSub<T> {
   publish(topic: string, value: T): Promise<void> {
     const publishers = this.publishers[topic];
     if (publishers != null) {
-      for (const { put, close } of publishers) {
+      for (const { push, close } of publishers) {
         try {
-          put(value);
+          push(value);
         } catch (err) {
-          // put queue is full or weakmap lost reference to put function
+          // push queue is full
           close(err);
         }
       }
@@ -28,20 +28,18 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     return Promise.resolve();
   }
 
-  subscribe(topic: string, value?: T): Promise<AsyncIterableIterator<T>> {
+  subscribe(topic: string): Promise<AsyncIterableIterator<T>> {
     if (this.publishers[topic] == null) {
       this.publishers[topic] = new Set();
     }
-    const chan: Channel<T> = new Channel(async (put, close, start, stop) => {
-      if (value != null) {
-        put(value);
-      }
-      await start;
-      const publisher = { put, close };
-      this.publishers[topic].add(publisher);
-      await stop;
-      this.publishers[topic].delete(publisher);
-    });
-    return Promise.resolve(chan);
+    return Promise.resolve(
+      new Channel<T>(async (push, close, start, stop) => {
+        await start;
+        const publisher = { push, close };
+        this.publishers[topic].add(publisher);
+        await stop;
+        this.publishers[topic].delete(publisher);
+      }),
+    );
   }
 }

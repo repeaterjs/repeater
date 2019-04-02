@@ -1,35 +1,34 @@
 import { FixedBuffer, SlidingBuffer } from "./buffers";
 import { Channel } from "./channel";
 
-export function timeout(
-  delay: number,
-  options: { reject?: boolean } = {},
-): AsyncIterableIterator<number> {
-  return new Channel<number>(async (put, close, start, stop) => {
+export function delay(wait: number): Channel<number> {
+  return new Channel<number>(async (push, close, start, stop) => {
     await start;
-    const timer = setTimeout(() => {
-      if (options.reject) {
-        close(new Error(`${delay} ms elapsed`));
-      } else {
-        put(Date.now());
-        close();
-      }
-    }, delay);
+    const timer = setTimeout(() => (push(Date.now()), close()), wait);
+    await stop;
+    clearTimeout(timer);
+  });
+}
+
+export function timeout(wait: number): Channel<number> {
+  return new Channel<number>(async (_, close, start, stop) => {
+    await start;
+    const timer = setTimeout(() => close(new Error(`${wait}ms elapsed`)), wait);
     await stop;
     clearTimeout(timer);
   });
 }
 
 export function interval(
-  delay: number,
-  buffer: number = 1,
-): AsyncIterableIterator<number> {
-  return new Channel<number>(async (put, _, start, stop) => {
+  wait: number,
+  bufferLength: number = 1,
+): Channel<number> {
+  return new Channel<number>(async (push, _, start, stop) => {
     await start;
-    const timer = setInterval(() => put(Date.now()), delay);
+    const timer = setInterval(() => push(Date.now()), wait);
     await stop;
     clearInterval(timer);
-  }, new SlidingBuffer(buffer));
+  }, new SlidingBuffer(bufferLength));
 }
 
 export interface Token<T> {
@@ -39,21 +38,24 @@ export interface Token<T> {
 }
 
 export async function* resources<T>(
-  limit: number,
-  init?: () => T,
+  max: number,
+  // TODO: allow create to return a promise
+  create?: () => T,
+  // TODO: add another callback for destroying resources
 ): AsyncIterableIterator<Token<T | undefined>> {
-  let remaining = limit;
+  let remaining = max;
   let release: (resource?: T) => void;
-  const releases = new Channel<T | undefined>(async (put, _, ready) => {
+  const releases = new Channel<T | undefined>(async (push, _, start) => {
     release = (resource?: T) => {
       remaining++;
-      put(resource);
+      push(resource);
     };
-    await ready;
-    for (let i = 0; i < limit; i++) {
-      put(init && init());
+    await start;
+    for (let i = 0; i < max; i++) {
+      const resource = create && create();
+      await push(resource);
     }
-  }, new FixedBuffer(limit));
+  }, new FixedBuffer(max));
   for await (const resource of releases) {
     remaining--;
     yield {

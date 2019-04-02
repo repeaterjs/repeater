@@ -1,6 +1,6 @@
 import { Buffer, FixedBuffer } from "./buffers";
 
-interface PutOperation<T> {
+interface PushOperation<T> {
   resolve(): void;
   value: T;
 }
@@ -11,7 +11,7 @@ interface TakeOperation<T> {
 }
 
 export type ChannelExecutor<T> = (
-  put: (value: T) => Promise<void>,
+  push: (value: T) => Promise<void>,
   close: (reason?: any) => void,
   start: Promise<void>,
   stop: Promise<void>,
@@ -22,8 +22,8 @@ export class Channel<T> implements AsyncIterableIterator<T> {
   protected reason?: any;
   protected onstart?: () => void;
   protected onstop?: () => void;
-  protected puts: PutOperation<T>[] = [];
-  protected takes: TakeOperation<T>[] = [];
+  protected pushQueue: PushOperation<T>[] = [];
+  protected takeQueue: TakeOperation<T>[] = [];
   protected readonly MAX_QUEUE_LENGTH = 1024;
 
   constructor(
@@ -34,30 +34,30 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     const stop = new Promise<void>((resolve) => (this.onstop = resolve));
     try {
       Promise.resolve(
-        executor(this.put.bind(this), this.close.bind(this), start, stop),
+        executor(this.push.bind(this), this.close.bind(this), start, stop),
       ).catch((err) => this.close(err));
     } catch (err) {
       this.close(err);
     }
   }
 
-  protected put(value: T): Promise<void> {
+  protected push(value: T): Promise<void> {
     if (this.closed) {
       return Promise.resolve();
-    } else if (this.takes.length) {
-      const take = this.takes.shift()!;
+    } else if (this.takeQueue.length) {
+      const take = this.takeQueue.shift()!;
       const result = { value, done: false };
       take.resolve(result);
       return Promise.resolve();
     } else if (!this.buffer.full) {
       this.buffer.add(value);
       return Promise.resolve();
-    } else if (this.puts.length >= this.MAX_QUEUE_LENGTH) {
+    } else if (this.pushQueue.length >= this.MAX_QUEUE_LENGTH) {
       throw new Error(
-        `Put queue length cannot exceed ${this.MAX_QUEUE_LENGTH}`,
+        `Push queue length cannot exceed ${this.MAX_QUEUE_LENGTH}`,
       );
     }
-    return new Promise((resolve) => this.puts.push({ resolve, value }));
+    return new Promise((resolve) => this.pushQueue.push({ resolve, value }));
   }
 
   next(): Promise<IteratorResult<T>> {
@@ -68,17 +68,17 @@ export class Channel<T> implements AsyncIterableIterator<T> {
 
     if (!this.buffer.empty) {
       const result = { value: this.buffer.remove()!, done: false };
-      if (this.puts.length) {
-        const put = this.puts.shift()!;
-        this.buffer.add(put.value);
-        put.resolve();
+      if (this.pushQueue.length) {
+        const push = this.pushQueue.shift()!;
+        this.buffer.add(push.value);
+        push.resolve();
       }
       return Promise.resolve(result);
-    } else if (this.puts.length) {
-      // this is only really possible if we have a buffer of length 0
-      const put = this.puts.shift()!;
-      const result = { value: put.value, done: false };
-      put.resolve();
+    } else if (this.pushQueue.length) {
+      // this branch is only possible if we have a buffer of length 0
+      const push = this.pushQueue.shift()!;
+      const result = { value: push.value, done: false };
+      push.resolve();
       return Promise.resolve(result);
     } else if (this.closed) {
       if (this.reason == null) {
@@ -86,48 +86,55 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       } else {
         return Promise.reject(this.reason);
       }
-    } else if (this.takes.length >= this.MAX_QUEUE_LENGTH) {
+    } else if (this.takeQueue.length >= this.MAX_QUEUE_LENGTH) {
       return Promise.reject(
-        new Error(`Queue length cannot exceed ${this.MAX_QUEUE_LENGTH}`),
+        new Error(`Take queue length cannot exceed ${this.MAX_QUEUE_LENGTH}`),
       );
     }
 
     return new Promise((resolve, reject) =>
-      this.takes.push({ resolve, reject }),
+      this.takeQueue.push({ resolve, reject }),
     );
   }
 
   protected close(reason?: any): void {
     if (this.closed) {
-      return;
+      if (reason == null) {
+        return;
+      }
+      // If we close the channel with a reason when it has already closed, rather than swallowing the reason, we rethrow it here. This may lead to an unhandled promise rejection if, for instance, an error occurs in the executor after the stop promise resolves.
+      throw reason;
     }
     this.closed = true;
     this.reason = reason;
-    for (const put of this.puts) {
-      put.resolve();
+    for (const push of this.pushQueue) {
+      push.resolve();
     }
-    this.puts = [];
-    Object.freeze(this.puts);
-    for (const take of this.takes) {
+    this.pushQueue = [];
+    Object.freeze(this.pushQueue);
+    for (const take of this.takeQueue) {
       if (reason == null) {
         take.resolve({ done: true } as IteratorResult<T>);
       } else {
         take.reject(reason);
       }
     }
-    this.takes = [];
-    Object.freeze(this.takes);
+    this.takeQueue = [];
+    Object.freeze(this.takeQueue);
+    if (this.onstart != null) {
+      delete this.onstart;
+    }
     this.onstop!();
     delete this.onstop;
     Object.freeze(this);
   }
 
-  return(value?: any): Promise<IteratorResult<T>> {
+  return(): Promise<IteratorResult<T>> {
     this.close();
-    return Promise.resolve({ done: true, value } as IteratorResult<T>);
+    return Promise.resolve({ done: true } as IteratorResult<T>);
   }
 
-  throw(reason?: any): Promise<IteratorResult<T>> {
+  throw(reason: any): Promise<IteratorResult<T>> {
     this.close(reason);
     return Promise.reject(reason);
   }

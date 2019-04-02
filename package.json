@@ -11,7 +11,7 @@
     "prebench": "yarn build",
     "bench": "NODE_ENV=production node ./bench",
     "develop": "yarn test --watchAll",
-    "test": "jest --verbose --detectLeaks",
+    "test": "jest --verbose",
     "lint": "eslint --ext js,ts src"
   },
   "devDependencies": {
