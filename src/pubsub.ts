@@ -33,8 +33,7 @@ export class InMemoryPubSub<T> implements PubSub<T> {
       this.publishers[topic] = new Set();
     }
     return Promise.resolve(
-      new Channel<T>(async (push, close, start, stop) => {
-        await start;
+      new Channel<T>(async (push, close, _, stop) => {
         const publisher = { push, close };
         this.publishers[topic].add(publisher);
         await stop;
