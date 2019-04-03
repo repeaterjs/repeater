@@ -44,6 +44,7 @@ export async function* resources<T>(
   // TODO: add another callback for destroying resources
 ): AsyncIterableIterator<ResourceToken<T | undefined>> {
   let remaining = max;
+  // TODO: allow release to destroy resources and create another one. This will probably make release an async function
   let release: (resource?: T) => void;
   const releases = new Channel<T | undefined>(async (push, _, start) => {
     release = (resource?: T) => {
@@ -64,6 +65,7 @@ export async function* resources<T>(
       release: release!.bind(null, resource),
     };
   }
+  // TODO: release and destroy all resources when the generator is closed
 }
 
 export interface LimiterInfo {
@@ -99,9 +101,5 @@ export async function* limiter(
     }
   } finally {
     timer.return();
-    for (const token of tokens) {
-      token.release();
-    }
-    tokens.clear();
   }
 }
