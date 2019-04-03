@@ -1,4 +1,4 @@
-import { delay, interval, resources, timeout } from "../index";
+import { delay, interval, limiter, resources, timeout } from "../index";
 
 async function* identity(iter: AsyncIterable<any>) {
   for await (const value of iter) {
@@ -147,5 +147,17 @@ describe("timers", () => {
       tokens.return!();
       expect(tokens.next()).resolves.toEqual({ done: true });
     });
+  });
+
+  describe("limiter", () => {
+    // TODO: figure out how to test rateLimiter with timer mocks
+    test.skip("it works", async () => {
+      let i = 0;
+      for await (const _ of limiter(1000, 10)) {
+        if (i++ >= 50) {
+          break;
+        }
+      }
+    }, 6000);
   });
 });

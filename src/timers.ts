@@ -31,7 +31,7 @@ export function interval(
   }, new SlidingBuffer(bufferLength));
 }
 
-export interface Token<T> {
+export interface ResourceToken<T> {
   resource?: T;
   remaining: number;
   release(): void;
@@ -42,7 +42,7 @@ export async function* resources<T>(
   // TODO: allow create to return a promise
   create?: () => T,
   // TODO: add another callback for destroying resources
-): AsyncIterableIterator<Token<T | undefined>> {
+): AsyncIterableIterator<ResourceToken<T | undefined>> {
   let remaining = max;
   let release: (resource?: T) => void;
   const releases = new Channel<T | undefined>(async (push, _, start) => {
@@ -63,5 +63,45 @@ export async function* resources<T>(
       remaining,
       release: release!.bind(null, resource),
     };
+  }
+}
+
+export interface LimiterInfo {
+  limit: number;
+  remaining: number;
+  reset: number;
+}
+
+// TODO: think about the name of this function for a bit
+export async function* limiter(
+  rate: number,
+  limit: number = 1,
+): AsyncIterableIterator<LimiterInfo> {
+  const timer = interval(rate);
+  const tokens = new Set<ResourceToken<any>>();
+  let time = Date.now();
+  (async () => {
+    for await (time of timer) {
+      for (const token of tokens) {
+        token.release();
+      }
+      tokens.clear();
+    }
+  })();
+  try {
+    for await (const token of resources(limit)) {
+      yield {
+        limit,
+        remaining: token.remaining,
+        reset: time + rate,
+      };
+      tokens.add(token);
+    }
+  } finally {
+    timer.return();
+    for (const token of tokens) {
+      token.release();
+    }
+    tokens.clear();
   }
 }
