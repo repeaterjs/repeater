@@ -2,7 +2,7 @@ import { Channel } from "./channel";
 
 export interface PubSub<T> {
   publish(topic: string, value: T): Promise<void>;
-  subscribe(topic: string): Promise<AsyncIterableIterator<T>>;
+  subscribe(topic: string): AsyncIterableIterator<T>;
   close(topic: string, reason?: any): void;
   destroy(reason?: any): void;
 }
@@ -30,19 +30,17 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     return Promise.resolve();
   }
 
-  subscribe(topic: string): Promise<AsyncIterableIterator<T>> {
+  subscribe(topic: string): AsyncIterableIterator<T> {
     if (this.publishers[topic] == null) {
       this.publishers[topic] = new Set();
     }
-    return Promise.resolve(
-      new Channel<T>(async (push, close, _, stop) => {
-        // TODO: should we await start?
-        const publisher = { push, close };
-        this.publishers[topic].add(publisher);
-        await stop;
-        this.publishers[topic].delete(publisher);
-      }),
-    );
+    return new Channel<T>(async (push, close, _start, stop) => {
+      // awaiting start can cause unnecessary deadlocks or dropped values
+      const publisher = { push, close };
+      this.publishers[topic].add(publisher);
+      await stop;
+      this.publishers[topic].delete(publisher);
+    });
   }
 
   close(topic: string, reason?: any): void {
