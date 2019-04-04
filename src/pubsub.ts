@@ -3,11 +3,13 @@ import { Channel } from "./channel";
 export interface PubSub<T> {
   publish(topic: string, value: T): Promise<void>;
   subscribe(topic: string): Promise<AsyncIterableIterator<T>>;
+  close(topic: string, reason?: any): void;
+  destroy(reason?: any): void;
 }
 
 interface Publisher<T> {
   push(value: T): void;
-  close(err: any): void;
+  close(reason?: any): void;
 }
 
 export class InMemoryPubSub<T> implements PubSub<T> {
@@ -34,11 +36,30 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     }
     return Promise.resolve(
       new Channel<T>(async (push, close, _, stop) => {
+        // TODO: should we await start?
         const publisher = { push, close };
         this.publishers[topic].add(publisher);
         await stop;
         this.publishers[topic].delete(publisher);
       }),
     );
+  }
+
+  close(topic: string, reason?: any): void {
+    const publishers = this.publishers[topic];
+    if (publishers == null) {
+      return;
+    }
+    for (const { close } of publishers) {
+      close(reason);
+    }
+  }
+
+  destroy(reason?: any): void {
+    for (const publishers of Object.values(this.publishers)) {
+      for (const { close } of publishers) {
+        close(reason);
+      }
+    }
   }
 }
