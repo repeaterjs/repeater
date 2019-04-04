@@ -33,29 +33,28 @@ describe("Channel", () => {
     await expect(chan.next()).rejects.toBe(error);
   });
 
-  test("take then push avoids buffer", async () => {
+  test("pull then push avoids buffer", async () => {
     const buffer = new FixedBuffer<number>(1);
     let push: (value: number) => Promise<void>;
     const chan = new Channel((push1) => (push = push1), buffer);
-    const takeResult = chan.next();
+    const pullResult = chan.next();
     push!(1000);
     expect(buffer.empty).toBe(true);
-    await expect(takeResult).resolves.toEqual({ value: 1000, done: false });
+    await expect(pullResult).resolves.toEqual({ value: 1000, done: false });
   });
 
   test("pushes throw when buffer and queue are full", () => {
+    const bufferLength = 3;
     let push: (value: number) => Promise<void>;
     const chan = new Channel<number>(
       (push1) => (push = push1),
-      new FixedBuffer(3),
+      new FixedBuffer(bufferLength),
     );
-    // @ts-ignore
-    chan.MAX_QUEUE_LENGTH = 0;
-    push!(1);
-    push!(2);
-    push!(3);
-    expect(() => push(4)).toThrow();
-    expect(() => push(5)).toThrow();
+    for (let i = 0; i < bufferLength + chan["MAX_QUEUE_LENGTH"]; i++) {
+      push!(i);
+    }
+    expect(() => push(-1)).toThrow();
+    expect(() => push(-2)).toThrow();
   });
 
   test("dropping buffer", async () => {
@@ -102,11 +101,11 @@ describe("Channel", () => {
     const result: number[] = [];
     for await (const num of chan) {
       result.push(num);
-      if (num === 2) {
+      if (num === 3) {
         break;
       }
     }
-    expect(result).toEqual([1, 2]);
+    expect(result).toEqual([1, 2, 3]);
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -149,29 +148,5 @@ describe("Channel", () => {
     }
     expect(result).toEqual([1, 2, 3]);
     await expect(chan.next()).resolves.toEqual({ done: true });
-  });
-
-  test("throw method", async () => {
-    const chan = new Channel<number>(async (push) => {
-      await push(1);
-      await push(2);
-      await push(3);
-      await push(4);
-    });
-    const error = new Error("Error thrown via method error");
-    let result: number[] = [];
-    await expect(
-      (async () => {
-        for await (const num of chan) {
-          result.push(num);
-          if (num === 3) {
-            await chan.throw(error);
-          }
-        }
-      })(),
-    ).rejects.toBe(error);
-    expect(result).toEqual([1, 2, 3]);
-    await expect(chan.next()).rejects.toBe(error);
-    await expect(chan.next()).rejects.toBe(error);
   });
 });
