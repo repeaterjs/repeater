@@ -17,6 +17,17 @@ export type ChannelExecutor<T> = (
   stop: Promise<void>,
 ) => void;
 
+export class ChannelOverflowError extends Error {
+  name = "ChannelOverflowError";
+  constructor(message: string) {
+    super(message);
+    Object.setPrototypeOf(this, new.target.prototype);
+    if (typeof Error.captureStackTrace === "function") {
+      Error.captureStackTrace(this, ChannelOverflowError);
+    }
+  }
+}
+
 export class Channel<T> implements AsyncIterableIterator<T> {
   private closed = false;
   private reason?: any;
@@ -53,7 +64,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       this.buffer.add(value);
       return Promise.resolve();
     } else if (this.pushQueue.length >= this.MAX_QUEUE_LENGTH) {
-      throw new Error(
+      throw new ChannelOverflowError(
         `No more than ${
           this.MAX_QUEUE_LENGTH
         } pending pushes are allowed on a single channel. Consider using a windowed buffer.`,
@@ -117,7 +128,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       }
     } else if (this.pullQueue.length >= this.MAX_QUEUE_LENGTH) {
       return Promise.reject(
-        new Error(
+        new ChannelOverflowError(
           `No more than ${
             this.MAX_QUEUE_LENGTH
           } pending pulls are allowed on a single channel. Consider using a windowed buffer.`,

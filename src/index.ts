@@ -1,5 +1,5 @@
 export { Buffer, DroppingBuffer, FixedBuffer, SlidingBuffer } from "./buffers";
-export { Channel, ChannelExecutor } from "./channel";
+export { Channel, ChannelExecutor, ChannelOverflowError } from "./channel";
 export { PubSub, InMemoryPubSub } from "./pubsub";
 export {
   delay,

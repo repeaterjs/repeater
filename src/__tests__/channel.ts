@@ -1,4 +1,10 @@
-import { Channel, DroppingBuffer, FixedBuffer, SlidingBuffer } from "../index";
+import {
+  Channel,
+  ChannelOverflowError,
+  DroppingBuffer,
+  FixedBuffer,
+  SlidingBuffer,
+} from "../index";
 
 describe("Channel", () => {
   test("no buffer", async () => {
@@ -43,7 +49,7 @@ describe("Channel", () => {
     await expect(pullResult).resolves.toEqual({ value: 1000, done: false });
   });
 
-  test("pushes throw when buffer and queue are full", () => {
+  test("pushes throw when buffer and push queue are full", () => {
     const bufferLength = 3;
     let push: (value: number) => Promise<void>;
     const chan = new Channel<number>(
@@ -53,8 +59,17 @@ describe("Channel", () => {
     for (let i = 0; i < bufferLength + chan["MAX_QUEUE_LENGTH"]; i++) {
       push!(i);
     }
-    expect(() => push(-1)).toThrow();
-    expect(() => push(-2)).toThrow();
+    expect(() => push(-1)).toThrow(ChannelOverflowError);
+    expect(() => push(-2)).toThrow(ChannelOverflowError);
+  });
+
+  test("pulls throw when pull queue is full", async () => {
+    const chan = new Channel(() => {}, new FixedBuffer(3));
+    for (let i = 0; i < chan["MAX_QUEUE_LENGTH"]; i++) {
+      chan.next();
+    }
+    await expect(chan.next()).rejects.toBeInstanceOf(ChannelOverflowError);
+    await expect(chan.next()).rejects.toBeInstanceOf(ChannelOverflowError);
   });
 
   test("dropping buffer", async () => {
