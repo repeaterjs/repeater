@@ -1,5 +1,8 @@
 import { throttler, semaphore } from "../index";
 describe("limiters", () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
   test("semaphore", async () => {
     const tokens = semaphore(4);
     const t1 = (await tokens.next()).value;
@@ -19,14 +22,28 @@ describe("limiters", () => {
     expect(t6.remaining).toEqual(1);
   });
 
-  // TODO: figure out how to test throttler with timer mocks
-  test.skip("throttler", async () => {
+  test("throttler cleans up", async () => {
+    const throttle = throttler(1000, 8);
+    await throttle.next();
+    expect(setInterval).toBeCalledTimes(1);
+    await throttle.return!();
+    expect(clearInterval).toBeCalledTimes(1);
+  });
+
+  test("throttler counts remaining in interval", async () => {
+    let remaining = 8;
     let i = 0;
     for await (const token of throttler(1000, 8)) {
-      token; // console.log(token);
-      if (i++ >= 35) {
+      remaining--;
+      expect(token.remaining).toEqual(remaining);
+      if (token.remaining === 0) {
+        jest.advanceTimersByTime(1000);
+        remaining = 8;
+      }
+      if (i++ >= 40) {
         break;
       }
     }
+    expect(clearInterval).toBeCalledTimes(1);
   });
 });
