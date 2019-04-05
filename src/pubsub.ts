@@ -1,10 +1,11 @@
+import { Buffer } from "./buffers";
 import { Channel } from "./channel";
 
 export interface PubSub<T> {
   publish(topic: string, value: T): Promise<void>;
-  subscribe(topic: string): AsyncIterableIterator<T>;
-  close(topic: string, reason?: any): void;
-  destroy(reason?: any): void;
+  subscribe(topic: string, buffer: Buffer<T>): AsyncIterableIterator<T>;
+  unpublish(topic: string, reason?: any): void;
+  close(reason?: any): void;
 }
 
 interface Publisher<T> {
@@ -30,20 +31,20 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     return Promise.resolve();
   }
 
-  subscribe(topic: string): AsyncIterableIterator<T> {
+  subscribe(topic: string, buffer?: Buffer<T>): AsyncIterableIterator<T> {
     if (this.publishers[topic] == null) {
       this.publishers[topic] = new Set();
     }
-    return new Channel<T>(async (push, close, _start, stop) => {
-      // awaiting start can cause unnecessary deadlocks or dropped values
+    return new Channel<T>(async (push, close, start, stop) => {
+      await start;
       const publisher = { push, close };
       this.publishers[topic].add(publisher);
       await stop;
       this.publishers[topic].delete(publisher);
-    });
+    }, buffer);
   }
 
-  close(topic: string, reason?: any): void {
+  unpublish(topic: string, reason?: any): void {
     const publishers = this.publishers[topic];
     if (publishers == null) {
       return;
@@ -51,13 +52,15 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     for (const { close } of publishers) {
       close(reason);
     }
+    this.publishers[topic].clear();
   }
 
-  destroy(reason?: any): void {
+  close(reason?: any): void {
     for (const publishers of Object.values(this.publishers)) {
       for (const { close } of publishers) {
         close(reason);
       }
+      publishers.clear();
     }
   }
 }
