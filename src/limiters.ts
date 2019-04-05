@@ -1,58 +1,56 @@
 import { FixedBuffer } from "./buffers";
 import { Channel } from "./channel";
 import { interval } from "./timers";
-export interface ResourceToken<T> {
-  resource?: T;
+
+export interface Token {
+  id: number;
+  limit: number;
   remaining: number;
   release(): void;
 }
 
-export async function* resources<T>(
-  max: number,
-  // TODO: allow create to return a promise
-  create?: () => T,
-  // TODO: add another callback for destroying resources
-): AsyncIterableIterator<ResourceToken<T | undefined>> {
-  let remaining = max;
-  // TODO: allow release to destroy resources and create another one. This will probably make release an async function
-  let release: (resource?: T) => void;
-  const releases = new Channel<T | undefined>(async (push, _, start) => {
-    release = (resource?: T) => {
-      remaining++;
-      push(resource);
-    };
-    await start;
-    for (let i = 0; i < max; i++) {
-      const resource = create && create();
-      await push(resource);
+export async function* semaphore(limit: number): AsyncIterableIterator<Token> {
+  let remaining = limit;
+  const released: Record<string, Token> = {};
+  const tokens = new Channel<Token>(async (push, _, start, stop) => {
+    function release(id: number) {
+      if (released[id] != null) {
+        push(released[id]);
+        delete released[id];
+        remaining++;
+      }
     }
-  }, new FixedBuffer(max));
-  for await (const resource of releases) {
+    await start;
+    let stopped = false;
+    stop = stop.then(() => void (stopped = true));
+    for (let id = 0; id < limit; id++) {
+      const token = { id, limit, remaining, release: release.bind(null, id) };
+      await Promise.race([stop, push(token)]);
+      if (stopped) {
+        break;
+      }
+    }
+  }, new FixedBuffer(limit));
+  for await (let token of tokens) {
     remaining--;
-    yield {
-      resource,
-      remaining,
-      release: release!.bind(null, resource),
-    };
+    token = { ...token, remaining };
+    released[token.id] = token;
+    yield token;
   }
-  // TODO: release and destroy all resources when the generator is closed
 }
 
-export interface LimiterInfo {
-  limit: number;
-  remaining: number;
+export interface TimerToken extends Token {
   reset: number;
 }
 
-// TODO: think about the name of this function for a bit
-export async function* limiter(
-  rate: number,
+export async function* throttler(
+  wait: number,
   limit: number = 1,
-): AsyncIterableIterator<LimiterInfo> {
-  const timer = interval(rate);
-  const tokens = new Set<ResourceToken<any>>();
+): AsyncIterableIterator<TimerToken> {
+  const timer = interval(wait);
+  const tokens = new Set<Token>();
   let time = Date.now();
-  (async () => {
+  (async function leak() {
     for await (time of timer) {
       for (const token of tokens) {
         token.release();
@@ -61,12 +59,8 @@ export async function* limiter(
     }
   })();
   try {
-    for await (const token of resources(limit)) {
-      yield {
-        limit,
-        remaining: token.remaining,
-        reset: time + rate,
-      };
+    for await (const token of semaphore(limit)) {
+      yield { ...token, reset: time + wait };
       tokens.add(token);
     }
   } finally {
