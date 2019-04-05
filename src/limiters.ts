@@ -3,8 +3,8 @@ import { Channel } from "./channel";
 import { interval } from "./timers";
 
 export interface Token {
-  id: number;
-  limit: number;
+  readonly id: number;
+  readonly limit: number;
   remaining: number;
   release(): void;
 }
