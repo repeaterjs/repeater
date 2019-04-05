@@ -73,19 +73,23 @@ describe("timers", () => {
 
     test("interval", async () => {
       const timer = interval(500);
-      const resultP = timer.next();
-      await Promise.resolve(); // clear promise queue
-      jest.advanceTimersByTime(500);
-      let result: IteratorResult<number>;
-      result = await resultP;
+      let result = await timer.next();
+      expect(result.value).toBeGreaterThan(Date.now() - 10);
       expect(result.value).toBeLessThanOrEqual(Date.now());
       expect(result.done).toBe(false);
       jest.advanceTimersByTime(500);
       result = await timer.next();
+      expect(result.value).toBeGreaterThan(Date.now() - 10);
       expect(result.value).toBeLessThanOrEqual(Date.now());
       expect(result.done).toBe(false);
       jest.advanceTimersByTime(500);
       result = await timer.next();
+      expect(result.value).toBeGreaterThan(Date.now() - 10);
+      expect(result.value).toBeLessThanOrEqual(Date.now());
+      expect(result.done).toBe(false);
+      jest.advanceTimersByTime(500);
+      result = await timer.next();
+      expect(result.value).toBeGreaterThan(Date.now() - 10);
       expect(result.value).toBeLessThanOrEqual(Date.now());
       expect(result.done).toBe(false);
       timer.return();
