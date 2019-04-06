@@ -1,4 +1,5 @@
-import { throttler, semaphore } from "../index";
+import { throttler, semaphore } from "./index";
+
 describe("limiters", () => {
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());

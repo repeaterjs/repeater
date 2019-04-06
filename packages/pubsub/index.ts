@@ -1,9 +1,8 @@
-import { Buffer } from "./buffers";
-import { Channel } from "./channel";
+import { Channel, ChannelBuffer } from "backchannel";
 
 export interface PubSub<T> {
   publish(topic: string, value: T): Promise<void>;
-  subscribe(topic: string, buffer: Buffer<T>): AsyncIterableIterator<T>;
+  subscribe(topic: string, buffer: ChannelBuffer<T>): AsyncIterableIterator<T>;
   unpublish(topic: string, reason?: any): void;
   close(reason?: any): void;
 }
@@ -52,15 +51,12 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     for (const { close } of publishers) {
       close(reason);
     }
-    this.publishers[topic].clear();
+    publishers.clear();
   }
 
   close(reason?: any): void {
-    for (const publishers of Object.values(this.publishers)) {
-      for (const { close } of publishers) {
-        close(reason);
-      }
-      publishers.clear();
+    for (const topic of Object.keys(this.publishers)) {
+      this.unpublish(topic, reason);
     }
   }
 }

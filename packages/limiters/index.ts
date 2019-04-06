@@ -1,6 +1,5 @@
-import { FixedBuffer } from "./buffers";
-import { Channel } from "./channel";
-import { interval } from "./timers";
+import { Channel, FixedBuffer } from "backchannel";
+import { interval } from "backchannel-timers";
 
 export interface Token {
   readonly id: number;

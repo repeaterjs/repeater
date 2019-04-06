@@ -1,0 +1,12 @@
+{
+  "name": "@channel/limiters",
+  "version": "0.1.0",
+  "private": true,
+  "browser": "lib/browser.js",
+  "main": "lib/main.js",
+  "module": "lib/module.js",
+  "dependencies": {
+    "@channel/channel": "^0.1.0",
+    "@channel/timers": "^0.1.0"
+  }
+}

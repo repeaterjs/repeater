@@ -1,6 +1,8 @@
 {
   "private": true,
-  "scripts": {},
+  "scripts": {
+    "test": "jest"
+  },
   "devDependencies": {
     "lerna": "^3.0.6"
   },
