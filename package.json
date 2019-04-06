@@ -1,5 +1,5 @@
 {
-  "name": "@collabjs/channel",
+  "name": "backchannel",
   "version": "0.1.0",
   "private": true,
   "main": "lib/index.js",
@@ -8,8 +8,6 @@
     "prebuild": "yarn clean",
     "build": "tsc",
     "watch": "yarn run build -w",
-    "prebench": "yarn build",
-    "bench": "NODE_ENV=production node ./bench",
     "develop": "yarn test --watchAll",
     "test": "jest --verbose",
     "lint": "eslint --ext js,ts src"
