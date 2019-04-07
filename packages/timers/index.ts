@@ -1,19 +1,46 @@
 import { Channel, ChannelBuffer, SlidingBuffer } from "@channel/channel";
 
-export function delay(wait: number): Channel<number> {
+export class TimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TimeoutError";
+    if (typeof Object.setPrototypeOf === "function") {
+      Object.setPrototypeOf(this, new.target.prototype);
+    } else {
+      (this as any).__proto__ = new.target.prototype;
+    }
+    if (typeof (Error as any).captureStackTrace === "function") {
+      (Error as any).captureStackTrace(this, TimeoutError);
+    }
+  }
+}
+
+export function delay(
+  wait: number,
+  options: { reject?: boolean } = {},
+): Channel<number> {
   return new Channel<number>(async (push, close, stop) => {
-    const timer = setTimeout(() => (push(Date.now()), close()), wait);
+    const timer = setTimeout(async () => {
+      if (options.reject == null) {
+        await push(Date.now());
+        close();
+      } else {
+        close(new TimeoutError(`${wait} milliseconds elapsed`));
+      }
+    }, wait);
     await stop;
     clearTimeout(timer);
   });
 }
 
-export function timeout(wait: number): Channel<number> {
-  return new Channel<number>(async (_, close, stop) => {
-    const timer = setTimeout(() => close(new Error(`${wait}ms elapsed`)), wait);
-    await stop;
-    clearTimeout(timer);
-  });
+export function timeout<T>(wait: number, promise?: Promise<T>): Promise<T> {
+  const timer = delay(wait, { reject: true });
+  if (promise == null) {
+    return (timer.next() as unknown) as Promise<T>;
+  }
+  const result = Promise.race([promise, timer.next()]);
+  result.catch(() => {}).finally(() => timer.return());
+  return result as Promise<T>;
 }
 
 export function interval(
