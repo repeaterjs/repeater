@@ -3,12 +3,11 @@ export interface ChannelBuffer<T> {
   empty: boolean;
   add(value: T): void;
   remove(): T | undefined;
-  clear(): void;
 }
 
 export class FixedBuffer<T> implements ChannelBuffer<T> {
-  protected arr: T[] = [];
-  constructor(protected capacity: number) {
+  private arr: T[] = [];
+  constructor(private capacity: number) {
     if (capacity < 0) {
       throw new RangeError("FixedBuffer capacity cannot be less than zero");
     }
@@ -33,17 +32,13 @@ export class FixedBuffer<T> implements ChannelBuffer<T> {
   remove(): T | undefined {
     return this.arr.shift();
   }
-
-  clear(): void {
-    this.arr = [];
-  }
 }
 
-// TODO: use a circular buffer
+// TODO: use a circular buffer here
 export class SlidingBuffer<T> implements ChannelBuffer<T> {
   readonly full = false;
-  protected arr: T[] = [];
-  constructor(protected capacity: number) {
+  private arr: T[] = [];
+  constructor(private capacity: number) {
     if (capacity <= 0) {
       throw new RangeError(
         "SlidingBuffer capacity cannot be less than or equal to zero",
@@ -65,17 +60,13 @@ export class SlidingBuffer<T> implements ChannelBuffer<T> {
   remove(): T | undefined {
     return this.arr.shift();
   }
-
-  clear(): void {
-    this.arr = [];
-  }
 }
 
 export class DroppingBuffer<T> implements ChannelBuffer<T> {
   readonly full = false;
-  protected arr: T[] = [];
+  private arr: T[] = [];
 
-  constructor(protected capacity: number) {
+  constructor(private capacity: number) {
     if (capacity <= 0) {
       throw new RangeError(
         "DroppingBuffer capacity cannot be less than or equal to zero",
@@ -96,10 +87,6 @@ export class DroppingBuffer<T> implements ChannelBuffer<T> {
   remove(): T | undefined {
     return this.arr.shift();
   }
-
-  clear(): void {
-    this.arr = [];
-  }
 }
 
 interface PushOperation<T> {
@@ -115,44 +102,33 @@ interface PullOperation<T> {
 export type ChannelExecutor<T> = (
   push: (value: T) => Promise<void>,
   close: (reason?: any) => void,
-  start: Promise<void>,
   stop: Promise<void>,
-) => void;
+) => T | void | Promise<T | void>;
 
 export class ChannelOverflowError extends Error {
-  name = "ChannelOverflowError";
   constructor(message: string) {
     super(message);
-    Object.setPrototypeOf(this, new.target.prototype);
-    if (typeof Error.captureStackTrace === "function") {
-      Error.captureStackTrace(this, ChannelOverflowError);
+    this.name = "ChannelOverflowError";
+    if (typeof Object.setPrototypeOf === "function") {
+      Object.setPrototypeOf(this, new.target.prototype);
+    } else {
+      (this as any).__proto__ = new.target.prototype;
+    }
+    if (typeof (Error as any).captureStackTrace === "function") {
+      (Error as any).captureStackTrace(this, ChannelOverflowError);
     }
   }
 }
 
 export class Channel<T> implements AsyncIterableIterator<T> {
+  private readonly MAX_QUEUE_LENGTH = 1024;
   private closed = false;
   private reason?: any;
   private onstart?: () => void;
   private onstop?: () => void;
   private pushQueue: PushOperation<T>[] = [];
   private pullQueue: PullOperation<T>[] = [];
-  private readonly MAX_QUEUE_LENGTH = 1024;
-
-  constructor(
-    executor: ChannelExecutor<T>,
-    private buffer: Buffer<T> = new FixedBuffer(0),
-  ) {
-    const start = new Promise<void>((resolve) => (this.onstart = resolve));
-    const stop = new Promise<void>((resolve) => (this.onstop = resolve));
-    try {
-      Promise.resolve(
-        executor(this.push.bind(this), this.close.bind(this), start, stop),
-      ).catch((err) => this.close(err));
-    } catch (err) {
-      this.close(err);
-    }
-  }
+  private execution: Promise<T | void>;
 
   private push(value: T): Promise<void> {
     if (this.closed) {
@@ -169,7 +145,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       throw new ChannelOverflowError(
         `No more than ${
           this.MAX_QUEUE_LENGTH
-        } pending pushes are allowed on a single channel. Consider using a windowed buffer.`,
+        } pending pushes are allowed on a single channel.`,
       );
     }
     return new Promise((resolve) => this.pushQueue.push({ resolve, value }));
@@ -203,6 +179,31 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     Object.freeze(this);
   }
 
+  constructor(
+    executor: ChannelExecutor<T>,
+    private buffer: ChannelBuffer<T> = new FixedBuffer(0),
+  ) {
+    const start = new Promise<void>((resolve) => (this.onstart = resolve));
+    const stop = new Promise<void>((resolve) => (this.onstop = resolve));
+    this.execution = start.then(() => {
+      try {
+        return Promise.resolve(
+          executor(this.push.bind(this), this.close.bind(this), stop),
+        ).catch((err) => {
+          if (this.closed) {
+            throw err;
+          }
+          this.close(err);
+        });
+      } catch (err) {
+        if (this.closed) {
+          throw err;
+        }
+        this.close(err);
+      }
+    });
+  }
+
   next(): Promise<IteratorResult<T>> {
     if (!this.closed && this.onstart != null) {
       this.onstart();
@@ -233,19 +234,19 @@ export class Channel<T> implements AsyncIterableIterator<T> {
         new ChannelOverflowError(
           `No more than ${
             this.MAX_QUEUE_LENGTH
-          } pending pulls are allowed on a single channel. Consider using a windowed buffer.`,
+          } pending pulls are allowed on a single channel.`,
         ),
       );
     }
-
     return new Promise((resolve, reject) => {
       this.pullQueue.push({ resolve, reject });
     });
   }
 
-  return(): Promise<IteratorResult<T>> {
+  async return(): Promise<IteratorResult<T>> {
     this.close();
-    return Promise.resolve({ done: true } as IteratorResult<T>);
+    const value = await this.execution;
+    return { value, done: true } as IteratorResult<T>;
   }
 
   [Symbol.asyncIterator]() {

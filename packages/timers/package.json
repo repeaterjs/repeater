@@ -2,9 +2,15 @@
   "name": "@channel/timers",
   "version": "0.1.0",
   "private": true,
-  "browser": "lib/browser.js",
-  "main": "lib/main.js",
-  "module": "lib/module.js",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "prebuild": "yarn run clean",
+    "build": "rollup -c ../../rollup.config.js",
+    "clean": "shx rm -rf ./lib",
+    "test": "jest --config ../../jest.config.js --rootDir --color"
+  },
   "dependencies": {
     "@channel/channel": "^0.1.0"
   }

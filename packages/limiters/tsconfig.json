@@ -1,11 +1,6 @@
 {
   "extends": "../../tsconfig.json",
-  "references": [
-    {
-      "path": "../channel"
-    },
-    {
-      "path": "../limiters"
-    }
+  "files": [
+    "index.ts"
   ]
 }

@@ -1,5 +1,5 @@
-import { Channel, FixedBuffer } from "backchannel";
-import { interval } from "backchannel-timers";
+import { Channel, FixedBuffer } from "@channel/channel";
+import { interval } from "@channel/timers";
 
 export interface Token {
   readonly id: number;
@@ -11,7 +11,7 @@ export interface Token {
 export async function* semaphore(limit: number): AsyncIterableIterator<Token> {
   let remaining = limit;
   const released: Record<string, Token> = {};
-  const tokens = new Channel<Token>(async (push, _, start, stop) => {
+  const tokens = new Channel<Token>(async (push, _, stop) => {
     function release(id: number) {
       if (released[id] != null) {
         push(released[id]);
@@ -19,9 +19,8 @@ export async function* semaphore(limit: number): AsyncIterableIterator<Token> {
         remaining++;
       }
     }
-    await start;
     let stopped = false;
-    stop = stop.then(() => void (stopped = true));
+    stop.then(() => (stopped = true));
     for (let id = 0; id < limit; id++) {
       const token = { id, limit, remaining, release: release.bind(null, id) };
       await Promise.race([stop, push(token)]);

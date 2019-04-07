@@ -1,4 +1,4 @@
-import { Channel, ChannelBuffer } from "backchannel";
+import { Channel, ChannelBuffer } from "@channel/channel";
 
 export interface PubSub<T> {
   publish(topic: string, value: T): Promise<void>;
@@ -12,7 +12,7 @@ interface Publisher<T> {
   close(reason?: any): void;
 }
 
-export class InMemoryPubSub<T> implements PubSub<T> {
+export class ChannelPubSub<T> implements PubSub<T> {
   protected publishers: Record<string, Set<Publisher<T>>> = {};
 
   publish(topic: string, value: T): Promise<void> {
@@ -30,12 +30,11 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     return Promise.resolve();
   }
 
-  subscribe(topic: string, buffer?: Buffer<T>): AsyncIterableIterator<T> {
+  subscribe(topic: string, buffer?: ChannelBuffer<T>): AsyncIterableIterator<T> {
     if (this.publishers[topic] == null) {
       this.publishers[topic] = new Set();
     }
-    return new Channel<T>(async (push, close, start, stop) => {
-      await start;
+    return new Channel<T>(async (push, close, stop) => {
       const publisher = { push, close };
       this.publishers[topic].add(publisher);
       await stop;

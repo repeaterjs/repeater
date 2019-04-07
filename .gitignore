@@ -1,11 +1,6 @@
 node_modules
-
 lib
-.next
-.nyc_output
-
+.rpt2_cache
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-.env
