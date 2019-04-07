@@ -31,7 +31,7 @@ describe("limiters", () => {
     expect(clearInterval).toBeCalledTimes(1);
   });
 
-  test("throttler counts remaining in interval", async () => {
+  test("throttler tracks remaining by interval", async () => {
     let remaining = 8;
     let i = 0;
     for await (const token of throttler(1000, 8)) {

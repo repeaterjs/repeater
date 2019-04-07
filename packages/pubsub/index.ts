@@ -30,10 +30,7 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     return Promise.resolve();
   }
 
-  subscribe(
-    topic: string,
-    buffer?: ChannelBuffer<T>,
-  ): AsyncIterableIterator<T> {
+  subscribe(topic: string, buffer?: ChannelBuffer<T>): Channel<T> {
     if (this.publishers[topic] == null) {
       this.publishers[topic] = new Set();
     }
