@@ -12,7 +12,7 @@ interface Publisher<T> {
   close(reason?: any): void;
 }
 
-export class ChannelPubSub<T> implements PubSub<T> {
+export class InMemoryPubSub<T> implements PubSub<T> {
   protected publishers: Record<string, Set<Publisher<T>>> = {};
 
   publish(topic: string, value: T): Promise<void> {

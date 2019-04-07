@@ -8,7 +8,8 @@
   "scripts": {
     "prebuild": "yarn run clean",
     "build": "rollup -c ../../rollup.config.js",
-    "clean": "shx rm -rf ./lib"
+    "clean": "shx rm -rf ./lib",
+    "test": "jest --config ../../jest.config.js --rootDir --color"
   },
   "dependencies": {
     "@channel/channel": "^0.1.0",
