@@ -37,14 +37,16 @@ export async function* semaphore(limit: number): AsyncIterableIterator<Token> {
   }
 }
 
-export interface TimerToken extends Token {
+// TODO: implement a resource pool
+
+export interface ThrottleToken extends Token {
   reset: number;
 }
 
 export async function* throttler(
   wait: number,
   limit: number = 1,
-): AsyncIterableIterator<TimerToken> {
+): AsyncIterableIterator<ThrottleToken> {
   const timer = interval(wait);
   const tokens = new Set<Token>();
   let time = Date.now();
@@ -65,3 +67,5 @@ export async function* throttler(
     timer.return();
   }
 }
+
+// TODO: implement a debouncer
