@@ -2,8 +2,10 @@
   "private": true,
   "scripts": {
     "build": "lerna run build --parallel",
+    "preboostrap": "yarn build",
+    "bootstrap": "lerna bootstrap",
     "test": "lerna run test --stream",
-    "lint": "eslint packages --ext .ts --ignore-pattern lib"
+    "lint": "eslint packages --ext .ts --ignore-path .gitignore"
   },
   "devDependencies": {
     "@types/jest": "^24.0.11",
