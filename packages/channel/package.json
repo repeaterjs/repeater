@@ -10,5 +10,8 @@
     "build": "rollup -c ../../rollup.config.js",
     "clean": "shx rm -rf ./lib",
     "test": "jest --config ../../jest.config.js --rootDir --color"
+  },
+  "dependencies": {
+    "tslib": "^1.9.3"
   }
 }

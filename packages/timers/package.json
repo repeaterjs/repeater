@@ -12,6 +12,7 @@
     "test": "jest --config ../../jest.config.js --rootDir --color"
   },
   "dependencies": {
-    "@channel/channel": "^0.1.0"
+    "@channel/channel": "^0.1.0",
+    "tslib": "^1.9.3"
   }
 }
