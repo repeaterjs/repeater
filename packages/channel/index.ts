@@ -145,7 +145,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       throw new ChannelOverflowError(
         `No more than ${
           this.MAX_QUEUE_LENGTH
-        } pending pushes are allowed on a single channel.`,
+        } pending calls to push are allowed on a single channel.`,
       );
     }
     return new Promise((resolve) => this.pushQueue.push({ resolve, value }));
@@ -234,7 +234,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
         new ChannelOverflowError(
           `No more than ${
             this.MAX_QUEUE_LENGTH
-          } pending pulls are allowed on a single channel.`,
+          } pending calls to Channel.prototype.next are allowed on a single channel.`,
         ),
       );
     }
@@ -243,10 +243,11 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     });
   }
 
-  async return(): Promise<IteratorResult<T>> {
+  return(): Promise<IteratorResult<T>> {
     this.close();
-    const value = await this.execution;
-    return { value, done: true } as IteratorResult<T>;
+    return this.execution.then(
+      (value) => ({ value, done: true } as IteratorResult<T>),
+    );
   }
 
   [Symbol.asyncIterator]() {
