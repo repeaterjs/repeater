@@ -128,7 +128,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
   private onstop?: () => void;
   private pushQueue: PushOperation<T>[] = [];
   private pullQueue: PullOperation<T>[] = [];
-  private execution: Promise<T | void>;
+  private execution?: Promise<T | void>;
 
   private push(value: T): Promise<void> {
     if (this.closed) {
@@ -173,6 +173,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     Object.freeze(this.pullQueue);
     if (this.onstart != null) {
       delete this.onstart;
+      delete this.execution;
     }
     this.onstop!();
     delete this.onstop;
@@ -243,8 +244,12 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     });
   }
 
+  // TODO: handle edge case where execution is never run in the first place
   return(): Promise<IteratorResult<T>> {
     this.close();
+    if (this.execution == null) {
+      return Promise.resolve({ done: true } as IteratorResult<T>);
+    }
     return this.execution.then(
       (value) => ({ value, done: true } as IteratorResult<T>),
     );
