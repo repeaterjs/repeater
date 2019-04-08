@@ -4,8 +4,7 @@
     "clean": "lerna clean --yes && lerna run clean",
     "build": "lerna run build --parallel",
     "test": "lerna run test --stream",
-    "lint": "eslint packages --ext .ts --ignore-path .gitignore",
-    "release": "yarn lint && yarn test && yarn build && lerna publish"
+    "lint": "eslint packages --ext .ts --ignore-path .gitignore"
   },
   "devDependencies": {
     "@types/jest": "^24.0.11",
