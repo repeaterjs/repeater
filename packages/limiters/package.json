@@ -1,7 +1,8 @@
 {
   "name": "@channel/limiters",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.0",
+  "license": "MIT",
+  "files": ["/lib"],
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
@@ -13,7 +14,9 @@
   },
   "dependencies": {
     "@channel/channel": "^0.1.0",
-    "@channel/timers": "^0.1.0",
-    "tslib": "^1.9.3"
+    "@channel/timers": "^0.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

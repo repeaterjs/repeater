@@ -26,6 +26,5 @@ export default {
     "@channel/timers",
     "@channel/pubsub",
     "@channel/limiters",
-    "tslib",
   ],
 };

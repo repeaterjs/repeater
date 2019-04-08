@@ -1,7 +1,9 @@
 {
   "name": "@channel/channel",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.0",
+  "description": "The missing constructor function for creating safe async iterators",
+  "license": "MIT",
+  "files": ["/lib"],
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
@@ -11,7 +13,7 @@
     "clean": "shx rm -rf ./lib",
     "test": "jest --config ../../jest.config.js --rootDir --color"
   },
-  "dependencies": {
-    "tslib": "^1.9.3"
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -33,14 +33,16 @@ export function delay(
   });
 }
 
-export function timeout<T>(wait: number, promise?: Promise<T>): Promise<T> {
+export function timeout(wait: number): Promise<void>;
+export function timeout<T>(wait: number, promise: Promise<T>): Promise<T>;
+export function timeout(wait: number, promise?: Promise<any>) {
   const timer = delay(wait, { reject: true });
   if (promise == null) {
-    return (timer.next() as unknown) as Promise<T>;
+    return timer.next();
   }
   const result = Promise.race([promise, timer.next()]);
-  result.catch(() => {}).finally(() => timer.return());
-  return result as Promise<T>;
+  result.finally(() => timer.return()).catch(() => {});
+  return result;
 }
 
 export function interval(
