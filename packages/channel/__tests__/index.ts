@@ -128,7 +128,7 @@ describe("Channel", () => {
 
   test("pull then push avoids buffer", async () => {
     const buffer = new FixedBuffer<number>(1);
-    let push: (value: number) => Promise<void>;
+    let push: (value: number) => Promise<boolean>;
     const chan = new Channel((push1) => {
       push = push1;
       push(1);
@@ -143,7 +143,7 @@ describe("Channel", () => {
 
   test("pushes throw when buffer and push queue are full", async () => {
     const bufferLength = 3;
-    let push: (value: number) => Promise<void>;
+    let push: (value: number) => Promise<boolean>;
     const chan = new Channel<number>((push1) => {
       push = push1;
       push(-1);
@@ -156,6 +156,23 @@ describe("Channel", () => {
     }
     expect(() => push(i++)).toThrow(ChannelOverflowError);
     expect(() => push(i++)).toThrow(ChannelOverflowError);
+  });
+
+  test("pushes tell you if they’ve been accepted", async () => {
+    let push: (value: number) => Promise<boolean>;
+    let close: () => void;
+    const chan = new Channel<number>((push1, close1) => {
+      push = push1;
+      close = close1;
+      push(0);
+    });
+    // prime the channel
+    await chan.next();
+    const p = push!(1);
+    await chan.next();
+    expect(p).resolves.toBe(true);
+    close!();
+    expect(push!(2)).resolves.toBe(false);
   });
 
   test("pulls throw when pull queue is full", async () => {
@@ -261,7 +278,8 @@ describe("Channel", () => {
     const chan = new Channel<number>(async (push, _, stop) => {
       push(1);
       push(2);
-      await Promise.race([stop, push(3)]);
+      await stop;
+      push(3);
       mock();
     });
     await expect(chan.next()).resolves.toEqual({ done: false, value: 1 });

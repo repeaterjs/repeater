@@ -90,7 +90,7 @@ export class DroppingBuffer<T> implements ChannelBuffer<T> {
 }
 
 interface PushOperation<T> {
-  resolve(): void;
+  resolve(accepted: boolean): void;
   value: T;
 }
 
@@ -100,7 +100,7 @@ interface PullOperation<T> {
 }
 
 export type ChannelExecutor<T> = (
-  push: (value: T) => Promise<void>,
+  push: (value: T) => Promise<boolean>,
   close: (reason?: any) => void,
   stop: Promise<void>,
 ) => T | void | Promise<T | void>;
@@ -130,17 +130,17 @@ export class Channel<T> implements AsyncIterableIterator<T> {
   private pullQueue: PullOperation<T>[] = [];
   private execution?: Promise<T | void>;
 
-  private push(value: T): Promise<void> {
+  private push(value: T): Promise<boolean> {
     if (this.closed) {
-      return Promise.resolve();
+      return Promise.resolve(false);
     } else if (this.pullQueue.length) {
       const pull = this.pullQueue.shift()!;
       const result = { value, done: false };
       pull.resolve(result);
-      return Promise.resolve();
+      return Promise.resolve(true);
     } else if (!this.buffer.full) {
       this.buffer.add(value);
-      return Promise.resolve();
+      return Promise.resolve(true);
     } else if (this.pushQueue.length >= this.MAX_QUEUE_LENGTH) {
       throw new ChannelOverflowError(
         `No more than ${
@@ -158,7 +158,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     this.closed = true;
     this.reason = reason;
     for (const push of this.pushQueue) {
-      push.resolve();
+      push.resolve(false);
     }
     this.pushQueue = [];
     Object.freeze(this.pushQueue);
@@ -216,13 +216,13 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       if (this.pushQueue.length) {
         const push = this.pushQueue.shift()!;
         this.buffer.add(push.value);
-        push.resolve();
+        push.resolve(true);
       }
       return Promise.resolve(result);
     } else if (this.pushQueue.length) {
       const push = this.pushQueue.shift()!;
       const result = { value: push.value, done: false };
-      push.resolve();
+      push.resolve(true);
       return Promise.resolve(result);
     } else if (this.closed) {
       if (this.reason == null) {

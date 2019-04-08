@@ -11,7 +11,7 @@ export interface Token {
 export async function* semaphore(limit: number): AsyncIterableIterator<Token> {
   let remaining = limit;
   const released: Record<string, Token> = {};
-  const tokens = new Channel<Token>(async (push, _, stop) => {
+  const tokens = new Channel<Token>(async (push) => {
     function release(id: number) {
       if (released[id] != null) {
         push(released[id]);
@@ -19,12 +19,10 @@ export async function* semaphore(limit: number): AsyncIterableIterator<Token> {
         remaining++;
       }
     }
-    let stopped = false;
-    stop.then(() => (stopped = true));
     for (let id = 0; id < limit; id++) {
       const token = { id, limit, remaining, release: release.bind(null, id) };
-      await Promise.race([stop, push(token)]);
-      if (stopped) {
+      const accepted = await push(token);
+      if (!accepted) {
         break;
       }
     }
