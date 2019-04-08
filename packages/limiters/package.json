@@ -1,6 +1,6 @@
 {
   "name": "@channel/limiters",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "description": "Basic async iterators for limiting concurrency, implemented with channels",
   "license": "MIT",
   "homepage": "https://github.com/channeljs/channel",
@@ -17,8 +17,8 @@
     "test": "jest --config ../../jest.config.js --rootDir --color"
   },
   "dependencies": {
-    "@channel/channel": "^0.1.0-alpha",
-    "@channel/timers": "^0.1.0-alpha"
+    "@channel/channel": "^0.1.0",
+    "@channel/timers": "^0.1.0"
   },
   "publishConfig": {
     "access": "public"

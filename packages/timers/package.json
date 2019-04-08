@@ -1,6 +1,6 @@
 {
   "name": "@channel/timers",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "description": "Cancelable timers, implemented with channels",
   "homepage": "https://github.com/channeljs/channel",
   "license": "MIT",
@@ -17,7 +17,7 @@
     "test": "jest --config ../../jest.config.js --rootDir --color"
   },
   "dependencies": {
-    "@channel/channel": "^0.1.0-alpha"
+    "@channel/channel": "^0.1.0"
   },
   "publishConfig": {
     "access": "public"
