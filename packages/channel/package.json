@@ -3,6 +3,7 @@
   "version": "0.1.0-alpha.0",
   "description": "The missing constructor function for creating safe async iterators",
   "license": "MIT",
+  "homepage": "https://github.com/channeljs/channel",
   "files": [
     "/lib"
   ],

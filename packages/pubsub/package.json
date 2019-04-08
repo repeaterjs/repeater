@@ -2,6 +2,7 @@
   "name": "@channel/pubsub",
   "version": "0.1.0-alpha.0",
   "description": "A generic pubsub class, implemented with channels",
+  "homepage": "https://github.com/channeljs/channel",
   "license": "MIT",
   "files": [
     "/lib"

@@ -3,6 +3,7 @@
   "version": "0.1.0-alpha.0",
   "description": "Basic async iterators for limiting concurrency, implemented with channels",
   "license": "MIT",
+  "homepage": "https://github.com/channeljs/channel",
   "files": [
     "/lib"
   ],
