@@ -1,11 +1,18 @@
 # Channel.js
-### The missing constructor function for creating safe async iterators
+The missing constructor function for creating safe async iterators
 
-[Async iterators](https://github.com/tc39/proposal-async-iteration) are available in most modern javascript runtimes but have yet to achieve widespread usage by the community due to various [pitfalls](https://github.com/tc39/proposal-async-iteration/issues/126) and [gotchas](https://github.com/apollographql/graphql-subscriptions/issues/116). This library implements the `Channel` class, a minimal message queue which emulates the simplicity of the `Promise` constructor and makes it easy to transform *any* callback-based source of data (e.g. `EventTarget`, `EventEmitter`, `Stream`) into an async iterator. The `Channel` class is designed to drop developers into a [pit of success](https://blog.codinghorror.com/falling-into-the-pit-of-success/) by preventing common mistakes made when hand-crafting async iterators.
+## Installation
+`npm install @channel/channel`
 
-NOTE: This README assumes familiarity with recent javascript features, specifically [promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise), [async/await](https://javascript.info/async-await) and [iterators/generators](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators).
+`yarn add @channel/channel`
 
-## Selected Examples
+## Rationale
+
+While [async iterators](https://github.com/tc39/proposal-async-iteration) are available in most modern javascript runtimes, they have yet to achieve widespread usage due to various [pitfalls](https://github.com/tc39/proposal-async-iteration/issues/126) and [gotchas](https://github.com/apollographql/graphql-subscriptions/issues/116). What async iterators need is something akin to the `Promise` constructor, which allows developers to convert callback-based APIs into promise returning functions. This library implements the `Channel` class, a minimal message queue which emulates the simplicity of the `Promise` constructor and makes it easy to transform *any* callback-based source of data (e.g. `EventTarget`, `EventEmitter`, `Stream`) into an async iterator. The `Channel` class is designed to drop developers into a [pit of success](https://blog.codinghorror.com/falling-into-the-pit-of-success/) by preventing common mistakes made when hand-crafting async iterators.
+
+NOTE: This README assumes some familiarity with recent javascript features, specifically [promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise), [async/await](https://javascript.info/async-await) and [iterators/generators](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators).
+
+## Examples
 
 Logging a timestamp every second
 
@@ -32,6 +39,7 @@ const timestamps = Channel(async (push, _, stop) => {
 ```
 
 Listening for the [Konami Code](https://en.wikipedia.org/wiki/Konami_Code) and canceling if <kbd>Escape</kbd> is pressed.
+
 ```js
 import { Channel } from "@channel/channel";
 
@@ -69,19 +77,20 @@ const konami = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "Ar
 
 Channels are opaque objects which can be read/closed via the methods found on the [`AsyncIterableIterator` interface](https://github.com/Microsoft/TypeScript/blob/master/lib/lib.es2018.asynciterable.d.ts). `Channel.prototype.next` returns a promise which resolves to the next result, and `Channel.prototype.return` closes the channel prematurely. Async iterators are most useful when used via [`for await…of` loops](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of) which call and await the channel’s `next`/`return` methods automatically, as seen above. Channels can be used as drop-in replacements for async generator objects.
 
-Similar to the `Promise` constructor, the `Channel` constructor takes an *executor*, a function which is passed the arguments `push`, `close` and `stop`. The `push` and `close` arguments are functions analogous to the `Promise` executor’s `resolve` and `reject` functions: `push` can be called with a value so that `next` resolves to that value, and `close` can be called with an error so that `next` rejects with that error. However, unlike `resolve`, `push` can be called more than once to enqueue multiple values onto the channel, and unlike `reject`, `close` can be called with no arguments to close the channel without error. The `stop` argument is unique to the `Channel` executor: it is a promise which resolves when the channel is closed. These three arguments are enough to allow convenient setup and teardown of callbacks within the executor, and the arguments can be selectively exposed to parent closures to model complex async architectural patterns like [pubsub](packages/pubsub/index.ts) and [semaphores](packages/limiters/index.ts).
+Similar to the `Promise` constructor, the `Channel` constructor takes an *executor*, a function which is passed the arguments `push`, `close` and `stop`. The `push` and `close` arguments are functions analogous to the `Promise` executor’s `resolve` and `reject` functions: `push` can be called with a value so that `next` resolves to that value, and `close` can be called with an error so that `next` rejects with that error. However, unlike `resolve`, `push` can be called more than once to enqueue multiple values onto the channel, and unlike `reject`, `close` can be called with no arguments to close the channel without error. The `stop` argument is unique to the `Channel` executor: it is a promise which resolves when the channel is closed. These three arguments are enough to allow convenient setup and teardown of callbacks within the executor, and the arguments can be selectively exposed to parent closures to model async architectural patterns like [pubsub](packages/pubsub/index.ts) and [semaphores](packages/limiters/index.ts).
 
 ## Why are channels “safe”?
-Most async iterator libraries currently available make at least one of two mistakes which make them leak memory. Channels use the following design principles to avoid them.
+Most async iterator libraries currently available make it easy to cause memory leaks. Channels are carefuly designed to prevent them.
 
 ### Channels execute lazily.
-There are several async iterator libraries which provide tightly-coupled wrappers around event emitters, streams, or other callback-based APIs. Almost all of them make the critical mistake of registering callbacks eagerly, i.e. when the iterator is created. Consider the following async iterator function:
+There are several async iterator libraries out there which provide tightly-coupled wrappers around event emitters, streams, or other callback-based APIs. Almost all of them make the critical mistake of registering callbacks eagerly, i.e. when the iterator is created. Consider the following async iterator function:
 
 ```js
 function listen(target, name) {
   const events = [];
   const nexts = [];
   function listener(ev) {
+    console.log(ev);
     const next = nexts.shift();
     if (next == null) {
       events.push(ev);
@@ -132,7 +141,7 @@ async function* positions(clicks) {
 })();
 ```
 
-The `positions` async generator takes an async iterator of click events and yields x/y coordinates. However, in the example, the generator is returned early so that the `for await…of` loop never starts. Consequently, `clicks.return` is never called and the event handler is never cleaned up. To make the code above safe, a developer would have to make sure that either that every positions generator is iterated at least once, or that `clicks.return` is manually called instead. This logic is difficult to write, and ultimately forces developers to treat async iterators differently than async generators, the latter of which can be safely created and ignored.
+The `positions` async generator takes an async iterator of click events and yields x/y coordinates. However, in the example, the generator is returned early so that the `for await…of` loop never starts. Consequently, `clicks.return` is never called and the event handler is never cleaned up. To make the code above safe, a developer would have to make sure that either every positions generator is started or that every listen iterator is manually returned. This logic is difficult to write, and ultimately forces developers to treat async iterators differently than async generators, the latter of which can be safely created and ignored.
 
 The `Channel` class solves this problem by executing lazily. In other words, the executor passed to the channel constructor does not run until the first time `next` is called. Here’s the same `listen` function above written with channels:
 
@@ -154,7 +163,7 @@ If we swap in the channel based `listen` function for the one above, neither `ta
 Because channels execute lazily, the contract for safely consuming channels is relatively simple: **if you call `next`, you must call `return`**. This happens automatically when using `for await…of loops` and is easy to enforce when calling `next` manually using control-flow syntax like `try/finally`.
 
 ### Channels respond to backpressure.
-The naive `listen` function above has an additional, potentially more insidious problem, which is that it pushes events onto an unbounded array. One can imagine creating a scroll listening async iterator and having the scroll handler continuously push to the `events` array and while those values are being pulled slowly or not at all. As the user continues scrolling, the `events` array will continue to grow, eventually causing application performance to degrade. This is often referred to as the “fast producer, slow consumer“ problem, and while it might not seem like a big issue for short-lived browser sessions, it is crucial to deal with when writing long-running server processes with node.js.
+The naive `listen` function above has an additional, potentially more insidious problem, which is that it pushes events onto an unbounded array. One can imagine creating a scroll listening async iterator and having the scroll handler continuously push to the `events` array, even if those values are being pulled slowly or not at all. As the user scrolls, the `events` array would continue to grow, eventually causing application performance to degrade. This is often referred to as the “fast producer, slow consumer“ problem, and while it might not seem like a big issue for short-lived browser sessions, it is crucial to deal with when writing long-running server processes with node.js.
 
 Inspired by Clojure’s `core.async`, channels provide three solutions for dealing with slow consumers.
 
@@ -183,7 +192,7 @@ By awaiting `push`, executors can wait for channel consumers to call `next` and 
 
 #### 2. Throwing errors.
 
-When using callback-based APIs, it is often inconvenient to await `push` calls because the callbacks are run frequently and synchronously. Therefore, while you can call `push` in a fire-and-forget manner, `push` will begin throwing synchronous errors when there are too many pending pushes.
+When using callback-based APIs, it is often inconvenient to await `push` calls because the callbacks are run frequently and synchronously. Therefore, channels allow you to call `push` in a fire-and-forget manner with the caveat that `push` will begin throwing synchronous errors when there are too many pending pushes.
 
 ```js
 const ys = new Channel(async (push, _, stop) => {
@@ -200,7 +209,7 @@ This behavior is desirable because it allows developers to quickly surface bottl
 
 #### 3. Buffering and dropping values
 
-If you neither wish to await `push` calls nor want to deal with errors, one last option is to have the channel store values in a buffer and dropping values when the buffer has reached capacity. The channel constructor optionally takes a `ChannelBuffer` object as a second argument. For example, by passing in a `SlidingBuffer`, we can make it so that the channel above only retains the twenty latest scroll positions.
+If you neither wish to await `push` calls nor want to deal with errors, one last option is to have the channel store values in a buffer, dropping them when the buffer has reached capacity. The channel constructor optionally takes a `ChannelBuffer` instance as the second argument. For example, by passing in a `SlidingBuffer`, we can make it so that the channel above only retains the twenty latest scroll positions.
 
 ```js
 import { Channel, SlidingBuffer } from "@channel/channel";
@@ -215,7 +224,7 @@ const ys = new Channel(async (push, _, stop) => {
 ys.next();
 ```
 
-The `@channel/channel` package exports three buffer classes: `FixedBuffer`, `DroppingBuffer` and `SlidingBuffer`. A `FixedBuffer` allows channels to push a set number of values without having pushes wait, but preserves the error throwing behavior described above when the buffer is full. `DroppingBuffer` will drop the *latest* values when the buffer has reached capacity, and `SlidingBuffer` will drop the *earliest* values instead. Because `DroppingBuffer` and `SlidingBuffer` instances never fill up, pushing to channels with these types of buffers will never throw an error. You can define your own buffer classes to give channels more complex buffering behaviors.
+The `@channel/channel` package exports three buffer classes: `FixedBuffer`, `DroppingBuffer` and `SlidingBuffer`. `FixedBuffer` allows channels to push a set number of values without having pushes wait, but preserves the error throwing behavior described above when the buffer is full, `DroppingBuffer` will drop the *latest* values when the buffer has reached capacity, and `SlidingBuffer` will drop the *earliest* values instead. Because `DroppingBuffer` and `SlidingBuffer` instances never fill up, pushing to channels with these types of buffers will never throw errors. You can define custom buffer classes to give channels more complex buffering behaviors.
 
 ## Additional packages
 

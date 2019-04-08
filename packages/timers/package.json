@@ -1,6 +1,7 @@
 {
   "name": "@channel/timers",
   "version": "0.1.0-alpha.0",
+  "description": "Cancelable timers, implemented with channels",
   "license": "MIT",
   "files": [
     "/lib"

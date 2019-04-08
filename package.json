@@ -1,6 +1,7 @@
 {
   "private": true,
   "scripts": {
+    "clean": "lerna clean --yes && lerna run clean",
     "build": "lerna run build --parallel",
     "test": "lerna run test --stream",
     "lint": "eslint packages --ext .ts --ignore-path .gitignore",

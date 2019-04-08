@@ -1,6 +1,7 @@
 {
   "name": "@channel/pubsub",
   "version": "0.1.0-alpha.0",
+  "description": "A generic pubsub class, implemented with channels",
   "license": "MIT",
   "files": [
     "/lib"

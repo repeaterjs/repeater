@@ -1,6 +1,7 @@
 {
   "name": "@channel/limiters",
   "version": "0.1.0-alpha.0",
+  "description": "Basic async iterators for limiting concurrency, implemented with channels",
   "license": "MIT",
   "files": [
     "/lib"
