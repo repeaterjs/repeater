@@ -8,7 +8,7 @@ The missing constructor function for creating safe async iterators
 
 ## Rationale
 
-While [async iterators](https://github.com/tc39/proposal-async-iteration) are available in most modern javascript runtimes, they have yet to achieve widespread usage due to various [pitfalls](https://github.com/tc39/proposal-async-iteration/issues/126) and [gotchas](https://github.com/apollographql/graphql-subscriptions/issues/116). What async iterators need is something akin to the `Promise` constructor, which helped developers turn familiar callback-based APIs into promise-based APIs. This library implements the `Channel` class, which emulates the simplicity of the `Promise` constructor, and makes it easy to turn *any* callback-based source of data (e.g. `EventTarget`, `Stream`) into an async iterator. The `Channel` class drops developers into a [pit of success](https://blog.codinghorror.com/falling-into-the-pit-of-success/) by preventing common mistakes made when crafting async iterators by design.
+While [async iterators](https://github.com/tc39/proposal-async-iteration) are available in most modern javascript runtimes, they have yet to achieve widespread usage due to various [pitfalls](https://github.com/tc39/proposal-async-iteration/issues/126) and [gotchas](https://github.com/apollographql/graphql-subscriptions/issues/116). What async iterators need is something akin to the `Promise` constructor, which helped developers turn familiar callback-based APIs into promise-based APIs. This library implements the `Channel` class, which emulates the simplicity of the `Promise` constructor and makes it easy to turn *any* callback-based source of data (e.g. `EventTarget`, `Stream`, `Observable`) into an async iterator. The `Channel` class drops developers into a [pit of success](https://blog.codinghorror.com/falling-into-the-pit-of-success/) by preventing common async iterator mistakes by design.
 
 NOTE: This README assumes some familiarity with recent javascript features, specifically [promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise), [async/await](https://javascript.info/async-await) and [iterators/generators](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators).
 
@@ -79,7 +79,7 @@ Channels are opaque objects which can be read/closed via the methods found on th
 
 Similar to the `Promise` constructor, the `Channel` constructor takes an *executor*, a function which is passed the arguments `push`, `close` and `stop`. The `push` and `close` arguments are functions analogous to the `Promise` executor’s `resolve` and `reject` functions: `push` can be called with a value so that `next` resolves to that value, and `close` can be called with an error so that `next` rejects with that error. However, unlike `resolve`, `push` can be called more than once to enqueue multiple values onto the channel, and unlike `reject`, `close` can be called with no arguments to close the channel without error. The `stop` argument is unique to the `Channel` executor: it is a promise which resolves when the channel is closed. These three arguments are enough to allow convenient setup and teardown of callbacks within the executor, and the arguments can be selectively exposed to parent closures to model async architectural patterns like [pubsub](packages/pubsub/index.ts) and [semaphores](packages/limiters/index.ts).
 
-## Why are channels “safe”?
+## How are channels “safe”?
 Most async iterator libraries currently available make it easy to cause memory leaks. Channels use the following design principles to prevent them.
 
 ### Channels execute lazily.
@@ -160,7 +160,7 @@ function listen(target, name) {
 
 If we swap in the channel based `listen` function for the one above, neither `target.addEventListener` nor `target.removeEventListener` are called, and the `clicks` channel can be safely garbage collected.
 
-Because channels execute lazily, the contract for safely consuming channels is relatively simple: **if you call `next`, you must eventually call `return` when you are done with the iterator**. This happens automatically when using `for await…of loops` and is easy to enforce when calling `next` manually using control-flow syntax like `try/finally`.
+Because channels execute lazily, the contract for safely consuming channels is relatively simple: **if you call `next`, you must eventually call `return` when you are done with the iterator**. This happens automatically when using `for await…of` loops and is easy to enforce when calling `next` manually using control-flow syntax like `try/finally`.
 
 ### Channels respond to backpressure.
 The naive `listen` function above has an additional, potentially more insidious problem, which is that it pushes events onto an unbounded array. One can imagine creating a scroll listening async iterator and having the scroll handler continuously push to the `events` array, even if those values are being pulled slowly or not at all. As the user scrolls, the `events` array would continue to grow, eventually causing application performance to degrade. This is often referred to as the “fast producer, slow consumer“ problem, and while it might not seem like a big issue for short-lived browser sessions, it is crucial to deal with when writing long-running server processes with node.js.
@@ -230,9 +230,9 @@ The `@channel/channel` package exports three buffer classes: `FixedBuffer`, `Dro
 
 In addition to the `@channel/channel` package which exports the `Channel` and `ChannelBuffer` classes, this repository also contains various async utility packages implemented with channels.
 
-- `@channel/timers` - Cancelable timers, implemented with channels
-- `@channel/pubsub` - A generic pubsub class, implemented with channels
-- `@channel/limiters` - Basic async iterators for limiting concurrency, implemented with channels
+- `@channel/timers` - Cancelable timers
+- `@channel/pubsub` - A generic pubsub class
+- `@channel/limiters` - Basic async iterators for limiting concurrency
 
 These packages are experimental and will probably be changed more frequently than the base `@channel/channel` package, which is more or less stable. If you need greater stability with these utilities, I encourage you to go into the files themselves and copy the code directly into your codebase. Report back on what works and what doesn’t! My hope is that this repository and the `@channel` npm scope becomes a place for useful, channel-based async utilities discovered by the community.
 
