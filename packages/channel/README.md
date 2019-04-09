@@ -21,6 +21,7 @@ type ChannelExecutor<T> = (
   close: (reason?: any) => void,
   stop: Promise<void>
 ) => T | void | Promise<T | void>;
+```
 
 The `Channel` executor is passed three values, `push`, `close` and `stop`.
 
@@ -29,7 +30,6 @@ The `Channel` executor is passed three values, `push`, `close` and `stop`.
 `close` is a function which allows you to close the channel. Passing no arguments will cause the channel to close without error, while passing one argument will cause every subsequent call to `next` to error. Calling `close` on an already closed channel will have no effect.
 
 `stop` is a promise which resolves when the channel is closed. It is useful to await `close` to remove event handlers, and it can be used with `Promise.race` to cancel pending promises within the executor.
-```
 
 ### Buffers
 ```ts
