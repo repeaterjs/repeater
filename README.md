@@ -1,5 +1,5 @@
 # Channel.js
-The missing constructor function for creating safe async iterators
+The missing class for creating safe async iterators
 
 ## Installation
 `npm install @channel/channel`
@@ -8,7 +8,7 @@ The missing constructor function for creating safe async iterators
 
 ## Rationale
 
-While [async iterators](https://github.com/tc39/proposal-async-iteration) are available in most modern javascript runtimes, they have yet to achieve widespread usage due to various [pitfalls](https://github.com/tc39/proposal-async-iteration/issues/126) and [gotchas](https://github.com/apollographql/graphql-subscriptions/issues/116). What async iterators need is something akin to the `Promise` constructor, which helped developers turn familiar callback-based APIs into promise-based APIs. This library implements the `Channel` class, which emulates the simplicity of the `Promise` constructor and makes it easy to turn *any* callback-based source of data (e.g. `EventTarget`, `Stream`, `Observable`) into an async iterator. The `Channel` class drops developers into a [pit of success](https://blog.codinghorror.com/falling-into-the-pit-of-success/) by preventing common async iterator mistakes by design.
+While [async iterators](https://github.com/tc39/proposal-async-iteration) are available in most modern javascript runtimes, they have yet to achieve widespread usage due to various [pitfalls](https://github.com/tc39/proposal-async-iteration/issues/126) and [gotchas](https://github.com/apollographql/graphql-subscriptions/issues/143). What async iterators need is something like the `Promise` constructor, which helped developers convert familiar callback-based APIs into promise-based APIs. This library implements the `Channel` class, which emulates the simplicity of the `Promise` constructor and makes it easy to turn *any* callback-based source of data (e.g. `EventTarget`, `Stream`, `Observable`) into an async iterator. The `Channel` class drops developers into a [pit of success](https://blog.codinghorror.com/falling-into-the-pit-of-success/) by preventing common async iterator mistakes by design.
 
 NOTE: This README assumes some familiarity with recent javascript features, specifically [promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise), [async/await](https://javascript.info/async-await) and [iterators/generators](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators).
 
@@ -196,10 +196,10 @@ When using callback-based APIs, it is often inconvenient to await `push` calls b
 
 ```js
 const ys = new Channel(async (push, _, stop) => {
-  const handler = () => push(window.scrollY); // Will eventually throw a ChannelOverflowError!!!
-  window.addEventListener("scroll", handler);
+  const listener = () => push(window.scrollY); // Will eventually throw a ChannelOverflowError!!!
+  window.addEventListener("scroll", listener);
   await stop;
-  window.removeEventListener("scroll", handler);
+  window.removeEventListener("scroll", listener);
 });
 
 ys.next();
@@ -209,16 +209,16 @@ This behavior is desirable because it allows developers to quickly surface bottl
 
 #### 3. Buffering and dropping values
 
-If you neither wish to await `push` calls nor want to deal with errors, one last option is to have the channel store values in a buffer, dropping them when the buffer has reached capacity. The channel constructor optionally takes a `ChannelBuffer` instance as the second argument. For example, by passing in a `SlidingBuffer`, we can make it so that the channel above only retains the twenty latest scroll positions.
+If you neither wish to await `push` calls nor want to deal with errors, one last option is to have the channel store values in a buffer and drop values them when the buffer has reached capacity. The channel constructor optionally takes a `ChannelBuffer` instance as the second argument. For example, by passing in a `SlidingBuffer`, we can make it so that the channel above only retains the twenty latest scroll positions.
 
 ```js
 import { Channel, SlidingBuffer } from "@channel/channel";
 
 const ys = new Channel(async (push, _, stop) => {
-  const handler = () => push(window.scrollY); // ☺️will never throw
-  window.addEventListener("scroll", handler);
+  const listener = () => push(window.scrollY); // 🙂 will never throw
+  window.addEventListener("scroll", listener);
   await stop;
-  window.removeEventListener("scroll", handler);
+  window.removeEventListener("scroll", listener);
 }, new SlidingBuffer(20));
 
 ys.next();
@@ -232,7 +232,7 @@ In addition to the `@channel/channel` package which exports the `Channel` and `C
 
 - `@channel/timers` - Cancelable timers
 - `@channel/pubsub` - A generic pubsub class
-- `@channel/limiters` - Basic async iterators for limiting concurrency
+- `@channel/limiters` - Async iterator functions for limiting concurrency
 
 These packages are experimental and will probably be changed more frequently than the base `@channel/channel` package, which is more or less stable. If you need greater stability with these utilities, I encourage you to go into the files themselves and copy the code directly into your codebase. Report back on what works and what doesn’t! My hope is that this repository and the `@channel` npm scope becomes a place for useful, channel-based async utilities discovered by the community.
 
