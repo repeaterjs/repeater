@@ -68,7 +68,23 @@ describe("buffers", () => {
 });
 
 describe("Channel", () => {
-  test("no buffer", async () => {
+  test("sync pushes", async () => {
+    const chan = new Channel<number>((push, close) => {
+      push(1);
+      push(2);
+      push(3);
+      push(4);
+      push(5);
+      close();
+    });
+    const result: number[] = [];
+    for await (const num of chan) {
+      result.push(num);
+    }
+    expect(result).toEqual([1]);
+  });
+
+  test("async pushes", async () => {
     const chan = new Channel<number>(async (push, close) => {
       await push(1);
       await push(2);
@@ -271,6 +287,44 @@ describe("Channel", () => {
     }
     expect(result).toEqual([1, 2, 3]);
     await expect(chan.next()).resolves.toEqual({ done: true });
+  });
+
+  test("throw method", async () => {
+    const chan = new Channel<number>(async (push) => {
+      await push(1);
+      await push(2);
+      await push(3);
+      await push(4);
+    });
+    const result: number[] = [];
+    const error = new Error("Error passed to throw method");
+    await expect((async () => {
+      for await (const num of chan) {
+        result.push(num);
+        if (num === 3) {
+          await expect(chan.throw(error)).resolves.toEqual({ done: true });
+        }
+      }
+    })()).rejects.toBe(error);
+    expect(result).toEqual([1, 2, 3]);
+  });
+
+  test("throw method on already closed channel", async () => {
+    const chan = new Channel<number>(async (push, close) => {
+      await push(1);
+      await push(2);
+      push(3);
+      close();
+    });
+    const result: number[] = [];
+    const error = new Error("Error passed to throw method on closed channel");
+    for await (const num of chan) {
+      result.push(num);
+      if (num === 3) {
+        await expect(chan.throw(error)).rejects.toBe(error);
+      }
+    }
+    expect(result).toEqual([1, 2, 3]);
   });
 
   test("stop", async () => {

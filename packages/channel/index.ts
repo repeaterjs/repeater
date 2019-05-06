@@ -255,6 +255,14 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     );
   }
 
+  throw(reason: any): Promise<IteratorResult<T>> {
+    if (this.closed) {
+      return Promise.reject(reason);
+    }
+    this.close(reason);
+    return this.return();
+  }
+
   [Symbol.asyncIterator]() {
     return this;
   }
