@@ -1,4 +1,6 @@
 # @channel/limiters
+This package is experimental!
+
 Basic async iterators for limiting concurrency, implemented with channels
 
 ```ts

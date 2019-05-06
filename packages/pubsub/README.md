@@ -1,4 +1,6 @@
 # @channel/pubusb
+This package is experimental!
+
 A generic pubsub class, implemented with channels
 
 ```ts

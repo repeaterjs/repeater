@@ -1,4 +1,6 @@
-# @channel/channel
+# @channel/timers
+This package is experimental!
+
 Cancelable timers, implemented with channels
 
 ```ts
