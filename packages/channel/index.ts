@@ -243,9 +243,9 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     if (this.execution == null) {
       return Promise.resolve({ done: true } as IteratorResult<T>);
     }
-    return this.execution.then(
-      (value) => ({ value, done: true } as IteratorResult<T>),
-    );
+    return this.execution.then((value) => {
+      return { value, done: true } as IteratorResult<T>;
+    });
   }
 
   throw(reason: any): Promise<IteratorResult<T>> {

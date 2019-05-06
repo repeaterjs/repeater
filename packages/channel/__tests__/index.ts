@@ -342,6 +342,6 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: false, value: 2 });
     chan.return();
     await expect(chan.next()).resolves.toEqual({ done: true });
-    expect(mock).toBeCalled();
+    expect(mock).toHaveBeenCalled();
   });
 });

@@ -26,9 +26,9 @@ describe("limiters", () => {
   test("throttler cleans up", async () => {
     const throttle = throttler(1000, 8);
     await throttle.next();
-    expect(setInterval).toBeCalledTimes(1);
+    expect(setInterval).toHaveBeenCalledTimes(1);
     await throttle.return!();
-    expect(clearInterval).toBeCalledTimes(1);
+    expect(clearInterval).toHaveBeenCalledTimes(1);
   });
 
   test("throttler tracks remaining by interval", async () => {
@@ -45,6 +45,6 @@ describe("limiters", () => {
         break;
       }
     }
-    expect(clearInterval).toBeCalledTimes(1);
+    expect(clearInterval).toHaveBeenCalledTimes(1);
   });
 });

@@ -34,8 +34,8 @@ describe("timers", () => {
       const timer = delay(1);
       timer.return();
       jest.advanceTimersByTime(1000);
-      expect(setTimeout).toBeCalledTimes(0);
-      expect(clearTimeout).toBeCalledTimes(0);
+      expect(setTimeout).toHaveBeenCalledTimes(0);
+      expect(clearTimeout).toHaveBeenCalledTimes(0);
     } finally {
       jest.useRealTimers();
     }
@@ -85,7 +85,7 @@ describe("timers", () => {
       expect(result.value).toBeLessThanOrEqual(Date.now());
       expect(result.done).toBe(false);
       await timer.return();
-      expect(clearInterval).toBeCalledTimes(1);
+      expect(clearInterval).toHaveBeenCalledTimes(1);
     } finally {
       jest.useRealTimers();
     }
@@ -96,8 +96,8 @@ describe("timers", () => {
       jest.useFakeTimers();
       const timer = interval(50);
       await timer.return();
-      expect(setInterval).toBeCalledTimes(0);
-      expect(clearInterval).toBeCalledTimes(0);
+      expect(setInterval).toHaveBeenCalledTimes(0);
+      expect(clearInterval).toHaveBeenCalledTimes(0);
     } finally {
       jest.useRealTimers();
     }
