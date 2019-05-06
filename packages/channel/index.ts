@@ -130,7 +130,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
   private pullQueue: PullOperation<T>[] = [];
   private execution?: Promise<T | void>;
 
-  private push(value: T): Promise<boolean> {
+  private push = (value: T): Promise<boolean> => {
     if (this.closed) {
       return Promise.resolve(false);
     } else if (this.pullQueue.length) {
@@ -149,9 +149,9 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       );
     }
     return new Promise((resolve) => this.pushQueue.push({ resolve, value }));
-  }
+  };
 
-  private close(reason?: any): void {
+  private close = (reason?: any): void => {
     if (this.closed) {
       return;
     }
@@ -178,7 +178,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     this.onstop!();
     delete this.onstop;
     Object.freeze(this);
-  }
+  };
 
   constructor(
     executor: ChannelExecutor<T>,
@@ -186,16 +186,10 @@ export class Channel<T> implements AsyncIterableIterator<T> {
   ) {
     const start = new Promise<void>((resolve) => (this.onstart = resolve));
     const stop = new Promise<void>((resolve) => (this.onstop = resolve));
-    this.execution = start.then(() => {
+    this.execution = start.then(async () => {
       try {
-        return Promise.resolve(
-          executor(this.push.bind(this), this.close.bind(this), stop),
-        ).catch((err) => {
-          if (this.closed) {
-            throw err;
-          }
-          this.close(err);
-        });
+        // we await here so we can catch async errors in executor
+        return await executor(this.push, this.close, stop);
       } catch (err) {
         if (this.closed) {
           throw err;
@@ -244,7 +238,6 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     });
   }
 
-  // TODO: handle edge case where execution is never run in the first place
   return(): Promise<IteratorResult<T>> {
     this.close();
     if (this.execution == null) {

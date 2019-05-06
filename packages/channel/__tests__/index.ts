@@ -113,7 +113,7 @@ describe("Channel", () => {
     const chan = new Channel<number>(async () => {
       throw error;
     });
-    await expect(chan.next()).rejects.toBeDefined();
+    await expect(chan.next()).rejects.toBe(error);
   });
 
   test("sync error in executor after close causes return to reject", async () => {
@@ -298,18 +298,20 @@ describe("Channel", () => {
     });
     const result: number[] = [];
     const error = new Error("Error passed to throw method");
-    await expect((async () => {
-      for await (const num of chan) {
-        result.push(num);
-        if (num === 3) {
-          await expect(chan.throw(error)).resolves.toEqual({ done: true });
+    await expect(
+      (async () => {
+        for await (const num of chan) {
+          result.push(num);
+          if (num === 3) {
+            await expect(chan.throw(error)).resolves.toEqual({ done: true });
+          }
         }
-      }
-    })()).rejects.toBe(error);
+      })(),
+    ).rejects.toBe(error);
     expect(result).toEqual([1, 2, 3]);
   });
 
-  test("throw method on already closed channel", async () => {
+  test("calling throw method after close causes throw to reject", async () => {
     const chan = new Channel<number>(async (push, close) => {
       await push(1);
       await push(2);
