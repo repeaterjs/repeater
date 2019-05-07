@@ -12,9 +12,7 @@ interface Token {
 }
 
 function semaphore(limit: number): AsyncIterableIterator<Token>;
-```
 
-```ts
 interface ThrottleToken extends Token {
   reset: number;
 }

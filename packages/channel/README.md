@@ -1,9 +1,8 @@
 # @channel/channel
-The missing constructor function for creating safe async iterators
+The missing constructor for creating safe async iterators
 
 ## API
 
-### Channels
 ```ts
 class Channel<T> implements AsyncIterableIterator<T> {
   constructor(executor: ChannelExecutor<T>, buffer?: ChannelBuffer<T>);
@@ -32,7 +31,6 @@ The `Channel` executor is passed three values, `push`, `close` and `stop`.
 
 `stop` is a promise which resolves when the channel is closed. It is useful to await the `stop` promise before removing event handlers, and it can be used with `Promise.race` to cancel pending promises within the executor.
 
-### Buffers
 ```ts
 interface ChannelBuffer<T> {
   full: boolean;
