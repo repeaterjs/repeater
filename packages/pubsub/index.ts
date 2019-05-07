@@ -2,8 +2,8 @@ import { Channel, ChannelBuffer } from "@channel/channel";
 
 export interface PubSub<T> {
   publish(topic: string, value: T): Promise<void>;
-  subscribe(topic: string, buffer: ChannelBuffer<T>): AsyncIterableIterator<T>;
   unpublish(topic: string, reason?: any): void;
+  subscribe(topic: string, buffer?: ChannelBuffer<T>): AsyncIterableIterator<T>;
   close(reason?: any): void;
 }
 
@@ -30,6 +30,17 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     return Promise.resolve();
   }
 
+  unpublish(topic: string, reason?: any): void {
+    const publishers = this.publishers[topic];
+    if (publishers == null) {
+      return;
+    }
+    for (const { close } of publishers) {
+      close(reason);
+    }
+    publishers.clear();
+  }
+
   subscribe(topic: string, buffer?: ChannelBuffer<T>): Channel<T> {
     if (this.publishers[topic] == null) {
       this.publishers[topic] = new Set();
@@ -40,17 +51,6 @@ export class InMemoryPubSub<T> implements PubSub<T> {
       await stop;
       this.publishers[topic].delete(publisher);
     }, buffer);
-  }
-
-  unpublish(topic: string, reason?: any): void {
-    const publishers = this.publishers[topic];
-    if (publishers == null) {
-      return;
-    }
-    for (const { close } of publishers) {
-      close(reason);
-    }
-    publishers.clear();
   }
 
   close(reason?: any): void {
