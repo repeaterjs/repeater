@@ -1,6 +1,6 @@
 {
   "name": "@channel/pubsub",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A generic pubsub class, implemented with channels",
   "homepage": "https://github.com/channeljs/channel",
   "license": "MIT",
@@ -18,7 +18,7 @@
     "prepublishOnly": "yarn run test && yarn run build"
   },
   "dependencies": {
-    "@channel/channel": "^0.1.0"
+    "@channel/channel": "^0.1.1"
   },
   "publishConfig": {
     "access": "public"
