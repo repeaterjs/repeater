@@ -17,5 +17,5 @@ interface ThrottleToken extends Token {
   reset: number;
 }
 
-throttler(wait: number, limit?: number): AsyncIterableIterator<ThrottleToken>;
+function throttler(wait: number, limit?: number): AsyncIterableIterator<ThrottleToken>;
 ```
