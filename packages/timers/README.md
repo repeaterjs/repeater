@@ -7,7 +7,7 @@ Cancelable timers, implemented with channels
 function delay(wait: number, options?: { reject?: boolean; }): Channel<number>;
 ```
 
-`delay` returns an async iterator which resolves after `wait` with the current timestamp and closes. The timer does not start until you call `next` on the returned iterator. The timer will reject with a `TimeoutError` if you pass `reject: true` to `options`. The timer can be canceled by calling `return`.
+`delay` returns an async iterator which resolves after `wait` with the current timestamp and closes. The timer does not start until you call `next` on the returned iterator. The timer rejects with a `TimeoutError` if `options.reject` is `true`. The timer can be canceled by calling `return`.
 
 ```ts
 function timeout(wait: number): Promise<void>;
@@ -19,4 +19,5 @@ function timeout<T>(wait: number, promise: Promise<T>): Promise<T>;
 ```ts
 function interval(wait: number, buffer?: ChannelBuffer<number>): Channel<number>;
 ```
+
 `interval` returns an async iterator which resolves with the current timestamp every `wait` milliseconds. The timer does not start until you call `next` on the returned iterator, and can be canceled by calling `return`.

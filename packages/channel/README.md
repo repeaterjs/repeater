@@ -13,7 +13,7 @@ class Channel<T> implements AsyncIterableIterator<T> {
 }
 ```
 
-The `Channel` class is a simple constructor which is passed an `ChannelExecutor` function and implements the `AsyncIterableIterator` interface.
+The `Channel` class is a simple constructor which is passed a `ChannelExecutor` function and implements the `AsyncIterableIterator` interface.
 
 ```ts
 type ChannelExecutor<T> = (
@@ -23,11 +23,11 @@ type ChannelExecutor<T> = (
 ) => T | void | Promise<T | void>;
 ```
 
-The `Channel` executor is passed three values, `push`, `close` and `stop`.
+The `ChannelExecutor` is passed three values: `push`, `close` and `stop`.
 
-`push` is a function which allows you to `push` new values onto the channel. It returns a promise which resolves to true when the channel accepts the value or false if the channel is closed. It will synchronously throw an error if there are too many pending pushes on the channel.
+`push` is a function which allows you to enqueue values onto the channel. It returns a promise which resolves to true when the channel accepts the value or false if the channel is closed. It synchronously throws an error if there are too many pending pushes on the channel.
 
-`close` is a function which allows you to close the channel. Passing no arguments to close will cause the channel to close without error, while passing one argument will cause every subsequent call to `next` to reject with that argument. Calling `close` on an already closed channel will have no effect.
+`close` is a function which allows you to close the channel. Passing no arguments to close causes the channel to close without error, while passing one argument causes every subsequent call to `next` to reject with that argument. Calling `close` on an already closed channel has no effect.
 
 `stop` is a promise which resolves when the channel is closed. It is useful to await the `stop` promise before removing event handlers, and it can be used with `Promise.race` to cancel pending promises within the executor.
 
@@ -52,4 +52,4 @@ class DroppingBuffer<T> implements ChannelBuffer<T> {
 }
 ```
 
-The `Channel` constructor optionally takes a `ChannelBuffer` instance as its second argument. Buffers allow multiple values to be pushed onto channels without waiting. `FixedBuffer` allows channels to push a set number of values, `DroppingBuffer` will drop the *latest* values when the buffer has reached capacity, and `SlidingBuffer` will drop the *earliest* values when the buffer has reached capacity. You can define custom buffering behaviors by implementing the `ChannelBuffer` interface.
+The `Channel` constructor optionally takes a `ChannelBuffer` instance as its second argument. Buffers allow multiple values to be pushed onto channels without waiting. `FixedBuffer` allows channels to push a set number of values, `DroppingBuffer` drops the *latest* values when the buffer has reached capacity, and `SlidingBuffer` drops the *earliest* values when the buffer has reached capacity. You can define custom buffering behaviors by implementing the `ChannelBuffer` interface.
