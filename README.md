@@ -6,6 +6,7 @@ NOTE: This README assumes some familiarity with recent javascript features, spec
 ## Installation
 
 `npm install @channel/channel`
+
 `yarn add @channel/channel`
 
 ## Rationale
