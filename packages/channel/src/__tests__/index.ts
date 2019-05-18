@@ -313,17 +313,18 @@ describe("Channel", () => {
   });
 
   test("calling throw method after close causes throw to reject", async () => {
-    const chan = new Channel<number>(async (push, close) => {
+    const chan = new Channel<number>(async (push) => {
       await push(1);
       await push(2);
-      push(3);
-      close();
+      await push(3);
+      await push(4);
     });
     const result: number[] = [];
     const error = new Error("Error passed to throw method on closed channel");
     for await (const num of chan) {
       result.push(num);
       if (num === 3) {
+        await chan.return();
         await expect(chan.throw(error)).rejects.toBe(error);
       }
     }
