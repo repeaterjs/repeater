@@ -638,4 +638,348 @@ describe("Channel", () => {
     expect(mock).toHaveBeenCalledWith(-2);
     await expect(returned).resolves.toEqual({ value: -1, done: true });
   });
+
+  describe("Channel.race", () => {
+    async function* gen(): AsyncIterableIterator<number> {
+      yield 1;
+      yield 2;
+      return 3;
+    }
+
+    async function* deferredGen(): AsyncIterableIterator<number> {
+      await Promise.resolve();
+      yield 1;
+      yield 2;
+      return 3;
+    }
+
+    async function* hangingGen(): AsyncIterableIterator<number> {
+      await new Promise(() => {});
+      yield 1;
+      yield 2;
+      return 3;
+    }
+
+    test("Promise.resolve vs generator", async () => {
+      const iter = Channel.race([Promise.resolve(-1), gen()]);
+      let result: IteratorResult<number>;
+      const nums: number[] = [];
+      do {
+        result = await iter.next();
+        if (result.done) {
+          expect(result.value).toEqual(-1);
+        } else {
+          nums.push(result.value);
+        }
+      } while (!result.done);
+      expect(nums).toEqual([]);
+      await expect(iter.return!()).resolves.toEqual({
+        value: undefined,
+        done: true,
+      });
+    });
+
+    test("generator vs Promise.resolve", async () => {
+      const iter = Channel.race([gen(), Promise.resolve(-1)]);
+      let result: IteratorResult<number>;
+      const nums: number[] = [];
+      do {
+        result = await iter.next();
+        if (result.done) {
+          expect(result.value).toEqual(3);
+        } else {
+          nums.push(result.value);
+        }
+      } while (!result.done);
+      expect(nums).toEqual([1, 2]);
+      await expect(iter.return!()).resolves.toEqual({
+        value: undefined,
+        done: true,
+      });
+    });
+
+    test("deferred generator vs Promise.resolve", async () => {
+      const iter = Channel.race([deferredGen(), Promise.resolve(-1)]);
+      let result: IteratorResult<number>;
+      const nums: number[] = [];
+      do {
+        result = await iter.next();
+        if (result.done) {
+          expect(result.value).toEqual(-1);
+        } else {
+          nums.push(result.value);
+        }
+      } while (!result.done);
+      expect(nums).toEqual([]);
+      await expect(iter.return!()).resolves.toEqual({
+        value: undefined,
+        done: true,
+      });
+    });
+
+    test("Promise.resolve vs deferred generator", async () => {
+      const iter = Channel.race([Promise.resolve(-1), deferredGen()]);
+      let result: IteratorResult<number>;
+      const nums: number[] = [];
+      do {
+        result = await iter.next();
+        if (result.done) {
+          expect(result.value).toEqual(-1);
+        } else {
+          nums.push(result.value);
+        }
+      } while (!result.done);
+      expect(nums).toEqual([]);
+      await expect(iter.return!()).resolves.toEqual({
+        value: undefined,
+        done: true,
+      });
+    });
+
+    test("hanging generator vs Promise.resolve", async () => {
+      const iter = Channel.race([hangingGen(), Promise.resolve(-1)]);
+      let result: IteratorResult<number>;
+      const nums: number[] = [];
+      do {
+        result = await iter.next();
+        if (result.done) {
+          expect(result.value).toEqual(-1);
+        } else {
+          nums.push(result.value);
+        }
+      } while (!result.done);
+      expect(nums).toEqual([]);
+      await expect(iter.return!()).resolves.toEqual({
+        value: undefined,
+        done: true,
+      });
+    });
+
+    test("Promise.resolve vs hanging generator", async () => {
+      const iter = Channel.race([Promise.resolve(-1), hangingGen()]);
+      let result: IteratorResult<number>;
+      const nums: number[] = [];
+      do {
+        result = await iter.next();
+        if (result.done) {
+          expect(result.value).toEqual(-1);
+        } else {
+          nums.push(result.value);
+        }
+      } while (!result.done);
+      expect(nums).toEqual([]);
+      await expect(iter.return!()).resolves.toEqual({
+        value: undefined,
+        done: true,
+      });
+    });
+
+    test("hanging generator vs setTimeout promise", async () => {
+      const promise = new Promise<number>((resolve) =>
+        setTimeout(() => resolve(-1), 25),
+      );
+      let result: IteratorResult<number>;
+      const iter = Channel.race([hangingGen(), promise]);
+      const nums: number[] = [];
+      do {
+        result = await iter.next();
+        if (result.done) {
+          expect(result.value).toEqual(-1);
+        } else {
+          nums.push(result.value);
+        }
+      } while (!result.done);
+      expect(nums).toEqual([]);
+      await expect(iter.return!()).resolves.toEqual({
+        value: undefined,
+        done: true,
+      });
+    });
+
+    test("setTimeout promise vs hanging", async () => {
+      const promise = new Promise<number>((resolve) =>
+        setTimeout(() => resolve(-1), 25),
+      );
+      let result: IteratorResult<number>;
+      const iter = Channel.race([promise, hangingGen()]);
+      const nums: number[] = [];
+      do {
+        result = await iter.next();
+        if (result.done) {
+          expect(result.value).toEqual(-1);
+        } else {
+          nums.push(result.value);
+        }
+      } while (!result.done);
+      expect(nums).toEqual([]);
+      await expect(iter.return!()).resolves.toEqual({
+        value: undefined,
+        done: true,
+      });
+    });
+
+    test("hanging channel vs setTimeout promise", async () => {
+      const chan = new Channel<number>(async () => {
+        await new Promise(() => {});
+      });
+      const promise = new Promise<number>((resolve) =>
+        setTimeout(() => resolve(-1), 25),
+      );
+      const iter = Channel.race([promise, chan]);
+      let result: IteratorResult<number>;
+      const nums: number[] = [];
+      do {
+        result = await iter.next();
+        if (result.done) {
+          expect(result.value).toEqual(-1);
+        } else {
+          nums.push(result.value);
+        }
+      } while (!result.done);
+      expect(nums).toEqual([]);
+      await expect(iter.return!()).resolves.toEqual({
+        value: undefined,
+        done: true,
+      });
+    });
+
+    test("setTimeout promise vs hanging channel", async () => {
+      const chan = new Channel<number>(async () => {
+        await new Promise(() => {});
+      });
+      const promise = new Promise<number>((resolve) =>
+        setTimeout(() => resolve(-1), 25),
+      );
+      const iter = Channel.race([chan, promise]);
+      let result: IteratorResult<number>;
+      const nums: number[] = [];
+      do {
+        result = await iter.next();
+        if (result.done) {
+          expect(result.value).toEqual(-1);
+        } else {
+          nums.push(result.value);
+        }
+      } while (!result.done);
+      expect(nums).toEqual([]);
+      await expect(iter.return!()).resolves.toEqual({
+        value: undefined,
+        done: true,
+      });
+    });
+
+    test("setInterval channel vs setTimeout promise", async () => {
+      const chan = new Channel<number>(async (push, _, stop) => {
+        let i = 0;
+        const timer = setInterval(() => push(i++), 10);
+        await stop;
+        clearInterval(timer);
+      });
+      const promise = new Promise<number>((resolve) =>
+        setTimeout(() => resolve(-1), 25),
+      );
+      const iter = Channel.race([chan, promise]);
+      let result: IteratorResult<number>;
+      const nums: number[] = [];
+      do {
+        result = await iter.next();
+        if (result.done) {
+          expect(result.value).toEqual(-1);
+        } else {
+          nums.push(result.value);
+        }
+      } while (!result.done);
+      expect(nums).toEqual([0, 1]);
+      await expect(iter.return!()).resolves.toEqual({
+        value: undefined,
+        done: true,
+      });
+    });
+
+    test("setInterval channel vs faster setInterval channel and setTimeout promise", async () => {
+      const chan1 = new Channel<number>(async (push, _, stop) => {
+        let i = 0;
+        const timer = setInterval(() => {
+          push(i++);
+        }, 20);
+        await stop;
+        clearInterval(timer);
+      });
+
+      const chan2 = new Channel<number>(async (push, _, stop) => {
+        let i = 100;
+        const timer = setInterval(() => {
+          push(i++);
+        }, 10);
+        await stop;
+        clearInterval(timer);
+      });
+
+      const promise = new Promise<number>((resolve) => {
+        setTimeout(() => resolve(-1), 25);
+      });
+
+      const iter = Channel.race([chan1, chan2, promise]);
+      let result: IteratorResult<number>;
+      const nums: number[] = [];
+      do {
+        result = await iter.next();
+        if (result.done) {
+          expect(result.value).toEqual(-1);
+        } else {
+          nums.push(result.value);
+        }
+      } while (!result.done);
+      expect(nums).toEqual([100, 101]);
+      await expect(iter.return!()).resolves.toEqual({
+        value: undefined,
+        done: true,
+      });
+    });
+
+    test("return should be called on all iterators when one returns", async () => {
+      const iter1: AsyncIterableIterator<number> = (async function*() {
+        await new Promise(() => {});
+        yield 0;
+      })();
+      const iter2 = new Channel<number>(() => {});
+      const iter3 = new Channel<number>((_, close) => {
+        setTimeout(() => close(), 25);
+      });
+      const hanging = new Promise(() => {});
+      const spy1 = jest.spyOn(iter1, "return");
+      const spy2 = jest.spyOn(iter2, "return");
+      const spy3 = jest.spyOn(iter3, "return");
+      const iter = Channel.race([hanging, iter1, iter2, iter3]);
+      iter.next();
+      await expect(iter.return!()).resolves.toEqual({
+        done: true,
+      });
+      expect(spy1).toHaveBeenCalledTimes(1);
+      expect(spy2).toHaveBeenCalledTimes(1);
+      expect(spy3).toHaveBeenCalledTimes(1);
+    });
+
+    test("return should not be called if iterator is not started", async () => {
+      const iter1: AsyncIterableIterator<number> = (async function*() {
+        await new Promise(() => {});
+        yield 0;
+      })();
+      const iter2 = new Channel<number>(() => {});
+      const iter3 = new Channel<number>((_, close) => {
+        setTimeout(() => close(), 25);
+      });
+      const hanging = new Promise(() => {});
+      const spy1 = jest.spyOn(iter1, "return");
+      const spy2 = jest.spyOn(iter2, "return");
+      const spy3 = jest.spyOn(iter3, "return");
+      const iter = Channel.race([hanging, iter1, iter2, iter3]);
+      await expect(iter.return!()).resolves.toEqual({
+        done: true,
+      });
+      expect(spy1).toHaveBeenCalledTimes(0);
+      expect(spy2).toHaveBeenCalledTimes(0);
+      expect(spy3).toHaveBeenCalledTimes(0);
+    });
+  });
 });

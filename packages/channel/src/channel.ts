@@ -1,4 +1,5 @@
 import { ChannelBuffer, FixedBuffer } from "./buffers";
+import { Contender, race } from "./combinators";
 
 export const MAX_QUEUE_LENGTH = 1024;
 
@@ -246,5 +247,9 @@ export class Channel<T = any, TYield = T, TReturn = TYield>
 
   [Symbol.asyncIterator](): this {
     return this;
+  }
+
+  static race(contenders: Iterable<Contender<any>>) {
+    return race(contenders);
   }
 }
