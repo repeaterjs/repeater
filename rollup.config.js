@@ -5,7 +5,7 @@ const root = process.cwd();
 const pkg = require(path.join(root, "package.json"));
 
 export default {
-  input: path.join(root, "./index.ts"),
+  input: path.join(root, "./src/index.ts"),
   output: [
     { 
       file: pkg.main,
