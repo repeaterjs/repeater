@@ -3,6 +3,7 @@ import {
   ChannelOverflowError,
   DroppingBuffer,
   FixedBuffer,
+  MAX_QUEUE_LENGTH,
   SlidingBuffer,
 } from "../index";
 
@@ -167,7 +168,7 @@ describe("Channel", () => {
     // prime the channel
     await chan.next();
     let i = 0;
-    for (; i < bufferLength + chan["MAX_QUEUE_LENGTH"]; i++) {
+    for (; i < bufferLength + MAX_QUEUE_LENGTH; i++) {
       push!(i);
     }
     expect(() => push(i++)).toThrow(ChannelOverflowError);
@@ -193,7 +194,7 @@ describe("Channel", () => {
 
   test("pulls throw when pull queue is full", async () => {
     const chan = new Channel(() => {}, new FixedBuffer(3));
-    for (let i = 0; i < chan["MAX_QUEUE_LENGTH"]; i++) {
+    for (let i = 0; i < MAX_QUEUE_LENGTH; i++) {
       chan.next();
     }
     await expect(chan.next()).rejects.toBeInstanceOf(ChannelOverflowError);

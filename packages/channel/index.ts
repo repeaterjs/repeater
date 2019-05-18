@@ -120,143 +120,177 @@ export class ChannelOverflowError extends Error {
   }
 }
 
-export class Channel<T> implements AsyncIterableIterator<T> {
-  private readonly MAX_QUEUE_LENGTH = 1024;
-  private closed = false;
-  private reason?: any;
-  private onstart?: () => void;
-  private onstop?: () => void;
-  private pushQueue: PushOperation<T>[] = [];
-  private pullQueue: PullOperation<T>[] = [];
-  private execution?: Promise<T | void>;
+export const MAX_QUEUE_LENGTH = 1024;
 
-  private push = (value: T): Promise<boolean> => {
-    if (this.closed) {
-      return Promise.resolve(false);
-    } else if (this.pullQueue.length) {
-      const pull = this.pullQueue.shift()!;
-      const result = { value, done: false };
-      pull.resolve(result);
-      return Promise.resolve(true);
-    } else if (!this.buffer.full) {
-      this.buffer.add(value);
-      return Promise.resolve(true);
-    } else if (this.pushQueue.length >= this.MAX_QUEUE_LENGTH) {
-      throw new ChannelOverflowError(
-        `No more than ${
-          this.MAX_QUEUE_LENGTH
-        } pending calls to push are allowed on a single channel.`,
-      );
-    }
-    return new Promise((resolve) => this.pushQueue.push({ resolve, value }));
-  };
+interface ChannelController<T> {
+  closed: boolean;
+  pushQueue: PushOperation<T>[];
+  pullQueue: PullOperation<T>[];
+  buffer: ChannelBuffer<T>;
+  push(value: T): Promise<boolean>;
+  close(reason?: any): void;
+  reason?: any;
+  onstart?: () => void;
+  onstop?: () => void;
+  execution?: Promise<T | void>;
+}
 
-  private close = (reason?: any): void => {
-    if (this.closed) {
-      return;
-    }
-    this.closed = true;
-    this.reason = reason;
-    for (const push of this.pushQueue) {
-      push.resolve(false);
-    }
-    this.pushQueue = [];
-    Object.freeze(this.pushQueue);
-    for (const pull of this.pullQueue) {
-      if (reason == null) {
-        pull.resolve({ done: true } as IteratorResult<T>);
-      } else {
-        pull.reject(reason);
+function createChannelController<T>(
+  executor: ChannelExecutor<T>,
+  buffer: ChannelBuffer<T>,
+): ChannelController<T> {
+  const controller: ChannelController<T> = {
+    pullQueue: [],
+    pushQueue: [],
+    closed: false,
+    buffer,
+    push(value: T): Promise<boolean> {
+      if (this.closed) {
+        return Promise.resolve(false);
+      } else if (this.pullQueue.length) {
+        const pull = this.pullQueue.shift()!;
+        const result = { value, done: false };
+        pull.resolve(result);
+        return Promise.resolve(true);
+      } else if (!this.buffer.full) {
+        this.buffer.add(value);
+        return Promise.resolve(true);
+      } else if (this.pushQueue.length >= MAX_QUEUE_LENGTH) {
+        throw new ChannelOverflowError(
+          `No more than ${MAX_QUEUE_LENGTH} pending calls to push are allowed on a single channel.`,
+        );
       }
-    }
-    this.pullQueue = [];
-    Object.freeze(this.pullQueue);
-    if (this.onstart != null) {
-      delete this.onstart;
-      delete this.execution;
-    }
-    this.onstop!();
-    delete this.onstop;
-    Object.freeze(this);
+      return new Promise((resolve) => this.pushQueue.push({ resolve, value }));
+    },
+    close(reason?: any): void {
+      if (this.closed) {
+        return;
+      }
+      this.closed = true;
+      this.reason = reason;
+      for (const push of this.pushQueue) {
+        push.resolve(false);
+      }
+      this.pushQueue = [];
+      Object.freeze(this.pushQueue);
+      for (const pull of this.pullQueue) {
+        if (reason == null) {
+          pull.resolve({ done: true } as IteratorResult<T>);
+        } else {
+          pull.reject(reason);
+        }
+      }
+      this.pullQueue = [];
+      Object.freeze(this.pullQueue);
+      if (this.onstart != null) {
+        delete this.onstart;
+        delete this.execution;
+      }
+      this.onstop!();
+      delete this.onstop;
+      Object.freeze(this);
+    },
   };
+  const start = new Promise<void>((resolve) => (controller.onstart = resolve));
+  const stop = new Promise<void>((resolve) => (controller.onstop = resolve));
+  controller.execution = start.then(async () => {
+    try {
+      // we use "return await" here so we can catch async errors in executor
+      return await executor(
+        controller.push.bind(controller),
+        controller.close.bind(controller),
+        stop,
+      );
+    } catch (err) {
+      if (controller.closed) {
+        throw err;
+      }
+      controller.close(err);
+    }
+  });
+  return controller;
+}
 
+type ChannelControllerMap<T = any> = WeakMap<Channel<T>, ChannelController<T>>;
+
+const controllers: ChannelControllerMap = new WeakMap();
+
+export class Channel<T> implements AsyncIterableIterator<T> {
   constructor(
     executor: ChannelExecutor<T>,
-    private buffer: ChannelBuffer<T> = new FixedBuffer(0),
+    buffer: ChannelBuffer<T> = new FixedBuffer(0),
   ) {
-    const start = new Promise<void>((resolve) => (this.onstart = resolve));
-    const stop = new Promise<void>((resolve) => (this.onstop = resolve));
-    this.execution = start.then(async () => {
-      try {
-        // we await here so we can catch async errors in executor
-        return await executor(this.push, this.close, stop);
-      } catch (err) {
-        if (this.closed) {
-          throw err;
-        }
-        this.close(err);
-      }
-    });
+    const controller = createChannelController(executor, buffer);
+    controllers.set(this, controller);
   }
 
-  next(): Promise<IteratorResult<T>> {
-    if (!this.closed && this.onstart != null) {
-      this.onstart();
-      delete this.onstart;
+  next(_value?: any): Promise<IteratorResult<T>> {
+    const controller = controllers.get(this);
+    if (controller == null) {
+      throw new Error("private channel controller is undefined");
+    } else if (!controller.closed && controller.onstart != null) {
+      controller.onstart();
+      delete controller.onstart;
     }
 
-    if (!this.buffer.empty) {
-      const result = { value: this.buffer.remove()!, done: false };
-      if (this.pushQueue.length) {
-        const push = this.pushQueue.shift()!;
-        this.buffer.add(push.value);
+    if (!controller.buffer.empty) {
+      const result = { value: controller.buffer.remove()!, done: false };
+      if (controller.pushQueue.length) {
+        const push = controller.pushQueue.shift()!;
+        controller.buffer.add(push.value);
         push.resolve(true);
       }
       return Promise.resolve(result);
-    } else if (this.pushQueue.length) {
-      const push = this.pushQueue.shift()!;
+    } else if (controller.pushQueue.length) {
+      const push = controller.pushQueue.shift()!;
       const result = { value: push.value, done: false };
       push.resolve(true);
       return Promise.resolve(result);
-    } else if (this.closed) {
-      if (this.reason == null) {
+    } else if (controller.closed) {
+      if (controller.reason == null) {
         return Promise.resolve({ done: true } as IteratorResult<T>);
       } else {
-        return Promise.reject(this.reason);
+        return Promise.reject(controller.reason);
       }
-    } else if (this.pullQueue.length >= this.MAX_QUEUE_LENGTH) {
+    } else if (controller.pullQueue.length >= MAX_QUEUE_LENGTH) {
       return Promise.reject(
         new ChannelOverflowError(
-          `No more than ${
-            this.MAX_QUEUE_LENGTH
-          } pending calls to Channel.prototype.next are allowed on a single channel.`,
+          `No more than ${MAX_QUEUE_LENGTH} pending calls to Channel.prototype.next are allowed on a single channel.`,
         ),
       );
     }
     return new Promise((resolve, reject) => {
-      this.pullQueue.push({ resolve, reject });
+      controller.pullQueue.push({ resolve, reject });
     });
   }
 
-  return(): Promise<IteratorResult<T>> {
-    this.close();
-    if (this.execution == null) {
+  return(_value?: any): Promise<IteratorResult<T>> {
+    const controller = controllers.get(this);
+    if (controller == null) {
+      throw new Error("private channel controller is undefined");
+    }
+    controller.close();
+    if (controller.execution == null) {
       return Promise.resolve({ done: true } as IteratorResult<T>);
     }
-    return this.execution.then((value) => {
+    return controller.execution.then((value) => {
       return { value, done: true } as IteratorResult<T>;
     });
   }
 
-  throw(reason: any): Promise<IteratorResult<T>> {
-    if (this.closed) {
+  throw(reason?: any): Promise<IteratorResult<T>> {
+    const controller = controllers.get(this);
+    if (controller == null) {
+      throw new Error("private channel controller is undefined");
+    }
+    if (controller.closed) {
       return Promise.reject(reason);
     }
-    this.close(reason);
+    controller.close(reason);
     return this.return();
   }
 
-  [Symbol.asyncIterator]() {
+  [Symbol.asyncIterator](): this {
     return this;
   }
 }
