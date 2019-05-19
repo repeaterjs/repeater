@@ -1,20 +1,6 @@
 import { ChannelBuffer, FixedBuffer } from "./buffers";
 
-interface PushOperation<T> {
-  resolve(accepted: boolean): void;
-  value: T;
-}
-
-interface PullOperation<T> {
-  resolve(result: IteratorResult<T>): void;
-  reject(err?: any): void;
-}
-
-export type ChannelExecutor<T> = (
-  push: (value: T) => Promise<boolean>,
-  close: (error?: any) => void,
-  stop: Promise<void>,
-) => T | void | Promise<T | void>;
+export const MAX_QUEUE_LENGTH = 1024;
 
 export class ChannelOverflowError extends Error {
   constructor(message: string) {
@@ -31,7 +17,23 @@ export class ChannelOverflowError extends Error {
   }
 }
 
-export const MAX_QUEUE_LENGTH = 1024;
+type MaybePromise<T> = Promise<T> | T;
+
+interface PushOperation<T> {
+  resolve(value: MaybePromise<boolean>): void;
+  value: T;
+}
+
+interface PullOperation<T> {
+  resolve(result: MaybePromise<IteratorResult<T>>): void;
+  reject(err?: any): void;
+}
+
+export type ChannelExecutor<T> = (
+  push: (value: T) => Promise<boolean>,
+  close: (error?: any) => void,
+  stop: Promise<T | void>,
+) => MaybePromise<T | void>;
 
 // The functionality for the Channel class is implemented in the
 // ChannelController class and hidden using a private WeakMap to make the
@@ -44,26 +46,35 @@ class ChannelController<T> {
   private execution: Promise<IteratorResult<T>>;
   private error?: any;
   private onstart?: () => void;
-  private onstop?: () => void;
+  private onstop?: (value?: MaybePromise<T>) => void;
+  private onerror?: (err?: any) => void;
 
   constructor(executor: ChannelExecutor<T>, private buffer: ChannelBuffer<T>) {
     const start = new Promise<void>((onstart) => (this.onstart = onstart));
-    const stop = new Promise<void>((onstop) => (this.onstop = onstop));
+    const stop = new Promise<T | void>((onstop, onerror) => {
+      this.onstop = onstop;
+      this.onerror = onerror;
+    });
+    stop.catch((err) => {
+      if (this.closed) {
+        this.execution = Promise.reject(err);
+      }
+    });
     this.execution = start.then(async () => {
+      let value: T | void;
       try {
-        const value = (await executor(
+        value = await executor(
           this.push.bind(this),
           this.close.bind(this),
           stop,
-        )) as T;
-        return { value, done: true };
+        );
       } catch (err) {
         if (this.closed) {
           throw err;
         }
         this.close(err);
-        return { done: true } as IteratorResult<T>;
       }
+      return { value, done: true } as IteratorResult<T>;
     });
   }
 
@@ -98,21 +109,37 @@ class ChannelController<T> {
     this.pushQueue = [];
     Object.freeze(this.pushQueue);
     for (const pull of this.pullQueue) {
-      if (error == null) {
-        pull.resolve({ done: true } as IteratorResult<T>);
+      if (this.error == null) {
+        pull.resolve(this.execution);
+        this.execution = Promise.resolve({ done: true } as IteratorResult<T>);
       } else {
-        pull.reject(error);
+        pull.reject(this.error);
+        delete this.error;
       }
     }
     this.pullQueue = [];
     Object.freeze(this.pullQueue);
+    // if this.onstart is defined, the Channel has never started
     if (this.onstart != null) {
-      delete this.onstart;
       this.execution = Promise.resolve({ done: true } as IteratorResult<T>);
+      delete this.onstart;
     }
-    this.onstop!();
+    if (this.onstop != null) {
+      this.onstop();
+    }
     delete this.onstop;
-    Object.freeze(this);
+    delete this.onerror;
+  }
+
+  private finish(): Promise<IteratorResult<T>> {
+    const execution = this.execution;
+    this.execution = Promise.resolve({ done: true } as IteratorResult<T>);
+    if (this.error != null) {
+      const error = this.error;
+      delete this.error;
+      return Promise.reject(error);
+    }
+    return execution;
   }
 
   async pull(): Promise<IteratorResult<T>> {
@@ -135,11 +162,7 @@ class ChannelController<T> {
       push.resolve(true);
       return result;
     } else if (this.closed) {
-      if (this.error == null) {
-        return { done: true } as IteratorResult<T>;
-      } else {
-        throw this.error;
-      }
+      return this.finish();
     } else if (this.pullQueue.length >= MAX_QUEUE_LENGTH) {
       throw new ChannelOverflowError(
         `No more than ${MAX_QUEUE_LENGTH} pending calls to Channel.prototype.next are allowed on a single channel.`,
@@ -150,12 +173,24 @@ class ChannelController<T> {
     });
   }
 
-  async finish(error?: any): Promise<IteratorResult<T>> {
-    if (error != null && this.closed) {
-      throw error;
+  async return(value?: T): Promise<IteratorResult<T>> {
+    if (this.closed) {
+      return { value, done: true } as IteratorResult<T>;
+    } else if (this.onstop != null) {
+      this.onstop(value);
     }
-    this.close(error);
-    return this.execution;
+    this.close();
+    return this.finish();
+  }
+
+  async throw(error?: any): Promise<IteratorResult<T>> {
+    if (this.closed) {
+      throw error;
+    } else if (this.onerror != null) {
+      this.onerror(error);
+    }
+    this.close();
+    return this.finish();
   }
 }
 
@@ -178,12 +213,12 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     return controller.pull();
   }
 
-  return(_value?: any): Promise<IteratorResult<T>> {
+  return(value?: T): Promise<IteratorResult<T>> {
     const controller = controllers.get(this);
     if (controller == null) {
       throw new Error("ChannelController missing from controllers WeakMap");
     }
-    return controller.finish();
+    return controller.return(value);
   }
 
   throw(error?: any): Promise<IteratorResult<T>> {
@@ -191,7 +226,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     if (controller == null) {
       throw new Error("ChannelController missing from controllers WeakMap");
     }
-    return controller.finish(error);
+    return controller.throw(error);
   }
 
   [Symbol.asyncIterator](): this {
