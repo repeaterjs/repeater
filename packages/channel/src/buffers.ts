@@ -30,6 +30,9 @@ export class FixedBuffer<T> implements ChannelBuffer<T> {
   }
 
   remove(): T | undefined {
+    if (this.empty) {
+      throw new Error("Buffer empty");
+    }
     return this.arr.shift();
   }
 }
@@ -58,6 +61,9 @@ export class SlidingBuffer<T> implements ChannelBuffer<T> {
   }
 
   remove(): T | undefined {
+    if (this.empty) {
+      throw new Error("Buffer empty");
+    }
     return this.arr.shift();
   }
 }
@@ -85,6 +91,9 @@ export class DroppingBuffer<T> implements ChannelBuffer<T> {
   }
 
   remove(): T | undefined {
+    if (this.empty) {
+      throw new Error("Buffer empty");
+    }
     return this.arr.shift();
   }
 }
