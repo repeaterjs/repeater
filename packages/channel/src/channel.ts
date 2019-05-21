@@ -19,76 +19,83 @@ export class ChannelOverflowError extends Error {
 
 type MaybePromise<T> = Promise<T> | T;
 
+// TYield is the type of the value passed to channel.next
+// TReturn is the type of the value passed to channel.return
+// TODO: parameterize these types
+type TYield = any;
+type TReturn = any;
+
 interface PushOperation<T> {
-  resolve(value: MaybePromise<boolean>): void;
+  resolve(next?: TYield): void;
   value: T;
 }
 
 interface PullOperation<T> {
   resolve(result: MaybePromise<IteratorResult<T>>): void;
   reject(err?: any): void;
+  value: TYield;
 }
 
 export type ChannelExecutor<T> = (
-  push: (value: T) => Promise<boolean>,
+  push: (value: T) => Promise<TYield>,
   close: (error?: any) => void,
-  stop: Promise<T | void>,
+  stop: Promise<TReturn>,
 ) => MaybePromise<T | void>;
 
-// The functionality for the Channel class is implemented in the
-// ChannelController class and hidden using a private WeakMap to make the
-// actual Channel class opaque and maximally compatible with the
-// AsyncIterableIterator interface.
-class ChannelController<T> {
-  private closed = false;
+/**
+ * The functionality for channels is implemented in this helper class and
+ * hidden using a private WeakMap to make the actual Channel class opaque and
+ * maximally compatible with the AsyncIterableIterator interface.
+ */
+class ChannelController<T> implements AsyncIterator<T> {
+  // pushQueue and pullQueue will never both contain values at the same time
   private pushQueue: PushOperation<T>[] = [];
   private pullQueue: PullOperation<T>[] = [];
-  private execution: Promise<IteratorResult<T>>;
-  private error?: any;
+
+  // The absence or presence of these values indicate various things about the
+  // state of the ChannelController.
+  // if onstart == null, the channel has started
   private onstart?: () => void;
-  private onstop?: (value?: MaybePromise<T>) => void;
-  private onerror?: (err?: any) => void;
+  // if onstop == null, the channel has stopped/closed
+  private onstop?: (value?: TReturn) => void;
+  // if execution == null, the channel is finished and frozen
+  private execution?: Promise<IteratorResult<T>>;
+  // if error != null, the next call to next or return will error
+  private error?: any;
 
   constructor(executor: ChannelExecutor<T>, private buffer: ChannelBuffer<T>) {
     const start = new Promise<void>((onstart) => (this.onstart = onstart));
-    const stop = new Promise<T | void>((onstop, onerror) => {
-      this.onstop = onstop;
-      this.onerror = onerror;
-    });
-    stop.catch((err) => {
-      if (this.closed) {
-        this.execution = Promise.reject(err);
-      }
-    });
+    const push = this.push.bind(this);
+    const close = this.close.bind(this);
+    const stop = new Promise<TReturn>((onstop) => (this.onstop = onstop));
     this.execution = start.then(async () => {
       let value: T | void;
       try {
-        value = await executor(
-          this.push.bind(this),
-          this.close.bind(this),
-          stop,
-        );
+        value = await executor(push, close, stop);
       } catch (err) {
-        if (this.closed) {
+        if (this.onstop == null) {
           throw err;
         }
         this.close(err);
+        return { done: true } as IteratorResult<T>;
       }
+      this.close();
       return { value, done: true } as IteratorResult<T>;
     });
+    this.execution.catch(() => {});
   }
 
-  private push(value: T): Promise<boolean> {
-    if (this.closed) {
-      return Promise.resolve(false);
+  private push(value: T): Promise<TYield> {
+    if (this.onstop == null) {
+      return Promise.resolve();
     } else if (this.pullQueue.length) {
       const pull = this.pullQueue.shift()!;
       const result = { value, done: false };
       pull.resolve(result);
-      return Promise.resolve(true);
+      return Promise.resolve(pull.value);
     } else if (!this.buffer.full) {
       this.buffer.add(value);
-      return Promise.resolve(true);
+      return Promise.resolve();
     } else if (this.pushQueue.length >= MAX_QUEUE_LENGTH) {
       throw new ChannelOverflowError(
         `No more than ${MAX_QUEUE_LENGTH} pending calls to push are allowed on a single channel.`,
@@ -98,52 +105,62 @@ class ChannelController<T> {
   }
 
   private close(error?: any): void {
-    if (this.closed) {
+    if (this.onstop == null) {
       return;
     }
-    this.closed = true;
+    this.onstop();
+    delete this.onstop;
+    // If this.onstart is not null, channel.next has never been called so we
+    // discard the execution.
+    if (this.onstart != null) {
+      delete this.execution;
+    }
+    delete this.onstart;
     this.error = error;
     for (const push of this.pushQueue) {
-      push.resolve(false);
+      push.resolve();
     }
     this.pushQueue = [];
     Object.freeze(this.pushQueue);
-    for (const pull of this.pullQueue) {
-      if (this.error == null) {
-        pull.resolve(this.execution);
-        this.execution = Promise.resolve({ done: true } as IteratorResult<T>);
-      } else {
-        pull.reject(this.error);
-        delete this.error;
-      }
-    }
+    const pullQueue = this.pullQueue;
     this.pullQueue = [];
     Object.freeze(this.pullQueue);
-    // if this.onstart is defined, the Channel has never started
-    if (this.onstart != null) {
-      this.execution = Promise.resolve({ done: true } as IteratorResult<T>);
-      delete this.onstart;
+    // Calling this.finish freezes the whole instance so we resolve pulls last.
+    // If the pullQueue is not empty, the buffer and pushQueue are necessarily
+    // empty, so we don‘t have to worry about this.finish dropping values in
+    // the buffer.
+    for (const pull of pullQueue) {
+      pull.resolve(this.finish());
     }
-    if (this.onstop != null) {
-      this.onstop();
-    }
-    delete this.onstop;
-    delete this.onerror;
   }
 
+  /**
+   * helper method to “consume” the final iteration of the channel, mimicking
+   * the returning/throwing behavior of generators.
+   *
+   * The difference between closing a channel vs finishing a channel is that
+   * close will allow calls to next to drain values from the buffer, while
+   * finish will immediately clear the buffer and freeze the channel.
+   */
   private finish(): Promise<IteratorResult<T>> {
+    if (this.execution == null) {
+      return Promise.resolve({ done: true } as IteratorResult<T>);
+    }
     const execution = this.execution;
-    this.execution = Promise.resolve({ done: true } as IteratorResult<T>);
-    if (this.error != null) {
-      const error = this.error;
-      delete this.error;
+    const error = this.error;
+    delete this.execution;
+    delete this.error;
+    // clear the buffer
+    this.buffer = new FixedBuffer(0);
+    Object.freeze(this);
+    if (error != null) {
       return Promise.reject(error);
     }
     return execution;
   }
 
-  async pull(): Promise<IteratorResult<T>> {
-    if (!this.closed && this.onstart != null) {
+  async next(value?: TYield): Promise<IteratorResult<T>> {
+    if (this.onstart != null && this.onstop != null) {
       this.onstart();
       delete this.onstart;
     }
@@ -153,15 +170,15 @@ class ChannelController<T> {
       if (this.pushQueue.length) {
         const push = this.pushQueue.shift()!;
         this.buffer.add(push.value);
-        push.resolve(true);
+        push.resolve(value);
       }
       return result;
     } else if (this.pushQueue.length) {
       const push = this.pushQueue.shift()!;
       const result = { value: push.value, done: false };
-      push.resolve(true);
+      push.resolve(value);
       return result;
-    } else if (this.closed) {
+    } else if (this.onstop == null) {
       return this.finish();
     } else if (this.pullQueue.length >= MAX_QUEUE_LENGTH) {
       throw new ChannelOverflowError(
@@ -169,12 +186,12 @@ class ChannelController<T> {
       );
     }
     return new Promise((resolve, reject) => {
-      this.pullQueue.push({ resolve, reject });
+      this.pullQueue.push({ resolve, reject, value });
     });
   }
 
-  async return(value?: T): Promise<IteratorResult<T>> {
-    if (this.closed) {
+  async return(value?: TReturn): Promise<IteratorResult<T>> {
+    if (this.onstop == null) {
       return { value, done: true } as IteratorResult<T>;
     } else if (this.onstop != null) {
       this.onstop(value);
@@ -184,12 +201,10 @@ class ChannelController<T> {
   }
 
   async throw(error?: any): Promise<IteratorResult<T>> {
-    if (this.closed) {
+    if (this.onstop == null) {
       throw error;
-    } else if (this.onerror != null) {
-      this.onerror(error);
     }
-    this.close();
+    this.close(error);
     return this.finish();
   }
 }
@@ -205,15 +220,15 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     controllers.set(this, new ChannelController(executor, buffer));
   }
 
-  next(_value?: any): Promise<IteratorResult<T>> {
+  next(value?: TYield): Promise<IteratorResult<T>> {
     const controller = controllers.get(this);
     if (controller == null) {
       throw new Error("ChannelController missing from controllers WeakMap");
     }
-    return controller.pull();
+    return controller.next(value);
   }
 
-  return(value?: T): Promise<IteratorResult<T>> {
+  return(value?: TReturn): Promise<IteratorResult<T>> {
     const controller = controllers.get(this);
     if (controller == null) {
       throw new Error("ChannelController missing from controllers WeakMap");
