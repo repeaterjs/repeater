@@ -54,7 +54,7 @@ describe("ChannelBuffer", () => {
   });
 });
 
-// TODO: create a jest helper to help us test asynciterators
+// TODO: create a jest helper to help us test AsyncIterators
 describe("Channel", () => {
   test("sync pushes", async () => {
     const chan = new Channel<number>((push) => {
@@ -281,7 +281,7 @@ describe("Channel", () => {
   test("next then push avoids buffer", async () => {
     const buffer = new FixedBuffer<number>(100);
     const spy = jest.spyOn(buffer, "add");
-    let push: (value: number) => Promise<void>;
+    let push: (value: number) => Promise<any>;
     const chan = new Channel(async (push1, _, stop) => {
       push = push1;
       push(-1);
@@ -311,7 +311,7 @@ describe("Channel", () => {
 
   test("pushes resolve to undefined when using a buffer", async () => {
     const mock = jest.fn();
-    let push: (value: number) => Promise<number>;
+    let push: (value: number) => Promise<number | void>;
     const chan = new Channel<number>(async (push1) => {
       push = push1;
       await expect(push(1)).resolves.toEqual(-1);
@@ -352,7 +352,7 @@ describe("Channel", () => {
 
   test("pushes throw when buffer and push queue are full", async () => {
     const bufferLength = 3;
-    let push: (value: number) => Promise<void>;
+    let push: (value: number) => Promise<any>;
     const chan = new Channel<number>(async (push1, _, stop) => {
       push = push1;
       push(-1);

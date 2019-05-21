@@ -17,40 +17,32 @@ export class ChannelOverflowError extends Error {
   }
 }
 
-type MaybePromise<T> = Promise<T> | T;
-
-// TYield is the type of the value passed to channel.next
-// TReturn is the type of the value passed to channel.return
-// TODO: parameterize these types
-type TYield = any;
-type TReturn = any;
-
-interface PushOperation<T> {
+interface PushOperation<T, TYield> {
   resolve(next?: TYield): void;
   value: T;
 }
 
-interface PullOperation<T> {
-  resolve(result: MaybePromise<IteratorResult<T>>): void;
+interface PullOperation<T, TYield> {
+  resolve(result: Promise<IteratorResult<T>> | IteratorResult<T>): void;
   reject(err?: any): void;
-  value: TYield;
+  value?: TYield;
 }
 
-export type ChannelExecutor<T> = (
-  push: (value: T) => Promise<TYield>,
+export type ChannelExecutor<T, TYield, TReturn> = (
+  push: (value: T) => Promise<TYield | void>,
   close: (error?: any) => void,
-  stop: Promise<TReturn>,
-) => MaybePromise<T | void>;
+  stop: Promise<TReturn | void>,
+) => Promise<T | void> | T | void;
 
 /**
  * The functionality for channels is implemented in this helper class and
  * hidden using a private WeakMap to make the actual Channel class opaque and
  * maximally compatible with the AsyncIterableIterator interface.
  */
-class ChannelController<T> implements AsyncIterator<T> {
+class ChannelController<T, TYield, TReturn> implements AsyncIterator<T> {
   // pushQueue and pullQueue will never both contain values at the same time
-  private pushQueue: PushOperation<T>[] = [];
-  private pullQueue: PullOperation<T>[] = [];
+  private pushQueue: PushOperation<T, TYield>[] = [];
+  private pullQueue: PullOperation<T, TYield>[] = [];
 
   // The absence or presence of these values indicate various things about the
   // state of the ChannelController.
@@ -63,11 +55,16 @@ class ChannelController<T> implements AsyncIterator<T> {
   // if error != null, the next call to next or return will error
   private error?: any;
 
-  constructor(executor: ChannelExecutor<T>, private buffer: ChannelBuffer<T>) {
+  constructor(
+    executor: ChannelExecutor<T, TYield, TReturn>,
+    private buffer: ChannelBuffer<T>,
+  ) {
     const start = new Promise<void>((onstart) => (this.onstart = onstart));
     const push = this.push.bind(this);
     const close = this.close.bind(this);
-    const stop = new Promise<TReturn>((onstop) => (this.onstop = onstop));
+    const stop = new Promise<TReturn | void>(
+      (onstop) => (this.onstop = onstop),
+    );
     this.execution = start.then(async () => {
       let value: T | void;
       try {
@@ -85,7 +82,7 @@ class ChannelController<T> implements AsyncIterator<T> {
     this.execution.catch(() => {});
   }
 
-  private push(value: T): Promise<TYield> {
+  private push(value: T): Promise<TYield | void> {
     if (this.onstop == null) {
       return Promise.resolve();
     } else if (this.pullQueue.length) {
@@ -110,8 +107,7 @@ class ChannelController<T> implements AsyncIterator<T> {
     }
     this.onstop();
     delete this.onstop;
-    // If this.onstart is not null, channel.next has never been called so we
-    // discard the execution.
+    // this branch executes if return is called before any values are pulled
     if (this.onstart != null && error == null) {
       delete this.execution;
     }
@@ -122,13 +118,13 @@ class ChannelController<T> implements AsyncIterator<T> {
     }
     this.pushQueue = [];
     Object.freeze(this.pushQueue);
+    // Calling this.finish freezes the whole instance so we resolve pulls last.
+    // If the pullQueue is not empty, the buffer and pushQueue are necessarily
+    // empty, so we don‘t have to worry about this.finish dropping values from
+    // the buffer.
     const pullQueue = this.pullQueue;
     this.pullQueue = [];
     Object.freeze(this.pullQueue);
-    // Calling this.finish freezes the whole instance so we resolve pulls last.
-    // If the pullQueue is not empty, the buffer and pushQueue are necessarily
-    // empty, so we don‘t have to worry about this.finish dropping values in
-    // the buffer.
     for (const pull of pullQueue) {
       pull.resolve(this.finish());
     }
@@ -192,7 +188,7 @@ class ChannelController<T> implements AsyncIterator<T> {
 
   async return(value?: TReturn): Promise<IteratorResult<T>> {
     if (this.onstop == null) {
-      return { value, done: true } as IteratorResult<T>;
+      return { value: (value as unknown) as T, done: true };
     } else if (this.onstop != null) {
       this.onstop(value);
     }
@@ -209,12 +205,16 @@ class ChannelController<T> implements AsyncIterator<T> {
   }
 }
 
-type ChannelControllerMap<T = any> = WeakMap<Channel<T>, ChannelController<T>>;
+type ChannelControllerMap<T = any, TYield = any, TReturn = any> = WeakMap<
+  Channel<T, TYield, TReturn>,
+  ChannelController<T, TYield, TReturn>
+>;
 const controllers: ChannelControllerMap = new WeakMap();
 
-export class Channel<T> implements AsyncIterableIterator<T> {
+export class Channel<T = any, TYield = T, TReturn = TYield>
+  implements AsyncIterableIterator<T> {
   constructor(
-    executor: ChannelExecutor<T>,
+    executor: ChannelExecutor<T, TYield, TReturn>,
     buffer: ChannelBuffer<T> = new FixedBuffer(0),
   ) {
     controllers.set(this, new ChannelController(executor, buffer));
