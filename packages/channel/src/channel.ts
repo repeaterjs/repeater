@@ -212,7 +212,7 @@ type ChannelControllerMap<T = any, TYield = any, TReturn = any> = WeakMap<
 >;
 const controllers: ChannelControllerMap = new WeakMap();
 
-export class Channel<T = any, TYield = T, TReturn = TYield>
+export class Channel<T, TYield = T, TReturn = TYield>
   implements AsyncIterableIterator<T> {
   constructor(
     executor: ChannelExecutor<T, TYield, TReturn>,

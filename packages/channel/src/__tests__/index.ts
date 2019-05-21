@@ -297,8 +297,8 @@ describe("Channel", () => {
   });
 
   test("pushes resolve to value passed to next", async () => {
-    let push: (value: number) => Promise<number>;
-    const chan = new Channel(async (push1) => {
+    let push: (value: number) => Promise<number | void>;
+    const chan = new Channel<number>(async (push1) => {
       push = push1;
       await expect(push(1)).resolves.toEqual(-1);
       await new Promise(() => {});
