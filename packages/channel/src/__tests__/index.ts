@@ -86,7 +86,19 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("sync return value", async () => {
+  test("sync return", async () => {
+    const chan = new Channel<number>(() => -1);
+    await expect(chan.next()).resolves.toEqual({ value: -1, done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+  });
+
+  test("async return", async () => {
+    const chan = new Channel<number>(() => Promise.resolve(-1));
+    await expect(chan.next()).resolves.toEqual({ value: -1, done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+  });
+
+  test("sync pushes and return", async () => {
     const chan = new Channel<number>((push) => {
       push(1);
       push(2);
@@ -98,7 +110,7 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("async return value", async () => {
+  test("async pushes and return", async () => {
     const chan = new Channel<number>(async (push) => {
       await push(1);
       await push(2);
