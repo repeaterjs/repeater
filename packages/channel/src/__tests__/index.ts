@@ -54,7 +54,7 @@ describe("ChannelBuffer", () => {
   });
 });
 
-// TODO: create a jest helper to help us test asynciterators 
+// TODO: create a jest helper to help us test asynciterators
 describe("Channel", () => {
   test("sync pushes", async () => {
     const chan = new Channel<number>((push) => {
@@ -402,8 +402,8 @@ describe("Channel", () => {
 
   test("executor doesn not run if channel is not started", async () => {
     const mock = jest.fn();
-    const chan = new Channel(() => mock());
-    expect(mock).toBeCalledTimes(0);
+    new Channel(() => mock());
+    expect(mock).toHaveBeenCalledTimes(0);
   });
 
   test("early break", async () => {
@@ -471,7 +471,7 @@ describe("Channel", () => {
     const chan = new Channel(() => mock());
     await expect(chan.return()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
-    expect(mock).toBeCalledTimes(0);
+    expect(mock).toHaveBeenCalledTimes(0);
   });
 
   test("return method blows away the buffer", async () => {
@@ -530,7 +530,7 @@ describe("Channel", () => {
     const error = new Error("throw method before channel is started");
     await expect(chan.throw(error)).rejects.toBe(error);
     await expect(chan.next()).resolves.toEqual({ done: true });
-    expect(mock).toBeCalledTimes(0);
+    expect(mock).toHaveBeenCalledTimes(0);
   });
 
   test("throw method blows away the buffer", async () => {
