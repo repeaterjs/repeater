@@ -112,7 +112,7 @@ class ChannelController<T> implements AsyncIterator<T> {
     delete this.onstop;
     // If this.onstart is not null, channel.next has never been called so we
     // discard the execution.
-    if (this.onstart != null) {
+    if (this.onstart != null && error == null) {
       delete this.execution;
     }
     delete this.onstart;
