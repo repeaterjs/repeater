@@ -37,23 +37,24 @@ export type ChannelExecutor<T, TYield, TReturn> = (
 
 /**
  * The functionality for channels is implemented in this helper class and
- * hidden using a private WeakMap to make the actual Channel class opaque and
- * maximally compatible with the AsyncIterableIterator interface.
+ * hidden using a private WeakMap to make channels opaque and maximally
+ * compatible with the AsyncIterableIterator interface.
  */
 class ChannelController<T, TYield, TReturn> implements AsyncIterator<T> {
-  // pushQueue and pullQueue will never both contain values at the same time
+  // pushQueue and pullQueue will never both contain operations at the same time
   private pushQueue: PushOperation<T, TYield>[] = [];
   private pullQueue: PullOperation<T, TYield>[] = [];
 
-  // The absence or presence of these values indicate various things about the
-  // state of the ChannelController.
+  // Because we delete these properties after they are used, the presence of
+  // these properties indicates the current state of ChannelController.
+
   // if onstart == null, the channel has started
   private onstart?: () => void;
   // if onstop == null, the channel has stopped/closed
   private onstop?: (value?: TReturn) => void;
   // if execution == null, the channel is finished and frozen
   private execution?: Promise<IteratorResult<T>>;
-  // if error != null, the next call to next or return will error
+  // if error != null, the next iteration will result in a promise rejection
   private error?: any;
 
   constructor(
@@ -108,8 +109,8 @@ class ChannelController<T, TYield, TReturn> implements AsyncIterator<T> {
     }
     this.onstop();
     delete this.onstop;
-    // this branch executes if return is called before any values are pulled
     if (this.onstart != null && error == null) {
+      // This branch executes if and only if return is called before the channel is started.
       delete this.execution;
     }
     delete this.onstart;
@@ -119,10 +120,9 @@ class ChannelController<T, TYield, TReturn> implements AsyncIterator<T> {
     }
     this.pushQueue = [];
     Object.freeze(this.pushQueue);
-    // Calling this.finish freezes the whole instance so we resolve pulls last.
+    // Calling this.finish freezes this so we resolve pulls last.
     // If the pullQueue is not empty, the buffer and pushQueue are necessarily
-    // empty, so we don‘t have to worry about this.finish dropping values from
-    // the buffer.
+    // empty, so we don‘t have to worry about this.finish clearing the buffer.
     const pullQueue = this.pullQueue;
     this.pullQueue = [];
     Object.freeze(this.pullQueue);
@@ -136,7 +136,7 @@ class ChannelController<T, TYield, TReturn> implements AsyncIterator<T> {
    * the returning/throwing behavior of generators.
    *
    * The difference between closing a channel vs finishing a channel is that
-   * close will allow calls to next to drain values from the buffer, while
+   * close will allow calls to continue to drain values from the buffer, while
    * finish will immediately clear the buffer and freeze the channel.
    */
   private finish(): Promise<IteratorResult<T>> {
@@ -249,6 +249,7 @@ export class Channel<T, TYield = T, TReturn = TYield>
     return this;
   }
 
+  // TODO: add typings
   static race(contenders: Iterable<Contender<any>>) {
     return race(contenders);
   }
