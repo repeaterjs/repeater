@@ -7,18 +7,17 @@ export interface ChannelBuffer<T> {
 
 export class FixedBuffer<T> implements ChannelBuffer<T> {
   private arr: T[] = [];
-  constructor(private capacity: number) {
-    if (capacity < 0) {
-      throw new RangeError("FixedBuffer capacity cannot be less than zero");
-    }
+  get empty(): boolean {
+    return this.arr.length === 0;
   }
-
   get full(): boolean {
     return this.arr.length >= this.capacity;
   }
 
-  get empty(): boolean {
-    return this.arr.length === 0;
+  constructor(private capacity: number) {
+    if (capacity < 0) {
+      throw new RangeError("FixedBuffer capacity cannot be less than zero");
+    }
   }
 
   add(value: T): void {
@@ -39,18 +38,17 @@ export class FixedBuffer<T> implements ChannelBuffer<T> {
 
 // TODO: use a circular buffer here
 export class SlidingBuffer<T> implements ChannelBuffer<T> {
-  readonly full = false;
   private arr: T[] = [];
+  get empty(): boolean {
+    return this.arr.length === 0;
+  }
+  readonly full = false;
   constructor(private capacity: number) {
     if (capacity <= 0) {
       throw new RangeError(
         "SlidingBuffer capacity cannot be less than or equal to zero",
       );
     }
-  }
-
-  get empty(): boolean {
-    return this.arr.length === 0;
   }
 
   add(value: T): void {
@@ -69,19 +67,17 @@ export class SlidingBuffer<T> implements ChannelBuffer<T> {
 }
 
 export class DroppingBuffer<T> implements ChannelBuffer<T> {
-  readonly full = false;
   private arr: T[] = [];
-
+  get empty(): boolean {
+    return this.arr.length === 0;
+  }
+  readonly full = false;
   constructor(private capacity: number) {
     if (capacity <= 0) {
       throw new RangeError(
         "DroppingBuffer capacity cannot be less than or equal to zero",
       );
     }
-  }
-
-  get empty(): boolean {
-    return this.arr.length === 0;
   }
 
   add(value: T): void {
