@@ -369,6 +369,12 @@ describe("Channel", () => {
     expect(() => push(-2)).toThrow(ChannelOverflowError);
   });
 
+  test("executor doesn not run if channel is not started", async () => {
+    const mock = jest.fn();
+    const chan = new Channel(() => mock());
+    expect(mock).toBeCalledTimes(0);
+  });
+
   test("dropping buffer", async () => {
     const chan = new Channel<number>((push, close) => {
       for (let i = 0; i < 100; i++) {
@@ -457,6 +463,14 @@ describe("Channel", () => {
     }
     expect(result).toEqual([1, 2, 3]);
     await expect(chan.next()).resolves.toEqual({ done: true });
+  });
+
+  test("return method called before channel is started", async () => {
+    const mock = jest.fn();
+    const chan = new Channel(() => mock());
+    await expect(chan.return()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    expect(mock).toBeCalledTimes(0);
   });
 
   test("return method blows away the buffer", async () => {
