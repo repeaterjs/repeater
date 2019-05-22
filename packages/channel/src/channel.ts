@@ -258,28 +258,26 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     return new Channel<T>(async (push, close, stop) => {
       let stopped = false;
       let returned: any;
-      stop.then((value) => {
+      const finish: Promise<IteratorResult<T>> = stop.then((value) => {
         stopped = true;
         returned = value;
+        return { value, done: true };
       });
-      const finish: Promise<IteratorResult<T>> = stop.then((value) => ({
-        value: value as T,
-        done: true,
-      }));
       try {
-        let next: any;
+        let nexted: any;
         while (!stopped) {
-          const nexts = iters.map((iter) => iter.next(next));
-          nexts.push(finish);
-          const result = await Promise.race(nexts);
+          const result = await Promise.race(
+            iters.map((iter) => iter.next(nexted)).concat([finish]),
+          );
           if (result.done) {
             return result.value;
           }
-          next = await push(result.value);
+          nexted = await push(result.value);
         }
       } catch (err) {
         close(err);
       } finally {
+        close();
         await Promise.race(
           iters.map(async (iter) => iter.return && iter.return(returned)),
         );
@@ -293,24 +291,23 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     return new Channel<T>(async (push, close, stop) => {
       let stopped = false;
       let returned: any;
-      stop.then((value) => {
+      let value: T | undefined;
+      const finish: Promise<IteratorResult<T>> = stop.then((value) => {
         stopped = true;
         returned = value;
+        return { value, done: true };
       });
-      const finish: Promise<IteratorResult<T>> = stop.then((value) => ({
-        value: value as T,
-        done: true,
-      }));
-      return Promise.race(
+      await Promise.all(
         iters.map(async (iter) => {
           try {
-            let next: any;
+            let nexted: any;
             while (!stopped) {
-              const result = await Promise.race([finish, iter.next(next)]);
+              const result = await Promise.race([finish, iter.next(nexted)]);
               if (result.done) {
-                return result.value;
+                value = result.value;
+                return;
               }
-              next = await push(result.value);
+              nexted = await push(result.value);
             }
           } catch (err) {
             close(err);
@@ -321,6 +318,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
           }
         }),
       );
+      return value;
     });
   }
 }
