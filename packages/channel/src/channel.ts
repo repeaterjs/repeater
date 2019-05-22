@@ -18,32 +18,39 @@ export class ChannelOverflowError extends Error {
   }
 }
 
-interface PushOperation<T, TYield> {
-  resolve(next?: TYield): void;
+// Next is the argument passed to AsyncIterator.next
+// Return is the argument passed to AsyncIterator.return
+// The AsyncIterator interface doesn’t parameterize these arguments so these
+// type aliases are used to keep track of where the arguments are used.
+type Next = any;
+type Return = any;
+
+interface PushOperation<T> {
+  resolve(next?: Next): void;
   value: T;
 }
 
-interface PullOperation<T, TYield> {
+interface PullOperation<T> {
   resolve(result: Promise<IteratorResult<T>> | IteratorResult<T>): void;
   reject(err?: any): void;
-  value?: TYield;
+  value?: Next;
 }
 
-export type ChannelExecutor<T, TYield, TReturn> = (
-  push: (value: T) => Promise<TYield | void>,
+export type ChannelExecutor<T> = (
+  push: (value: T) => Promise<Next | void>,
   close: (error?: any) => void,
-  stop: Promise<TReturn | void>,
-) => Promise<T | void> | T | void;
+  stop: Promise<Return | void>,
+) => Promise<Return | void> | Return | void;
 
 /**
  * The functionality for channels is implemented in this helper class and
  * hidden using a private WeakMap to make channels opaque and maximally
  * compatible with the AsyncIterableIterator interface.
  */
-class ChannelController<T, TYield, TReturn> implements AsyncIterator<T> {
+class ChannelController<T> implements AsyncIterator<T> {
   // pushQueue and pullQueue will never both contain operations at the same time
-  private pushQueue: PushOperation<T, TYield>[] = [];
-  private pullQueue: PullOperation<T, TYield>[] = [];
+  private pushQueue: PushOperation<T>[] = [];
+  private pullQueue: PullOperation<T>[] = [];
 
   // Because we delete these properties after they are used, the presence of
   // these properties indicates the current state of ChannelController.
@@ -51,24 +58,20 @@ class ChannelController<T, TYield, TReturn> implements AsyncIterator<T> {
   // if onstart == null, the channel has started
   private onstart?: () => void;
   // if onstop == null, the channel has stopped/closed
-  private onstop?: (value?: TReturn) => void;
+  private onstop?: (value?: Return) => void;
   // if execution == null, the channel is finished and frozen
   private execution?: Promise<IteratorResult<T>>;
   // if error != null, the next iteration will result in a promise rejection
+  // and the execution result will be thrown away
   private error?: any;
 
-  constructor(
-    executor: ChannelExecutor<T, TYield, TReturn>,
-    private buffer: ChannelBuffer<T>,
-  ) {
+  constructor(executor: ChannelExecutor<T>, private buffer: ChannelBuffer<T>) {
     const start = new Promise<void>((onstart) => (this.onstart = onstart));
     const push = this.push.bind(this);
     const close = this.close.bind(this);
-    const stop = new Promise<TReturn | void>(
-      (onstop) => (this.onstop = onstop),
-    );
+    const stop = new Promise<Return | void>((onstop) => (this.onstop = onstop));
     this.execution = start.then(async () => {
-      let value: T | void;
+      let value: Return | void;
       try {
         value = await executor(push, close, stop);
       } catch (err) {
@@ -84,7 +87,7 @@ class ChannelController<T, TYield, TReturn> implements AsyncIterator<T> {
     this.execution.catch(() => {});
   }
 
-  private push(value: T): Promise<TYield | void> {
+  private push(value: T): Promise<Next | void> {
     if (this.onstop == null) {
       return Promise.resolve();
     } else if (this.pullQueue.length) {
@@ -156,7 +159,7 @@ class ChannelController<T, TYield, TReturn> implements AsyncIterator<T> {
     return execution;
   }
 
-  async next(value?: TYield): Promise<IteratorResult<T>> {
+  async next(value?: Next): Promise<IteratorResult<T>> {
     if (this.onstart != null && this.onstop != null) {
       this.onstart();
       delete this.onstart;
@@ -187,7 +190,7 @@ class ChannelController<T, TYield, TReturn> implements AsyncIterator<T> {
     });
   }
 
-  async return(value?: TReturn): Promise<IteratorResult<T>> {
+  async return(value?: Return): Promise<IteratorResult<T>> {
     if (this.onstop == null) {
       return { value: (value as unknown) as T, done: true };
     } else if (this.onstop != null) {
@@ -206,23 +209,19 @@ class ChannelController<T, TYield, TReturn> implements AsyncIterator<T> {
   }
 }
 
-type ChannelControllerMap<T = any, TYield = any, TReturn = any> = WeakMap<
-  Channel<T, TYield, TReturn>,
-  ChannelController<T, TYield, TReturn>
->;
+type ChannelControllerMap<T = any> = WeakMap<Channel<T>, ChannelController<T>>;
 
 const controllers: ChannelControllerMap = new WeakMap();
 
-export class Channel<T, TYield = T, TReturn = TYield>
-  implements AsyncIterableIterator<T> {
+export class Channel<T> implements AsyncIterableIterator<T> {
   constructor(
-    executor: ChannelExecutor<T, TYield, TReturn>,
+    executor: ChannelExecutor<T>,
     buffer: ChannelBuffer<T> = new FixedBuffer(0),
   ) {
     controllers.set(this, new ChannelController(executor, buffer));
   }
 
-  next(value?: TYield): Promise<IteratorResult<T>> {
+  next(value?: Next): Promise<IteratorResult<T>> {
     const controller = controllers.get(this);
     if (controller == null) {
       throw new Error("ChannelController missing from controllers WeakMap");
@@ -230,7 +229,7 @@ export class Channel<T, TYield = T, TReturn = TYield>
     return controller.next(value);
   }
 
-  return(value?: TReturn): Promise<IteratorResult<T>> {
+  return(value?: Return): Promise<IteratorResult<T>> {
     const controller = controllers.get(this);
     if (controller == null) {
       throw new Error("ChannelController missing from controllers WeakMap");
@@ -250,17 +249,18 @@ export class Channel<T, TYield = T, TReturn = TYield>
     return this;
   }
 
+  // TODO: fix these types
   static race<T>(contenders: Iterable<Contender<T>>): Channel<T> {
     const iters = iterators(contenders);
     return new Channel<T>(async (push, close, stop) => {
       let stopped = false;
-      let value: any;
-      stop.then((value1) => {
+      let returned: any;
+      stop.then((value) => {
         stopped = true;
-        value = value1;
+        returned = value;
       });
-      const finish: Promise<IteratorResult<any>> = stop.then((value) => ({
-        value,
+      const finish: Promise<IteratorResult<T>> = stop.then((value) => ({
+        value: value as T,
         done: true,
       }));
       try {
@@ -278,20 +278,21 @@ export class Channel<T, TYield = T, TReturn = TYield>
         close(err);
       } finally {
         await Promise.race(
-          iters.map(async (iter) => iter.return && iter.return(value)),
+          iters.map(async (iter) => iter.return && iter.return(returned)),
         );
       }
     });
   }
 
+  // TODO: fix these types
   static merge<T>(contenders: Iterable<Contender<T>>): Channel<T> {
     const iters = iterators(contenders);
     return new Channel<T>(async (push, close, stop) => {
       let stopped = false;
-      let value: any;
-      stop.then((value1) => {
+      let returned: any;
+      stop.then((value) => {
         stopped = true;
-        value = value1;
+        returned = value;
       });
       const finish: Promise<IteratorResult<T>> = stop.then((value) => ({
         value: value as T,
@@ -312,7 +313,7 @@ export class Channel<T, TYield = T, TReturn = TYield>
             close(err);
           } finally {
             if (iter.return != null) {
-              await iter.return(value);
+              await iter.return(returned);
             }
           }
         }),
