@@ -4,7 +4,7 @@
     "clean": "lerna clean --yes && lerna run clean",
     "build": "lerna run build --parallel",
     "test": "lerna run test --stream",
-    "lint": "eslint packages --ext .ts --ignore-path .gitignore",
+    "lint": "lerna run lint --parallel",
     "prepublishOnly": "yarn run lint"
   },
   "devDependencies": {

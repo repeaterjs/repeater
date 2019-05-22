@@ -15,7 +15,9 @@
     "build": "rollup -c ../../rollup.config.js",
     "clean": "shx rm -rf ./lib",
     "test": "jest --config ../../jest.config.js --rootDir --color",
+    "lint": "eslint --ext ts src",
     "prepublishOnly": "yarn run test && yarn run build"
+
   },
   "publishConfig": {
     "access": "public"
