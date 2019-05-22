@@ -2,7 +2,7 @@ export interface ChannelBuffer<T> {
   full: boolean;
   empty: boolean;
   add(value: T): void;
-  remove(): T | undefined;
+  remove(): T;
 }
 
 export class FixedBuffer<T> implements ChannelBuffer<T> {
@@ -28,11 +28,11 @@ export class FixedBuffer<T> implements ChannelBuffer<T> {
     }
   }
 
-  remove(): T | undefined {
+  remove(): T {
     if (this.empty) {
       throw new Error("Buffer empty");
     }
-    return this.arr.shift();
+    return this.arr.shift()!;
   }
 }
 
@@ -58,11 +58,11 @@ export class SlidingBuffer<T> implements ChannelBuffer<T> {
     this.arr.push(value);
   }
 
-  remove(): T | undefined {
+  remove(): T {
     if (this.empty) {
       throw new Error("Buffer empty");
     }
-    return this.arr.shift();
+    return this.arr.shift()!;
   }
 }
 
@@ -86,10 +86,10 @@ export class DroppingBuffer<T> implements ChannelBuffer<T> {
     }
   }
 
-  remove(): T | undefined {
+  remove(): T {
     if (this.empty) {
       throw new Error("Buffer empty");
     }
-    return this.arr.shift();
+    return this.arr.shift()!;
   }
 }

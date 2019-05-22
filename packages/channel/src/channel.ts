@@ -20,8 +20,10 @@ export class ChannelOverflowError extends Error {
 
 // Next is the argument passed to AsyncIterator.next
 // Return is the argument passed to AsyncIterator.return
-// The AsyncIterator interface doesn’t parameterize these arguments so these
-// type aliases are used to keep track of where the arguments are used.
+//
+// The current AsyncIterator interface definition allows "any" to be passed to
+// next/return, so we use these type aliases here to keep track of where the
+// arguments are used, in case we want to parameterize them in the future.
 type Next = any;
 type Return = any;
 
@@ -40,7 +42,7 @@ export type ChannelExecutor<T> = (
   push: (value: T) => Promise<Next | void>,
   close: (error?: any) => void,
   stop: Promise<Return | void>,
-) => Promise<Return | void> | Return | void;
+) => Promise<T | void> | T | void;
 
 /**
  * The functionality for channels is implemented in this helper class and
@@ -113,7 +115,8 @@ class ChannelController<T> implements AsyncIterator<T> {
     this.onstop();
     delete this.onstop;
     if (this.onstart != null && error == null) {
-      // This branch executes if and only if return is called before the channel is started.
+      // This branch executes if and only if return is called before the
+      // channel is started.
       delete this.execution;
     }
     delete this.onstart;
@@ -123,7 +126,7 @@ class ChannelController<T> implements AsyncIterator<T> {
     }
     this.pushQueue = [];
     Object.freeze(this.pushQueue);
-    // Calling this.finish freezes this so we resolve pulls last.
+    // Calling this.finish freezes the controller so we resolve pulls last.
     // If the pullQueue is not empty, the buffer and pushQueue are necessarily
     // empty, so we don‘t have to worry about this.finish clearing the buffer.
     const pullQueue = this.pullQueue;
@@ -139,8 +142,8 @@ class ChannelController<T> implements AsyncIterator<T> {
    * the returning/throwing behavior of generators.
    *
    * The difference between closing a channel vs finishing a channel is that
-   * close will allow calls to continue to drain values from the buffer, while
-   * finish will immediately clear the buffer and freeze the channel.
+   * close will allow next to continue to drain values from the buffer, while
+   * finish will clear the buffer and freeze the channel immediately.
    */
   private finish(): Promise<IteratorResult<T>> {
     if (this.execution == null) {
@@ -166,7 +169,7 @@ class ChannelController<T> implements AsyncIterator<T> {
     }
 
     if (!this.buffer.empty) {
-      const result = { value: this.buffer.remove()!, done: false };
+      const result = { value: this.buffer.remove(), done: false };
       if (this.pushQueue.length) {
         const push = this.pushQueue.shift()!;
         this.buffer.add(push.value);
@@ -192,7 +195,7 @@ class ChannelController<T> implements AsyncIterator<T> {
 
   async return(value?: Return): Promise<IteratorResult<T>> {
     if (this.onstop == null) {
-      return { value: (value as unknown) as T, done: true };
+      return { value, done: true };
     } else if (this.onstop != null) {
       this.onstop(value);
     }
