@@ -1,5 +1,5 @@
 import { ChannelBuffer, FixedBuffer } from "./buffers";
-import { Contender, race } from "./combinators";
+import { Contender, iterators } from "./utils";
 
 export const MAX_QUEUE_LENGTH = 1024;
 
@@ -210,6 +210,7 @@ type ChannelControllerMap<T = any, TYield = any, TReturn = any> = WeakMap<
   Channel<T, TYield, TReturn>,
   ChannelController<T, TYield, TReturn>
 >;
+
 const controllers: ChannelControllerMap = new WeakMap();
 
 export class Channel<T, TYield = T, TReturn = TYield>
@@ -249,8 +250,73 @@ export class Channel<T, TYield = T, TReturn = TYield>
     return this;
   }
 
-  // TODO: add typings
-  static race(contenders: Iterable<Contender<any>>) {
-    return race(contenders);
+  static race<T>(contenders: Iterable<Contender<T>>): Channel<T> {
+    const iters = iterators(contenders);
+    return new Channel<T>(async (push, close, stop) => {
+      let stopped = false;
+      let value: any;
+      stop.then((value1) => {
+        stopped = true;
+        value = value1;
+      });
+      const finish: Promise<IteratorResult<any>> = stop.then((value) => ({
+        value,
+        done: true,
+      }));
+      try {
+        let next: any;
+        while (!stopped) {
+          const nexts = iters.map((iter) => iter.next(next));
+          nexts.push(finish);
+          const result = await Promise.race(nexts);
+          if (result.done) {
+            return result.value;
+          }
+          next = await push(result.value);
+        }
+      } catch (err) {
+        close(err);
+      } finally {
+        await Promise.race(
+          iters.map(async (iter) => iter.return && iter.return(value)),
+        );
+      }
+    });
+  }
+
+  static merge<T>(contenders: Iterable<Contender<T>>): Channel<T> {
+    const iters = iterators(contenders);
+    return new Channel<T>(async (push, close, stop) => {
+      let stopped = false;
+      let value: any;
+      stop.then((value1) => {
+        stopped = true;
+        value = value1;
+      });
+      const finish: Promise<IteratorResult<T>> = stop.then((value) => ({
+        value: value as T,
+        done: true,
+      }));
+      return Promise.race(
+        iters.map(async (iter) => {
+          try {
+            let next: any;
+            while (!stopped) {
+              const result = await Promise.race([finish, iter.next(next)]);
+              if (result.done) {
+                return result.value;
+              }
+              next = await push(result.value);
+            }
+          } catch (err) {
+            close(err);
+          } finally {
+            if (iter.return != null) {
+              await iter.return(value);
+            }
+          }
+        }),
+      );
+    });
   }
 }
