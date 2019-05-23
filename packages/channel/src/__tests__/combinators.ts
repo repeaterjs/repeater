@@ -204,9 +204,9 @@ describe("combinators", () => {
 
     test("hanging promise vs delayed promise vs slow channel vs fast channel", async () => {
       const hanging = new Promise<number>(() => {});
-      const delayed = delayPromise(125, -1);
-      const slow = delayChannel(80, [0, 1, 2, 3, 4]);
-      const fast = delayChannel(50, [100, 101, 102, 103, 104, 105]);
+      const delayed = delayPromise(250, -1);
+      const slow = delayChannel(160, [0, 1, 2, 3, 4]);
+      const fast = delayChannel(100, [100, 101, 102, 103, 104, 105]);
 
       const iter = Channel.race([hanging, delayed, slow, fast]);
       let result: IteratorResult<number>;
@@ -416,9 +416,9 @@ describe("combinators", () => {
 
     test("promise vs slow channel vs fast channel", async () => {
       const iter = Channel.merge([
-        delayPromise(250, -1),
-        delayChannel(80, [0, 1, 2, 3, 4], -2),
-        delayChannel(50, [100, 101, 102, 103, 104, 105], -3),
+        delayPromise(500, -1),
+        delayChannel(160, [0, 1, 2, 3, 4], -2),
+        delayChannel(100, [100, 101, 102, 103, 104, 105], -3),
       ]);
 
       let result: IteratorResult<number>;
@@ -565,8 +565,8 @@ describe("combinators", () => {
     });
 
     test("slow channel vs fast channel", async () => {
-      const slow = delayChannel(80, [0, 1, 2, 3, 4], -1);
-      const fast = delayChannel(50, [100, 101, 102, 103, 104, 105], -2);
+      const slow = delayChannel(160, [0, 1, 2, 3, 4], -1);
+      const fast = delayChannel(100, [100, 101, 102, 103, 104, 105], -2);
 
       const iter = Channel.all([slow, fast]);
       let result: IteratorResult<number[]>;
@@ -751,8 +751,8 @@ describe("combinators", () => {
     });
 
     test("slow channel vs fast channel", async () => {
-      const slow = delayChannel(80, [0, 1, 2, 3, 4], -1);
-      const fast = delayChannel(50, [100, 101, 102, 103, 104, 105], -2);
+      const slow = delayChannel(160, [0, 1, 2, 3, 4], -1);
+      const fast = delayChannel(100, [100, 101, 102, 103, 104, 105], -2);
 
       const iter = Channel.latest([slow, fast]);
       let result: IteratorResult<number[]>;

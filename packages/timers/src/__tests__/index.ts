@@ -24,8 +24,7 @@ describe("timers", () => {
   test("delay rejects", async () => {
     const timer = delay(10, { reject: true });
     await expect(timer.next()).rejects.toBeInstanceOf(TimeoutError);
-    await expect(timer.next()).rejects.toBeInstanceOf(TimeoutError);
-    await expect(timer.next()).rejects.toBeInstanceOf(TimeoutError);
+    await expect(timer.next()).resolves.toEqual({ done: true });
   });
 
   test("delay does not call setTimeout unnecessarily", async () => {
