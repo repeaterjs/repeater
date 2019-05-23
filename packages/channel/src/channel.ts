@@ -224,7 +224,7 @@ function constantly<T>(value: T | Promise<T>): AsyncIterator<T> {
   };
 }
 
-export type Contender<T> = T | Promise<T> | Iterable<T> | AsyncIterable<T>;
+export type Contender<T> = AsyncIterable<T> | Iterable<T> | Promise<T> | T;
 
 function iterators<T>(
   contenders: Iterable<Contender<T>>,
@@ -282,10 +282,40 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     return this;
   }
 
-  // TODO: fix static method types
+  // TODO: remove eslint-disable comments once no-dupe-class-members is fixed
+  // https://github.com/typescript-eslint/typescript-eslint/issues/291
+  // TODO: use prettier-ignore-start once it’s implemented
+  // https://github.com/prettier/prettier/issues/5287
+  // TODO: stop using overloads once we have variadic kinds
+  // https://github.com/Microsoft/TypeScript/issues/5453
+
+  /* eslint-disable no-dupe-class-members */
+  // prettier-ignore
+  static race<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Channel<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10>;
+  // prettier-ignore
+  static race<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>]): Channel<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9>;
+  // prettier-ignore
+  static race<T1, T2, T3, T4, T5, T6, T7, T8>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>]): Channel<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8>;
+  // prettier-ignore
+  static race<T1, T2, T3, T4, T5, T6, T7>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>]): Channel<T1 | T2 | T3 | T4 | T5 | T6 | T7>;
+  // prettier-ignore
+  static race<T1, T2, T3, T4, T5, T6>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>]): Channel<T1 | T2 | T3 | T4 | T5 | T6>;
+  // prettier-ignore
+  static race<T1, T2, T3, T4, T5>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>]): Channel<T1 | T2 | T3 | T4 | T5>;
+  // prettier-ignore
+  static race<T1, T2, T3, T4>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>]): Channel<T1 | T2 | T3 | T4>;
+  // prettier-ignore
+  static race<T1, T2, T3>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>]): Channel<T1 | T2 | T3>;
+  // prettier-ignore
+  static race<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Channel<T1 | T2>;
+  static race<T>(contenders: Contender<T>[]): Channel<T>;
+  static race(contenders: []): Channel<void>;
   static race<T>(contenders: Iterable<Contender<T>>): Channel<T> {
     const iters = iterators(contenders);
     return new Channel<T>(async (push, close, stop) => {
+      if (!iters.length) {
+        return;
+      }
       let stopped = false;
       let returned: Return;
       const finish: Promise<IteratorResult<T>> = stop.then((value) => {
@@ -312,10 +342,35 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       }
     });
   }
+  /* eslint-enable no-dupe-class-members */
 
+  /* eslint-disable no-dupe-class-members */
+  // prettier-ignore
+  static merge<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Channel<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10>;
+  // prettier-ignore
+  static merge<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>]): Channel<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9>;
+  // prettier-ignore
+  static merge<T1, T2, T3, T4, T5, T6, T7, T8>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>]): Channel<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8>;
+  // prettier-ignore
+  static merge<T1, T2, T3, T4, T5, T6, T7>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>]): Channel<T1 | T2 | T3 | T4 | T5 | T6 | T7>;
+  // prettier-ignore
+  static merge<T1, T2, T3, T4, T5, T6>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>]): Channel<T1 | T2 | T3 | T4 | T5 | T6>;
+  // prettier-ignore
+  static merge<T1, T2, T3, T4, T5>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>]): Channel<T1 | T2 | T3 | T4 | T5>;
+  // prettier-ignore
+  static merge<T1, T2, T3, T4>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>]): Channel<T1 | T2 | T3 | T4>;
+  // prettier-ignore
+  static merge<T1, T2, T3>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>]): Channel<T1 | T2 | T3>;
+  // prettier-ignore
+  static merge<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Channel<T1 | T2>;
+  static merge<T>(contenders: Contender<T>[]): Channel<T>;
+  static merge(contenders: []): Channel<void>;
   static merge<T>(contenders: Iterable<Contender<T>>): Channel<T> {
     const iters = iterators(contenders);
     return new Channel<T>(async (push, close, stop) => {
+      if (!iters.length) {
+        return;
+      }
       let stopped = false;
       let returned: Return;
       const finish: Promise<IteratorResult<T>> = stop.then((value) => {
@@ -347,10 +402,35 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       return finished;
     });
   }
+  /* eslint-enable no-dupe-class-members */
 
-  static zip<T>(contenders: Iterable<Contender<T>>): Channel<T[]> {
+  /* eslint-disable no-dupe-class-members */
+  // prettier-ignore
+  static zip<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Channel<[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]>;
+  // prettier-ignore
+  static zip<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>]): Channel<[T1, T2, T3, T4, T5, T6, T7, T8, T9]>;
+  // prettier-ignore
+  static zip<T1, T2, T3, T4, T5, T6, T7, T8>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>]): Channel<[T1, T2, T3, T4, T5, T6, T7, T8]>;
+  // prettier-ignore
+  static zip<T1, T2, T3, T4, T5, T6, T7>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>]): Channel<[T1, T2, T3, T4, T5, T6, T7]>;
+  // prettier-ignore
+  static zip<T1, T2, T3, T4, T5, T6>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>]): Channel<[T1, T2, T3, T4, T5, T6]>;
+  // prettier-ignore
+  static zip<T1, T2, T3, T4, T5>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>]): Channel<[T1, T2, T3, T4, T5]>;
+  // prettier-ignore
+  static zip<T1, T2, T3, T4>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>]): Channel<[T1, T2, T3, T4]>;
+  // prettier-ignore
+  static zip<T1, T2, T3>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>]): Channel<[T1, T2, T3]>;
+  // prettier-ignore
+  static zip<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Channel<[T1, T2]>;
+  static zip<T>(contenders: Contender<T>[]): Channel<T[]>;
+  static zip(contenders: []): Channel<[]>;
+  static zip<T>(contenders: Contender<T>[]): Channel<T[]> {
     const iters = iterators(contenders);
     return new Channel<T[]>(async (push, close, stop) => {
+      if (!iters.length) {
+        return [];
+      }
       let stopped = false;
       let returned: Return;
       stop.then((value) => {
@@ -389,10 +469,35 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       }
     });
   }
+  /* eslint-enable no-dupe-class-members */
 
+  /* eslint-disable no-dupe-class-members */
+  // prettier-ignore
+  static latest<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Channel<[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]>;
+  // prettier-ignore
+  static latest<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>]): Channel<[T1, T2, T3, T4, T5, T6, T7, T8, T9]>;
+  // prettier-ignore
+  static latest<T1, T2, T3, T4, T5, T6, T7, T8>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>]): Channel<[T1, T2, T3, T4, T5, T6, T7, T8]>;
+  // prettier-ignore
+  static latest<T1, T2, T3, T4, T5, T6, T7>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>]): Channel<[T1, T2, T3, T4, T5, T6, T7]>;
+  // prettier-ignore
+  static latest<T1, T2, T3, T4, T5, T6>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>]): Channel<[T1, T2, T3, T4, T5, T6]>;
+  // prettier-ignore
+  static latest<T1, T2, T3, T4, T5>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>]): Channel<[T1, T2, T3, T4, T5]>;
+  // prettier-ignore
+  static latest<T1, T2, T3, T4>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>]): Channel<[T1, T2, T3, T4]>;
+  // prettier-ignore
+  static latest<T1, T2, T3>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>]): Channel<[T1, T2, T3]>;
+  // prettier-ignore
+  static latest<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Channel<[T1, T2]>;
+  static latest<T>(contenders: Contender<T>[]): Channel<T[]>;
+  static latest(contenders: []): Channel<[]>;
   static latest<T>(contenders: Iterable<Contender<T>>): Channel<T[]> {
     const iters = iterators(contenders);
     return new Channel<T[]>(async (push, close, stop) => {
+      if (!iters.length) {
+        return [];
+      }
       let stopped = false;
       let returned: Return;
       const finish = stop.then((value) => {
@@ -443,4 +548,5 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       );
     });
   }
+  /* eslint-enable no-dupe-class-members */
 }
