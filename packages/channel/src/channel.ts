@@ -348,7 +348,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     });
   }
 
-  static all<T>(contenders: Iterable<Contender<T>>): Channel<T[]> {
+  static zip<T>(contenders: Iterable<Contender<T>>): Channel<T[]> {
     const iters = iterators(contenders);
     return new Channel<T[]>(async (push, close, stop) => {
       let stopped = false;
@@ -381,9 +381,11 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       } catch (err) {
         close(err);
       } finally {
-        await Promise.all<any>(
-          iters.map((iter) => iter.return && iter.return(returned)),
-        );
+        if (!stopped) {
+          await Promise.all<any>(
+            iters.map((iter) => iter.return && iter.return(returned)),
+          );
+        }
       }
     });
   }

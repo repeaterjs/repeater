@@ -474,9 +474,9 @@ describe("combinators", () => {
     });
   });
 
-  describe("Channel.all", () => {
+  describe("Channel.zip", () => {
     test("Promise.resolve vs generator", async () => {
-      const iter = Channel.all([Promise.resolve(-1), gen([1, 2, 3, 4, 5], 6)]);
+      const iter = Channel.zip([Promise.resolve(-1), gen([1, 2, 3, 4, 5], 6)]);
       let result: IteratorResult<number[]>;
       const nums: number[][] = [];
       do {
@@ -492,7 +492,7 @@ describe("combinators", () => {
     });
 
     test("generator vs Promise.resolve", async () => {
-      const iter = Channel.all([gen([1, 2, 3, 4, 5], 6), Promise.resolve(-1)]);
+      const iter = Channel.zip([gen([1, 2, 3, 4, 5], 6), Promise.resolve(-1)]);
       let result: IteratorResult<number[]>;
       const nums: number[][] = [];
       do {
@@ -508,7 +508,7 @@ describe("combinators", () => {
     });
 
     test("Promise.resolve vs deferred generator", async () => {
-      const iter = Channel.all([
+      const iter = Channel.zip([
         Promise.resolve(-1),
         deferredGen([10, 20, 30, 40, 50], 60),
       ]);
@@ -527,7 +527,7 @@ describe("combinators", () => {
     });
 
     test("deferred generator vs Promise.resolve", async () => {
-      const iter = Channel.all([
+      const iter = Channel.zip([
         deferredGen([10, 20, 30, 40, 50], 60),
         Promise.resolve(-1),
       ]);
@@ -546,7 +546,7 @@ describe("combinators", () => {
     });
 
     test("promise vs channel", async () => {
-      const iter = Channel.all([
+      const iter = Channel.zip([
         delayPromise(250, -1),
         delayChannel(100, [1, 2, 3, 4, 5], 6),
       ]);
@@ -568,7 +568,7 @@ describe("combinators", () => {
       const slow = delayChannel(160, [0, 1, 2, 3, 4], -1);
       const fast = delayChannel(100, [100, 101, 102, 103, 104, 105], -2);
 
-      const iter = Channel.all([slow, fast]);
+      const iter = Channel.zip([slow, fast]);
       let result: IteratorResult<number[]>;
       const nums: number[][] = [];
       do {
@@ -598,7 +598,7 @@ describe("combinators", () => {
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.all([iter1, iter2, iter3]);
+      const iter = Channel.zip([iter1, iter2, iter3]);
       await expect(iter.next()).resolves.toEqual({
         value: [1, 100, -3000],
         done: true,
@@ -622,13 +622,12 @@ describe("combinators", () => {
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.all([hanging, iter1, iter2, iter3]);
+      const iter = Channel.zip([hanging, iter1, iter2, iter3]);
       iter.next();
       await expect(iter.return()).resolves.toEqual({ done: true });
-      // Channel.all calls return twice for some reason but it should’nt matter???
-      expect(spy1).toHaveBeenCalledTimes(2);
-      expect(spy2).toHaveBeenCalledTimes(2);
-      expect(spy3).toHaveBeenCalledTimes(2);
+      expect(spy1).toHaveBeenCalledTimes(1);
+      expect(spy2).toHaveBeenCalledTimes(1);
+      expect(spy3).toHaveBeenCalledTimes(1);
     });
 
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
