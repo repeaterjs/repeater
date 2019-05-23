@@ -1,5 +1,4 @@
 import { ChannelBuffer, FixedBuffer } from "./buffers";
-import { Contender, iterators } from "./utils";
 
 export const MAX_QUEUE_LENGTH = 1024;
 
@@ -18,44 +17,44 @@ export class ChannelOverflowError extends Error {
   }
 }
 
-// Next is the argument passed to AsyncIterator.next
+// The current definition of the AsyncIterator interface found in typescript
+// allows "any" to be passed to next/return, so we use these type aliases to
+// keep track of the arguments as they flow through channels.
+// Yield is the argument passed to AsyncIterator.next
 // Return is the argument passed to AsyncIterator.return
-//
-// The current AsyncIterator interface definition allows "any" to be passed to
-// next/return, so we use these type aliases here to keep track of where the
-// arguments are used, in case we want to parameterize them in the future.
-type Next = any;
+type Yield = any;
 type Return = any;
 
 interface PushOperation<T> {
-  resolve(next?: Next): void;
+  resolve(next?: Yield): void;
   value: T;
 }
 
 interface PullOperation<T> {
   resolve(result: Promise<IteratorResult<T>> | IteratorResult<T>): void;
   reject(err?: any): void;
-  value?: Next;
+  value?: Yield;
 }
 
 export type ChannelExecutor<T> = (
-  push: (value: T) => Promise<Next | void>,
+  push: (value: T) => Promise<Yield | void>,
   close: (error?: any) => void,
   stop: Promise<Return | void>,
 ) => Promise<T | void> | T | void;
 
 /**
  * The functionality for channels is implemented in this helper class and
- * hidden using a private WeakMap to make channels opaque and maximally
- * compatible with the AsyncIterableIterator interface.
+ * hidden using a private WeakMap to make channels themselves opaque and
+ * maximally compatible with the AsyncIterableIterator interface.
  */
 class ChannelController<T> implements AsyncIterator<T> {
   // pushQueue and pullQueue will never both contain operations at the same time
   private pushQueue: PushOperation<T>[] = [];
   private pullQueue: PullOperation<T>[] = [];
 
-  // Because we delete these properties after they are used, the presence of
-  // these properties indicates the current state of ChannelController.
+  // Because we delete the following properties after they are used, the
+  // presence or absence of these properties indicates the current state of the
+  // controller.
 
   // if onstart == null, the channel has started
   private onstart?: () => void;
@@ -64,7 +63,6 @@ class ChannelController<T> implements AsyncIterator<T> {
   // if execution == null, the channel is finished and frozen
   private execution?: Promise<IteratorResult<T>>;
   // if error != null, the next iteration will result in a promise rejection
-  // and the execution result will be thrown away
   private error?: any;
 
   constructor(executor: ChannelExecutor<T>, private buffer: ChannelBuffer<T>) {
@@ -73,9 +71,10 @@ class ChannelController<T> implements AsyncIterator<T> {
     const close = this.close.bind(this);
     const stop = new Promise<Return | void>((onstop) => (this.onstop = onstop));
     this.execution = start.then(async () => {
-      let value: Return | void;
       try {
-        value = await executor(push, close, stop);
+        const value = await executor(push, close, stop);
+        this.close();
+        return { value, done: true } as IteratorResult<T>;
       } catch (err) {
         if (this.onstop == null) {
           throw err;
@@ -83,13 +82,11 @@ class ChannelController<T> implements AsyncIterator<T> {
         this.close(err);
         return { done: true } as IteratorResult<T>;
       }
-      this.close();
-      return { value, done: true } as IteratorResult<T>;
     });
     this.execution.catch(() => {});
   }
 
-  private push(value: T): Promise<Next | void> {
+  private push(value: T): Promise<Yield | void> {
     if (this.onstop == null) {
       return Promise.resolve();
     } else if (this.pullQueue.length) {
@@ -126,12 +123,13 @@ class ChannelController<T> implements AsyncIterator<T> {
     }
     this.pushQueue = [];
     Object.freeze(this.pushQueue);
-    // Calling this.finish freezes the controller so we resolve pulls last.
-    // If the pullQueue is not empty, the buffer and pushQueue are necessarily
-    // empty, so we don‘t have to worry about this.finish clearing the buffer.
     const pullQueue = this.pullQueue;
     this.pullQueue = [];
     Object.freeze(this.pullQueue);
+    // Calling this.finish freezes the controller so we resolve pull operations
+    // last. If the pullQueue contains operations, the buffer and pushQueue are
+    // necessarily empty, so we don‘t have to worry about this.finish clearing
+    // the buffer.
     for (const pull of pullQueue) {
       pull.resolve(this.finish());
     }
@@ -156,13 +154,13 @@ class ChannelController<T> implements AsyncIterator<T> {
     // clear the buffer
     this.buffer = new FixedBuffer(0);
     Object.freeze(this);
-    if (error != null) {
-      return Promise.reject(error);
+    if (error == null) {
+      return execution;
     }
-    return execution;
+    return Promise.reject(error);
   }
 
-  async next(value?: Next): Promise<IteratorResult<T>> {
+  async next(value?: Yield): Promise<IteratorResult<T>> {
     if (this.onstart != null && this.onstop != null) {
       this.onstart();
       delete this.onstart;
@@ -177,6 +175,9 @@ class ChannelController<T> implements AsyncIterator<T> {
       }
       return result;
     } else if (this.pushQueue.length) {
+      // This branch only really executes if we’re using a FixedBuffer with
+      // zero capacity (the default buffer passed to the constructor), because
+      // then the buffer is both empty and full at the same time.
       const push = this.pushQueue.shift()!;
       const result = { value: push.value, done: false };
       push.resolve(value);
@@ -212,6 +213,35 @@ class ChannelController<T> implements AsyncIterator<T> {
   }
 }
 
+function constantly<T>(value: T | Promise<T>): AsyncIterator<T> {
+  return {
+    next(): Promise<IteratorResult<T>> {
+      return Promise.resolve(value).then((value) => ({ value, done: true }));
+    },
+    return(): Promise<IteratorResult<T>> {
+      return Promise.resolve(value).then((value) => ({ value, done: true }));
+    },
+  };
+}
+
+export type Contender<T> = T | Promise<T> | Iterable<T> | AsyncIterable<T>;
+
+function iterators<T>(
+  contenders: Iterable<Contender<T>>,
+): (Iterator<T> | AsyncIterator<T>)[] {
+  const iters: (Iterator<T> | AsyncIterator<T>)[] = [];
+  for (const contender of contenders) {
+    if (typeof (contender as any)[Symbol.asyncIterator] === "function") {
+      iters.push((contender as AsyncIterable<any>)[Symbol.asyncIterator]());
+    } else if (typeof (contender as any)[Symbol.iterator] === "function") {
+      iters.push((contender as Iterable<any>)[Symbol.iterator]());
+    } else {
+      iters.push(constantly(contender as T | Promise<T>));
+    }
+  }
+  return iters;
+}
+
 type ChannelControllerMap<T = any> = WeakMap<Channel<T>, ChannelController<T>>;
 
 const controllers: ChannelControllerMap = new WeakMap();
@@ -224,7 +254,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     controllers.set(this, new ChannelController(executor, buffer));
   }
 
-  next(value?: Next): Promise<IteratorResult<T>> {
+  next(value?: Yield): Promise<IteratorResult<T>> {
     const controller = controllers.get(this);
     if (controller == null) {
       throw new Error("ChannelController missing from controllers WeakMap");
@@ -252,62 +282,58 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     return this;
   }
 
-  // TODO: fix these types
+  // TODO: fix static method types
   static race<T>(contenders: Iterable<Contender<T>>): Channel<T> {
     const iters = iterators(contenders);
     return new Channel<T>(async (push, close, stop) => {
       let stopped = false;
-      let returned: any;
+      let returned: Return;
       const finish: Promise<IteratorResult<T>> = stop.then((value) => {
         stopped = true;
         returned = value;
         return { value, done: true };
       });
       try {
-        let nexted: any;
         while (!stopped) {
-          const result = await Promise.race(
-            iters.map((iter) => iter.next(nexted)).concat([finish]),
-          );
+          const results = iters.map((iter) => iter.next());
+          results.push(finish);
+          const result = await Promise.race(results);
           if (result.done) {
             return result.value;
           }
-          nexted = await push(result.value);
+          await push(result.value);
         }
       } catch (err) {
         close(err);
       } finally {
-        close();
-        await Promise.race(
-          iters.map(async (iter) => iter.return && iter.return(returned)),
+        await Promise.race<any>(
+          iters.map((iter) => iter.return && iter.return(returned)),
         );
       }
     });
   }
 
-  // TODO: fix these types
   static merge<T>(contenders: Iterable<Contender<T>>): Channel<T> {
     const iters = iterators(contenders);
     return new Channel<T>(async (push, close, stop) => {
       let stopped = false;
-      let returned: any;
-      let value: T | undefined;
+      let returned: Return;
       const finish: Promise<IteratorResult<T>> = stop.then((value) => {
         stopped = true;
         returned = value;
         return { value, done: true };
       });
+      let finished: T | undefined;
       await Promise.all(
         iters.map(async (iter) => {
           try {
-            let nexted: any;
             while (!stopped) {
-              const result = await Promise.race([finish, iter.next(nexted)]);
+              const result = await Promise.race([finish, iter.next()]);
               if (result.done) {
-                value = result.value;
+                finished = result.value;
                 return;
               }
-              nexted = await push(result.value);
+              await push(result.value);
             }
           } catch (err) {
             close(err);
@@ -318,7 +344,101 @@ export class Channel<T> implements AsyncIterableIterator<T> {
           }
         }),
       );
-      return value;
+      return finished;
+    });
+  }
+
+  static all<T>(contenders: Iterable<Contender<T>>): Channel<T[]> {
+    const iters = iterators(contenders);
+    return new Channel<T[]>(async (push, close, stop) => {
+      let stopped = false;
+      let returned: Return;
+      stop.then((value) => {
+        stopped = true;
+        returned = value;
+      });
+      try {
+        while (!stopped) {
+          const resultsP = Promise.all(iters.map((iter) => iter.next()));
+          await Promise.race([stop, resultsP]);
+          if (stopped) {
+            return Promise.all(
+              iters.map(async (iter) => {
+                if (iter.return == null) {
+                  return returned;
+                }
+                return (await iter.return(returned)).value;
+              }),
+            );
+          }
+          const results = await resultsP;
+          const values = results.map((result) => result.value);
+          if (results.some((result) => result.done)) {
+            return values;
+          }
+          await push(values);
+        }
+      } catch (err) {
+        close(err);
+      } finally {
+        await Promise.all<any>(
+          iters.map((iter) => iter.return && iter.return(returned)),
+        );
+      }
+    });
+  }
+
+  static latest<T>(contenders: Iterable<Contender<T>>): Channel<T[]> {
+    const iters = iterators(contenders);
+    return new Channel<T[]>(async (push, close, stop) => {
+      let stopped = false;
+      let returned: Return;
+      const finish = stop.then((value) => {
+        stopped = true;
+        returned = value;
+        return { value, done: true };
+      });
+      const resultsP = Promise.all(iters.map((iter) => iter.next()));
+      await Promise.race([stop, resultsP]);
+      if (stopped) {
+        return Promise.all(
+          iters.map(async (iter) => {
+            if (iter.return == null) {
+              return returned;
+            }
+            return (await iter.return(returned)).value;
+          }),
+        );
+      }
+      const results = await resultsP;
+      const values = results.map((result) => result.value);
+      if (results.every((result) => result.done)) {
+        return values;
+      }
+      await push(values.slice());
+      return Promise.all(
+        iters.map(async (iter, i) => {
+          if (results[i].done) {
+            return results[i].value;
+          }
+          try {
+            while (!stopped) {
+              const result = await Promise.race([finish, iter.next()]);
+              if (result.done) {
+                return result.value;
+              }
+              values[i] = result.value;
+              await push(values.slice());
+            }
+          } catch (err) {
+            close(err);
+          } finally {
+            if (iter.return != null) {
+              await iter.return(returned);
+            }
+          }
+        }),
+      );
     });
   }
 }
