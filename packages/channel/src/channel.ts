@@ -378,14 +378,14 @@ export class Channel<T> implements AsyncIterableIterator<T> {
         returned = value;
         return { value, done: true };
       });
-      let finished: T | undefined;
+      let value: T | undefined;
       await Promise.all(
         iters.map(async (iter) => {
           try {
             while (!stopped) {
               const result = await Promise.race([finish, iter.next()]);
               if (result.done) {
-                finished = result.value;
+                value = result.value;
                 return;
               }
               await push(result.value);
@@ -399,7 +399,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
           }
         }),
       );
-      return finished;
+      return value;
     });
   }
   /* eslint-enable no-dupe-class-members */
@@ -425,7 +425,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
   static zip<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Channel<[T1, T2]>;
   static zip<T>(contenders: Contender<T>[]): Channel<T[]>;
   static zip(contenders: []): Channel<[]>;
-  static zip<T>(contenders: Contender<T>[]): Channel<T[]> {
+  static zip<T>(contenders: Iterable<Contender<T>>): Channel<T[]> {
     const iters = iterators(contenders);
     return new Channel<T[]>(async (push, close, stop) => {
       if (!iters.length) {
