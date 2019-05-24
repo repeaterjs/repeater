@@ -27,17 +27,17 @@ type Return = any;
 
 interface PushOperation<T> {
   resolve(next?: Yield): void;
-  value: T;
+  value: Promise<T> | T;
 }
 
 interface PullOperation<T> {
-  resolve(result: Promise<IteratorResult<T>> | IteratorResult<T>): void;
+  resolve(result: Promise<IteratorResult<T>>): void;
   reject(err?: any): void;
   value?: Yield;
 }
 
 export type ChannelExecutor<T> = (
-  push: (value: T) => Promise<Yield | void>,
+  push: (value: Promise<T> | T) => Promise<Yield | void>,
   close: (error?: any) => void,
   stop: Promise<Return | void>,
 ) => Promise<T | void> | T | void;
@@ -65,7 +65,10 @@ class ChannelController<T> implements AsyncIterator<T> {
   // if error != null, the next iteration will result in a promise rejection
   private error?: any;
 
-  constructor(executor: ChannelExecutor<T>, private buffer: ChannelBuffer<T>) {
+  constructor(
+    executor: ChannelExecutor<T>,
+    private buffer: ChannelBuffer<Promise<T> | T>,
+  ) {
     const start = new Promise<void>((onstart) => (this.onstart = onstart));
     const push = this.push.bind(this);
     const close = this.close.bind(this);
@@ -85,14 +88,25 @@ class ChannelController<T> implements AsyncIterator<T> {
     });
   }
 
+  private async unwrap(value: Promise<T> | T): Promise<IteratorResult<T>> {
+    try {
+      value = await value;
+      return { value, done: false };
+    } catch (err) {
+      this.close(err);
+      return this.finish();
+    }
+  }
+
   // TODO: allow push to push a promise
-  private push(value: T): Promise<Yield | void> {
+  private push(value: Promise<T> | T): Promise<Yield | void> {
+    value = Promise.resolve(value);
     if (this.onstop == null) {
+      Promise.resolve(value).catch(() => {});
       return Promise.resolve();
     } else if (this.pullQueue.length) {
       const pull = this.pullQueue.shift()!;
-      const result = { value, done: false };
-      pull.resolve(result);
+      pull.resolve(this.unwrap(value));
       return Promise.resolve(pull.value);
     } else if (!this.buffer.full) {
       this.buffer.add(value);
@@ -168,7 +182,7 @@ class ChannelController<T> implements AsyncIterator<T> {
     }
 
     if (!this.buffer.empty) {
-      const result = { value: this.buffer.remove(), done: false };
+      const result = this.unwrap(this.buffer.remove());
       if (this.pushQueue.length) {
         const push = this.pushQueue.shift()!;
         this.buffer.add(push.value);
@@ -180,7 +194,7 @@ class ChannelController<T> implements AsyncIterator<T> {
       // zero capacity (the default buffer passed to the constructor), because
       // then the buffer is both empty and full at the same time.
       const push = this.pushQueue.shift()!;
-      const result = { value: push.value, done: false };
+      const result = this.unwrap(push.value);
       push.resolve(value);
       return result;
     } else if (this.onstop == null) {
@@ -250,7 +264,7 @@ const controllers: ChannelControllerMap = new WeakMap();
 export class Channel<T> implements AsyncIterableIterator<T> {
   constructor(
     executor: ChannelExecutor<T>,
-    buffer: ChannelBuffer<T> = new FixedBuffer(0),
+    buffer: ChannelBuffer<Promise<T> | T> = new FixedBuffer(0),
   ) {
     controllers.set(this, new ChannelController(executor, buffer));
   }
