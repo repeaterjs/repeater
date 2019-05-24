@@ -183,7 +183,7 @@ describe("Channel", () => {
       throw error2;
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
-    await expect(chan.next()).rejects.toBe(error1);
+    await expect(chan.next()).rejects.toBe(error2);
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -203,7 +203,7 @@ describe("Channel", () => {
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 2, done: false });
-    await expect(chan.next()).rejects.toBe(error1);
+    await expect(chan.next()).rejects.toBe(error2);
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -516,11 +516,12 @@ describe("Channel", () => {
   });
 
   test("throw method with pending pull", async () => {
-    const chan = new Channel<number>(async (push) => {
+    const chan = new Channel<number>(async (push, _, stop) => {
       await push(1);
       await push(2);
       await push(3);
-      await new Promise(() => {});
+      await stop;
+      return -1;
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 2, done: false });

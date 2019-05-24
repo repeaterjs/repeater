@@ -83,9 +83,9 @@ class ChannelController<T> implements AsyncIterator<T> {
         return { done: true } as IteratorResult<T>;
       }
     });
-    this.execution.catch(() => {});
   }
 
+  // TODO: allow push to push a promise
   private push(value: T): Promise<Yield | void> {
     if (this.onstop == null) {
       return Promise.resolve();
@@ -111,10 +111,10 @@ class ChannelController<T> implements AsyncIterator<T> {
     }
     this.onstop();
     delete this.onstop;
-    if (this.onstart != null && error == null) {
+    if (this.onstart != null) {
       // This branch executes if and only if return is called before the
       // channel is started.
-      delete this.execution;
+      this.execution = Promise.resolve({ done: true } as IteratorResult<T>);
     }
     delete this.onstart;
     this.error = error;
@@ -143,9 +143,9 @@ class ChannelController<T> implements AsyncIterator<T> {
    * close will allow next to continue to drain values from the buffer, while
    * finish will clear the buffer and freeze the channel immediately.
    */
-  private finish(): Promise<IteratorResult<T>> {
+  private async finish(): Promise<IteratorResult<T>> {
     if (this.execution == null) {
-      return Promise.resolve({ done: true } as IteratorResult<T>);
+      return { done: true } as IteratorResult<T>;
     }
     const execution = this.execution;
     const error = this.error;
@@ -154,10 +154,11 @@ class ChannelController<T> implements AsyncIterator<T> {
     // clear the buffer
     this.buffer = new FixedBuffer(0);
     Object.freeze(this);
-    if (error == null) {
-      return execution;
+    const result = await execution;
+    if (error != null) {
+      throw error;
     }
-    return Promise.reject(error);
+    return result;
   }
 
   async next(value?: Yield): Promise<IteratorResult<T>> {
@@ -213,7 +214,7 @@ class ChannelController<T> implements AsyncIterator<T> {
   }
 }
 
-function constantly<T>(value: T | Promise<T>): AsyncIterator<T> {
+function constant<T>(value: Promise<T> | T): AsyncIterator<T> {
   return {
     next(): Promise<IteratorResult<T>> {
       return Promise.resolve(value).then((value) => ({ value, done: true }));
@@ -236,7 +237,7 @@ function iterators<T>(
     } else if (typeof (contender as any)[Symbol.iterator] === "function") {
       iters.push((contender as Iterable<any>)[Symbol.iterator]());
     } else {
-      iters.push(constantly(contender as T | Promise<T>));
+      iters.push(constant(contender as Promise<T> | T));
     }
   }
   return iters;
