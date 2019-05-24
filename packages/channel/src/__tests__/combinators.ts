@@ -554,7 +554,7 @@ describe("combinators", () => {
     });
 
     test("one iterator errors", async () => {
-      const iter1 = hangingGen<boolean>();
+      const iter1 = delayChannel(110, Array<boolean>(10).fill(true), false);
       const iter2 = new Channel<string>((push, _, stop) => {
         push("a");
         push("b");
@@ -562,14 +562,13 @@ describe("combinators", () => {
       });
       const error = new Error("Channel.merge error");
       const iter3 = delayChannel<number>(250, [1, 2, 3], undefined, error);
-      const hanging = new Promise<RegExp>(() => {});
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.merge([hanging, iter1, iter2, iter3]);
+      const iter = Channel.merge([iter1, iter2, iter3]);
 
-      let result: IteratorResult<number | string | boolean | RegExp>;
-      const values: (number | string | boolean | RegExp)[] = [];
+      let result: IteratorResult<number | string | boolean>;
+      const values: (number | string | boolean)[] = [];
       await expect(
         (async () => {
           do {
@@ -579,7 +578,21 @@ describe("combinators", () => {
           } while (!result.done);
         })(),
       ).rejects.toBe(error);
-      expect(values).toEqual(["a", "b", 1, 2, 3]);
+      expect(values).toEqual([
+        "a",
+        "b",
+        true,
+        true,
+        1,
+        true,
+        true,
+        2,
+        true,
+        true,
+        3,
+        true,
+        true,
+      ]);
       await expect(iter.next()).resolves.toEqual({ done: true });
       expect(spy1).toHaveBeenCalledTimes(1);
       expect(spy2).toHaveBeenCalledTimes(1);
