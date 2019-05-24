@@ -133,6 +133,7 @@ class ChannelController<T> implements AsyncIterator<T> {
     delete this.onstart;
     this.error = error;
     for (const push of this.pushQueue) {
+      Promise.resolve(push.value).catch(() => {});
       push.resolve();
     }
     this.pushQueue = [];
@@ -165,8 +166,10 @@ class ChannelController<T> implements AsyncIterator<T> {
     const error = this.error;
     delete this.execution;
     delete this.error;
-    // clear the buffer
-    this.buffer = new FixedBuffer(0);
+    while (!this.buffer.empty) {
+      Promise.resolve(this.buffer.remove()).catch(() => {});
+    }
+    Object.freeze(this.buffer);
     Object.freeze(this);
     const result = await execution;
     if (error != null) {
@@ -194,9 +197,8 @@ class ChannelController<T> implements AsyncIterator<T> {
       // zero capacity (the default buffer passed to the constructor), because
       // then the buffer is both empty and full at the same time.
       const push = this.pushQueue.shift()!;
-      const result = this.unwrap(push.value);
       push.resolve(value);
-      return result;
+      return this.unwrap(push.value);
     } else if (this.onstop == null) {
       return this.finish();
     } else if (this.pullQueue.length >= MAX_QUEUE_LENGTH) {

@@ -1,67 +1,7 @@
 import { Channel, FixedBuffer } from "../index";
+import { deferredGen, delayChannel, delayPromise, gen, hangingGen, hangingChannel } from "../testutils";
 
-async function* gen<T>(
-  values: T[],
-  returned?: T,
-  error?: Error,
-): AsyncIterableIterator<T> {
-  for (const value of values) {
-    yield value;
-  }
-  if (error != null) {
-    throw error;
-  }
-  return returned;
-}
-
-async function* deferredGen<T>(
-  values: T[],
-  returned?: T,
-  error?: any,
-): AsyncIterableIterator<T> {
-  for (const value of values) {
-    await Promise.resolve();
-    yield value;
-  }
-  if (error != null) {
-    throw error;
-  }
-  return returned;
-}
-
-async function* hangingGen<T = never>(): AsyncIterableIterator<T> {
-  await new Promise(() => {});
-  yield (Infinity as unknown) as T;
-}
-
-function hangingChannel<T = never>(): Channel<T> {
-  return new Channel(() => new Promise(() => {}));
-}
-
-function delayPromise<T>(wait: number, value: T): Promise<T> {
-  return new Promise((resolve) => setTimeout(() => resolve(value), wait));
-}
-
-function delayChannel<T>(
-  wait: number,
-  values: T[],
-  returned?: T,
-  error?: Error,
-): Channel<T> {
-  return new Channel<T>(async (push, close, stop) => {
-    let i = 0;
-    const timer = setInterval(() => {
-      if (i >= values.length) {
-        close(error);
-      }
-      push(values[i++]);
-    }, wait);
-    await stop;
-    clearInterval(timer);
-    return returned;
-  }, new FixedBuffer(values.length));
-}
-
+// TODO: maybe use timer mocks to make this suite execut faster
 describe("combinators", () => {
   describe("Channel.race", () => {
     test("empty", async () => {
