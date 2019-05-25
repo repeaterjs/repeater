@@ -52,6 +52,8 @@ class ChannelController<T> implements AsyncIterator<T> {
   private pushQueue: PushOperation<T>[] = [];
   private pullQueue: PullOperation<T>[] = [];
 
+  private execution: Promise<IteratorResult<T>>;
+  private error?: any;
   // Because we delete the following properties after they are used, the
   // presence or absence of these properties indicates the current state of the
   // controller.
@@ -60,10 +62,6 @@ class ChannelController<T> implements AsyncIterator<T> {
   private onstart?: () => void;
   // if onstop == null, the channel has stopped/closed
   private onstop?: (value?: Return) => void;
-  // if execution == null, the channel is finished and frozen
-  private execution?: Promise<IteratorResult<T>>;
-  // if error != null, the next iteration will result in a promise rejection
-  private error?: any;
 
   constructor(
     executor: ChannelExecutor<T>,
@@ -133,14 +131,13 @@ class ChannelController<T> implements AsyncIterator<T> {
     delete this.onstart;
     this.error = error;
     for (const push of this.pushQueue) {
+      // swallow any promise rejections in the push queue
       Promise.resolve(push.value).catch(() => {});
       push.resolve();
     }
     this.pushQueue = [];
-    Object.freeze(this.pushQueue);
     const pullQueue = this.pullQueue;
     this.pullQueue = [];
-    Object.freeze(this.pullQueue);
     // Calling this.finish freezes the controller so we resolve pull operations
     // last. If the pullQueue contains operations, the buffer and pushQueue are
     // necessarily empty, so we don‘t have to worry about this.finish clearing
@@ -159,18 +156,17 @@ class ChannelController<T> implements AsyncIterator<T> {
    * finish will clear the buffer and freeze the channel immediately.
    */
   private async finish(): Promise<IteratorResult<T>> {
-    if (this.execution == null) {
-      return { done: true } as IteratorResult<T>;
-    }
     const execution = this.execution;
+    this.execution = this.execution
+      .then(() => ({ done: true } as IteratorResult<T>))
+      .catch(() => ({ done: true } as IteratorResult<T>));
     const error = this.error;
-    delete this.execution;
     delete this.error;
     while (!this.buffer.empty) {
+      // swallow any promise rejections in the buffer
       Promise.resolve(this.buffer.remove()).catch(() => {});
     }
-    Object.freeze(this.buffer);
-    Object.freeze(this);
+    // errors which happen in the executor take precedence over errors passed to this.close
     const result = await execution;
     if (error != null) {
       throw error;
@@ -341,15 +337,28 @@ export class Channel<T> implements AsyncIterableIterator<T> {
         return { value, done: true };
       });
       try {
+        let result: IteratorResult<T> | undefined;
         while (!stopped) {
           const results = iters.map((iter) => iter.next());
-          results.push(finish);
-          const result = await Promise.race(results);
-          if (result.done) {
-            return result.value;
+          for (const result1 of results) {
+            Promise.resolve(result1)
+              .then((result1) => {
+                if (result1.done) {
+                  close();
+                  result = result || result1;
+                }
+              })
+              .catch(close);
           }
-          await push(result.value);
+          results.unshift(finish);
+          const result1 = await Promise.race(results);
+          if (result1.done) {
+            result = result || result1;
+            break;
+          }
+          await push(result1.value);
         }
+        return result && result.value;
       } catch (err) {
         close(err);
       } finally {

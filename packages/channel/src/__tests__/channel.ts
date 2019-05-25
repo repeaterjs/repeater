@@ -390,6 +390,18 @@ describe("Channel", () => {
     await expect(push2).resolves.toEqual(-2);
   });
 
+  test("final results resolve in order", async () => {
+    const chan = new Channel(async (push) => {
+      await push(1);
+    });
+    chan.next();
+    const result1 = chan.next().then(() => 1);
+    const result2 = chan.next().then(() => 2);
+    const result3 = chan.next().then(() => 3);
+    await expect(Promise.race([result3, result2, result1])).resolves.toEqual(1);
+    await expect(Promise.race([result3, result2])).resolves.toEqual(2);
+  });
+
   test("pushes resolve to undefined when using a buffer", async () => {
     const mock = jest.fn();
     let push: (value: number) => Promise<number | void>;
@@ -461,11 +473,10 @@ describe("Channel", () => {
       }
       close();
     }, new DroppingBuffer(3));
-    const result: number[] = [];
-    await expect(chan.next()).resolves.toEqual({ value: 0, done: false});
-    await expect(chan.next()).resolves.toEqual({ value: 1, done: false});
-    await expect(chan.next()).resolves.toEqual({ value: 2, done: false});
-    await expect(chan.next()).resolves.toEqual({ value: 3, done: false});
+    await expect(chan.next()).resolves.toEqual({ value: 0, done: false });
+    await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
+    await expect(chan.next()).resolves.toEqual({ value: 2, done: false });
+    await expect(chan.next()).resolves.toEqual({ value: 3, done: false });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -476,10 +487,10 @@ describe("Channel", () => {
       }
       close();
     }, new SlidingBuffer(3));
-    await expect(chan.next()).resolves.toEqual({ value: 0, done: false});
-    await expect(chan.next()).resolves.toEqual({ value: 97, done: false});
-    await expect(chan.next()).resolves.toEqual({ value: 98, done: false});
-    await expect(chan.next()).resolves.toEqual({ value: 99, done: false});
+    await expect(chan.next()).resolves.toEqual({ value: 0, done: false });
+    await expect(chan.next()).resolves.toEqual({ value: 97, done: false });
+    await expect(chan.next()).resolves.toEqual({ value: 98, done: false });
+    await expect(chan.next()).resolves.toEqual({ value: 99, done: false });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
