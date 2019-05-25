@@ -7,7 +7,7 @@ import {
   SlidingBuffer,
 } from "../index";
 
-import { delayPromise } from "../testutils";
+import { delayPromise } from "../_testutils";
 
 // TODO: create a jest helper to help us test AsyncIterators
 describe("Channel", () => {
@@ -250,7 +250,6 @@ describe("Channel", () => {
       await push(2);
       await push(3);
       throw error;
-      await push(4);
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 2, done: false });
@@ -284,8 +283,12 @@ describe("Channel", () => {
   });
 
   test("sync error in executor after close is called with error", async () => {
-    const error1 = new Error("sync error in executor after close is called with error 1");
-    const error2 = new Error("sync error in executor after close is called with error 2");
+    const error1 = new Error(
+      "sync error in executor after close is called with error 1",
+    );
+    const error2 = new Error(
+      "sync error in executor after close is called with error 2",
+    );
     const chan = new Channel<number>((push, close) => {
       push(1);
       close(error1);
@@ -297,8 +300,12 @@ describe("Channel", () => {
   });
 
   test("async error in executor after close is called with error", async () => {
-    const error1 = new Error("async error in executor after close is called with error 1");
-    const error2 = new Error("async error in executor after close is called with error 2");
+    const error1 = new Error(
+      "async error in executor after close is called with error 1",
+    );
+    const error2 = new Error(
+      "async error in executor after close is called with error 2",
+    );
     const chan = new Channel<number>(async (push, close, stop) => {
       await push(1);
       await push(2);

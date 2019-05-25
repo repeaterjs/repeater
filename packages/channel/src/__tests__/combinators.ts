@@ -1,7 +1,14 @@
-import { Channel, FixedBuffer } from "../index";
-import { deferredGen, delayChannel, delayPromise, gen, hangingGen, hangingChannel } from "../testutils";
+import { Channel } from "../index";
+import {
+  deferredGen,
+  delayChannel,
+  delayPromise,
+  gen,
+  hangingGen,
+  hangingChannel,
+} from "../_testutils";
 
-// TODO: maybe use timer mocks to make this suite execut faster
+// TODO: maybe use timer mocks to make this test suite execute faster
 describe("combinators", () => {
   describe("Channel.race", () => {
     test("empty", async () => {
