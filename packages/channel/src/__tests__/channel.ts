@@ -355,6 +355,27 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
+  test("pushes wait for next", async () => {
+    const mock = jest.fn();
+    const chan = new Channel<number>(async (push) => {
+      for (let i = 0; i < 100; i++) {
+        await push(i);
+        mock();
+      }
+      return -1;
+    });
+    for (let i = 0; i < 50; i++) {
+      await expect(chan.next()).resolves.toEqual({
+        value: mock.mock.calls.length,
+        done: false,
+      });
+    }
+    await expect(chan.next()).resolves.toEqual({ value: 50, done: false });
+    expect(mock).toHaveBeenCalledTimes(51);
+    await delayPromise(100);
+    expect(mock).toHaveBeenCalledTimes(51);
+  });
+
   test("next then push avoids buffer", async () => {
     const buffer = new FixedBuffer<number>(100);
     const spy = jest.spyOn(buffer, "add");
