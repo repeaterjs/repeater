@@ -52,12 +52,17 @@ class ChannelController<T> implements AsyncIterator<T> {
   private pushQueue: PushOperation<T>[] = [];
   private pullQueue: PullOperation<T>[] = [];
 
-  private execution: Promise<IteratorResult<T>>;
+  private pending: Promise<IteratorResult<T>> = Promise.resolve({
+    done: false,
+  } as IteratorResult<T>);
+
+  private execution: Promise<T | void>;
   private error?: any;
+  private done = false;
+
   // Because we delete the following properties after they are used, the
   // presence or absence of these properties indicates the current state of the
   // controller.
-
   // if onstart == null, the channel has started
   private onstart?: () => void;
   // if onstop == null, the channel has stopped/closed
@@ -67,40 +72,50 @@ class ChannelController<T> implements AsyncIterator<T> {
     executor: ChannelExecutor<T>,
     private buffer: ChannelBuffer<Promise<T> | T>,
   ) {
-    const start = new Promise<void>((onstart) => (this.onstart = onstart));
+    const start = new Promise((onstart) => (this.onstart = onstart));
     const push = this.push.bind(this);
     const close = this.close.bind(this);
-    const stop = new Promise<Return | void>((onstop) => (this.onstop = onstop));
+    const stop = new Promise((onstop) => (this.onstop = onstop));
     this.execution = start.then(async () => {
       try {
         const value = await executor(push, close, stop);
         this.close();
-        return { value, done: true } as IteratorResult<T>;
+        return value;
       } catch (err) {
         if (this.onstop == null) {
           throw err;
         }
         this.close(err);
-        return { done: true } as IteratorResult<T>;
       }
     });
   }
 
-  private async unwrap(value: Promise<T> | T): Promise<IteratorResult<T>> {
-    try {
-      value = await value;
-      return { value, done: false };
-    } catch (err) {
-      this.close(err);
-      return this.finish();
-    }
+  private unwrap(
+    value: Promise<T | void> | T | void,
+  ): Promise<IteratorResult<T>> {
+    let done = this.done;
+    this.pending = this.pending.then(
+      (prev) => {
+        if (prev.done) {
+          return { done: true } as IteratorResult<T>;
+        }
+        return Promise.resolve(value).then(
+          (value) => {
+            return { value: value as T, done };
+          },
+          (err) => {
+            return this.throw(err);
+          },
+        );
+      },
+      () => ({ done: true } as IteratorResult<T>),
+    );
+    return this.pending;
   }
 
-  // TODO: allow push to push a promise
   private push(value: Promise<T> | T): Promise<Yield | void> {
-    value = Promise.resolve(value);
+    Promise.resolve(value).catch(() => {});
     if (this.onstop == null) {
-      Promise.resolve(value).catch(() => {});
       return Promise.resolve();
     } else if (this.pullQueue.length) {
       const pull = this.pullQueue.shift()!;
@@ -126,25 +141,30 @@ class ChannelController<T> implements AsyncIterator<T> {
     if (this.onstart != null) {
       // This branch executes if and only if return is called before the
       // channel is started.
-      this.execution = Promise.resolve({ done: true } as IteratorResult<T>);
+      this.execution = Promise.resolve();
     }
     delete this.onstart;
     this.error = error;
     for (const push of this.pushQueue) {
-      // swallow any promise rejections in the push queue
-      Promise.resolve(push.value).catch(() => {});
       push.resolve();
     }
     this.pushQueue = [];
-    const pullQueue = this.pullQueue;
-    this.pullQueue = [];
-    // Calling this.finish freezes the controller so we resolve pull operations
-    // last. If the pullQueue contains operations, the buffer and pushQueue are
-    // necessarily empty, so we don‘t have to worry about this.finish clearing
-    // the buffer.
-    for (const pull of pullQueue) {
+    // If the pullQueue contains operations, the buffer is necessarily empty,
+    // so we don‘t have to worry about this.finish clearing the buffer.
+    for (const pull of this.pullQueue) {
       pull.resolve(this.finish());
     }
+    this.pullQueue = [];
+  }
+
+  private clear(): void {
+    if (this.done) {
+      return;
+    }
+    this.done = true;
+    delete this.error;
+    this.execution = this.execution.then(() => {}, () => {});
+    this.buffer = new FixedBuffer(0);
   }
 
   /**
@@ -157,24 +177,17 @@ class ChannelController<T> implements AsyncIterator<T> {
    */
   private async finish(): Promise<IteratorResult<T>> {
     const execution = this.execution;
-    this.execution = this.execution
-      .then(() => ({ done: true } as IteratorResult<T>))
-      .catch(() => ({ done: true } as IteratorResult<T>));
     const error = this.error;
-    delete this.error;
-    while (!this.buffer.empty) {
-      // swallow any promise rejections in the buffer
-      Promise.resolve(this.buffer.remove()).catch(() => {});
-    }
-    // errors which happen in the executor take precedence over errors passed to this.close
-    const result = await execution;
+    this.clear();
+    // rejections which happen in the executor take precedence over errors passed to this.close
+    const value = await execution;
     if (error != null) {
       throw error;
     }
-    return result;
+    return this.unwrap(value);
   }
 
-  async next(value?: Yield): Promise<IteratorResult<T>> {
+  next(value?: Yield): Promise<IteratorResult<T>> {
     if (this.onstart != null && this.onstop != null) {
       this.onstart();
       delete this.onstart;
@@ -207,19 +220,20 @@ class ChannelController<T> implements AsyncIterator<T> {
     });
   }
 
-  async return(value?: Return): Promise<IteratorResult<T>> {
+  return(value?: Return): Promise<IteratorResult<T>> {
     if (this.onstop == null) {
-      return { value, done: true };
-    } else if (this.onstop != null) {
-      this.onstop(value);
+      this.clear();
+      return Promise.resolve({ value, done: true });
     }
+    this.onstop(value);
     this.close();
     return this.finish();
   }
 
-  async throw(error?: any): Promise<IteratorResult<T>> {
+  throw(error?: any): Promise<IteratorResult<T>> {
     if (this.onstop == null) {
-      throw error;
+      this.clear();
+      return Promise.reject(error);
     }
     this.close(error);
     return this.finish();

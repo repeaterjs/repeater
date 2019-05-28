@@ -43,7 +43,7 @@ export function delayPromise<T>(
   value?: T,
   error?: Error,
 ): Promise<T> {
-  return new Promise((resolve, reject) => {
+  return new Promise<T>((resolve, reject) => {
     setTimeout(() => {
       if (error == null) {
         resolve(value);
