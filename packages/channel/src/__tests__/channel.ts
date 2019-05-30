@@ -12,6 +12,32 @@ import { delayPromise } from "../_testutils";
 // TODO: create a jest matcher to help us test AsyncIterators
 describe("Channel", () => {
   test("sync pushes", async () => {
+    const chan = new Channel((push) => {
+      push(1);
+      push(2);
+      push(3);
+      push(4);
+    });
+    await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
+    await expect(chan.next()).resolves.toEqual({ value: 2, done: false });
+    await expect(chan.next()).resolves.toEqual({ value: 3, done: false });
+    await expect(chan.next()).resolves.toEqual({ value: 4, done: false });
+  });
+
+  test("async pushes", async () => {
+    const chan = new Channel(async (push) => {
+      await push(1);
+      await push(2);
+      await push(3);
+      await push(4);
+    });
+    await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
+    await expect(chan.next()).resolves.toEqual({ value: 2, done: false });
+    await expect(chan.next()).resolves.toEqual({ value: 3, done: false });
+    await expect(chan.next()).resolves.toEqual({ value: 4, done: false });
+  });
+
+  test("sync pushes with close", async () => {
     const chan = new Channel((push, close) => {
       push(1);
       push(2);
@@ -25,7 +51,7 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("async pushes", async () => {
+  test("async pushes with close", async () => {
     const chan = new Channel(async (push, close) => {
       await push(1);
       await push(2);
@@ -94,8 +120,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("sync pushing promise rejection after push", async () => {
-    const error = new Error("sync pushing promise rejection after push");
+  test("sync pushing promise rejection", async () => {
+    const error = new Error("sync pushing promise rejection");
     const chan = new Channel(async (push) => {
       push(delayPromise(50, 1));
       push(delayPromise(50, 2, error));
@@ -138,12 +164,11 @@ describe("Channel", () => {
 
   test("async pushing promise rejection with buffer", async () => {
     const error = new Error("async pushing promise rejection with buffer");
-    const chan = new Channel<number>(async (push, _, stop) => {
+    const chan = new Channel<number>(async (push) => {
       await push(delayPromise(50, 1));
       await push(delayPromise(50, 2, error));
       await push(delayPromise(50, 3));
       await push(delayPromise(50, 4));
-      await stop;
     }, new FixedBuffer(100));
 
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -152,7 +177,7 @@ describe("Channel", () => {
   });
 
   test("pushing rejection and closing", async () => {
-    const error = new Error("sync pushing promise rejection");
+    const error = new Error("pushing rejection and closing");
     const chan = new Channel((push, close) => {
       push(delayPromise(50, 1, error));
       close();
@@ -525,10 +550,9 @@ describe("Channel", () => {
   test("push throws when buffer and push queue are full", async () => {
     const bufferLength = 1000;
     let push: (value: number) => Promise<any>;
-    const chan = new Channel<number>(async (push1, _, stop) => {
+    const chan = new Channel<number>(async (push1) => {
       push = push1;
       push(-1);
-      await stop;
     }, new FixedBuffer(bufferLength));
     // prime the channel
     await expect(chan.next()).resolves.toEqual({ value: -1, done: false });
@@ -799,9 +823,11 @@ describe("Channel", () => {
     });
     await expect(chan.next()).resolves.toEqual({ done: false, value: 1 });
     await expect(chan.next()).resolves.toEqual({ done: false, value: 2 });
+    expect(mock).toHaveBeenCalledTimes(0);
     const returned = chan.return();
+    expect(mock).toHaveBeenCalledTimes(0);
     await expect(chan.next()).resolves.toEqual({ done: true });
-    expect(mock).toHaveBeenCalled();
+    expect(mock).toHaveBeenCalledTimes(1);
     await expect(returned).resolves.toEqual({ value: -1, done: true });
   });
 
