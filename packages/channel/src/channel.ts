@@ -78,14 +78,10 @@ class ChannelController<T> implements AsyncIterator<T> {
     const stop = new Promise((onstop) => (this.onstop = onstop));
     this.execution = start.then(async () => {
       try {
-        const value = await executor(push, close, stop);
-        this.close();
-        return value;
+        return await executor(push, close, stop);
       } catch (err) {
-        if (this.onstop == null) {
-          throw err;
-        }
         this.close(err);
+        throw err;
       }
     });
   }
@@ -341,6 +337,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     const iters = iterators(contenders);
     return new Channel<T>(async (push, close, stop) => {
       if (!iters.length) {
+        close();
         return;
       }
       let stopped = false;
@@ -372,6 +369,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
           }
           await push(result1.value);
         }
+        close();
         return result && result.value;
       } catch (err) {
         close(err);
@@ -409,6 +407,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     const iters = iterators(contenders);
     return new Channel<T>(async (push, close, stop) => {
       if (!iters.length) {
+        close();
         return;
       }
       let stopped = false;
@@ -439,6 +438,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
           }
         }),
       );
+      close();
       return value;
     });
   }
@@ -469,6 +469,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     const iters = iterators(contenders);
     return new Channel<T[]>(async (push, close, stop) => {
       if (!iters.length) {
+        close();
         return [];
       }
       let stopped = false;
@@ -501,6 +502,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
       } catch (err) {
         close(err);
       } finally {
+        close();
         if (!stopped) {
           await Promise.all<any>(
             iters.map((iter) => iter.return && iter.return(returned)),
@@ -536,6 +538,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
     const iters = iterators(contenders);
     return new Channel<T[]>(async (push, close, stop) => {
       if (!iters.length) {
+        close();
         return [];
       }
       let stopped = false;
@@ -563,7 +566,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
         return values;
       }
       await push(values.slice());
-      return Promise.all(
+      const result = await Promise.all(
         iters.map(async (iter, i) => {
           if (results[i].done) {
             return results[i].value;
@@ -586,6 +589,8 @@ export class Channel<T> implements AsyncIterableIterator<T> {
           }
         }),
       );
+      close();
+      return result;
     });
   }
   /* eslint-enable no-dupe-class-members */

@@ -5,7 +5,6 @@ import {
   delayPromise,
   gen,
   hangingGen,
-  hangingChannel,
 } from "../_testutils";
 
 // TODO: maybe use timer mocks to make this test suite execute faster
@@ -123,13 +122,13 @@ describe("combinators", () => {
     test("return methods called on all iterators when any finish", async () => {
       const hanging = new Promise(() => {});
       const iter1 = hangingGen();
-      const iter2 = hangingChannel();
-      const iter3 = delayChannel<number>(250, [], -1);
+      const iter2 = delayChannel<number>(1000, [1, 2, 3], -1);
+      const iter3 = delayChannel<number>(250, [], -2);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
       const iter = Channel.race([hanging, iter1, iter2, iter3]);
-      await expect(iter.next()).resolves.toEqual({ done: true, value: -1 });
+      await expect(iter.next()).resolves.toEqual({ done: true, value: -2 });
       expect(spy1).toHaveBeenCalledTimes(1);
       expect(spy2).toHaveBeenCalledTimes(1);
       expect(spy3).toHaveBeenCalledTimes(1);

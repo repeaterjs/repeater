@@ -34,10 +34,6 @@ export async function* hangingGen<T = never>(): AsyncIterableIterator<T> {
   yield (Infinity as unknown) as T;
 }
 
-export function hangingChannel<T = never>(): Channel<T> {
-  return new Channel(() => new Promise(() => {}));
-}
-
 export function delayPromise<T>(
   wait: number,
   value?: T,
