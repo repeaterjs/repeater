@@ -517,13 +517,13 @@ describe("Channel", () => {
     const result4 = chan.next();
     await Promise.all([
       expect(
-        Promise.race([result1, result2, result3, result4]),
+        Promise.race([result4, result3, result2, result1]),
       ).resolves.toEqual({ value: 1, done: false }),
-      expect(Promise.race([result2, result3, result4])).resolves.toEqual({
+      expect(Promise.race([result4, result3, result2])).resolves.toEqual({
         value: 2,
         done: false,
       }),
-      expect(Promise.race([result3, result4])).resolves.toEqual({
+      expect(Promise.race([result4, result3])).resolves.toEqual({
         value: 3,
         done: false,
       }),
@@ -548,13 +548,13 @@ describe("Channel", () => {
     const result4 = chan.next();
     await Promise.all([
       expect(
-        Promise.race([result1, result2, result3, result4]),
+        Promise.race([result4, result3, result2, result1]),
       ).resolves.toEqual({ value: 1, done: false }),
-      expect(Promise.race([result2, result3, result4])).resolves.toEqual({
+      expect(Promise.race([result4, result3, result2])).resolves.toEqual({
         value: 2,
         done: false,
       }),
-      expect(Promise.race([result3, result4])).resolves.toEqual({
+      expect(Promise.race([result4, result3])).resolves.toEqual({
         value: 3,
         done: false,
       }),
@@ -581,13 +581,13 @@ describe("Channel", () => {
     const result4 = chan.next(-4);
     await Promise.all([
       expect(
-        Promise.race([result1, result2, result3, result4]),
+        Promise.race([result4, result3, result2, result1]),
       ).resolves.toEqual({ value: 1, done: false }),
-      expect(Promise.race([result2, result3, result4])).resolves.toEqual({
+      expect(Promise.race([result4, result3, result2])).resolves.toEqual({
         value: 2,
         done: false,
       }),
-      expect(Promise.race([result3, result4])).rejects.toBe(error),
+      expect(Promise.race([result4, result3])).rejects.toBe(error),
       expect(result4).resolves.toEqual({ done: true }),
     ]);
     await expect(chan.next()).resolves.toEqual({ done: true });
