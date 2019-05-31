@@ -17,11 +17,11 @@
     "jest": "^24.8.0",
     "lerna": "^3.14.1",
     "prettier": "^1.17.1",
-    "rollup": "^1.12.3",
+    "rollup": "^1.13.0",
     "rollup-plugin-typescript2": "^0.21.1",
     "shx": "^0.3.2",
     "ts-jest": "^24.0.0",
-    "typescript": "^3.4.5",
+    "typescript": "^3.5.1",
     "weak": "^1.0.1"
   },
   "workspaces": [
