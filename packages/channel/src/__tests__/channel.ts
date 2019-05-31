@@ -49,6 +49,8 @@ describe("Channel", () => {
     // first value is pulled and the rest are dropped.
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("async pushes with close", async () => {
@@ -64,6 +66,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 3, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 4, done: false });
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("sync pushing resolved promises", async () => {
@@ -75,6 +79,8 @@ describe("Channel", () => {
       close();
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -91,6 +97,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 3, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 4, done: false });
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("sync pushing delayed promises", async () => {
@@ -102,6 +110,8 @@ describe("Channel", () => {
       close();
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -118,6 +128,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 3, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 4, done: false });
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("sync pushing promise rejection", async () => {
@@ -131,6 +143,8 @@ describe("Channel", () => {
 
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).rejects.toBe(error);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -146,6 +160,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).rejects.toBe(error);
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("sync pushing promise rejection with buffer", async () => {
@@ -159,6 +175,8 @@ describe("Channel", () => {
 
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).rejects.toBe(error);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -174,6 +192,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).rejects.toBe(error);
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("pushing rejection and closing", async () => {
@@ -185,23 +205,18 @@ describe("Channel", () => {
 
     await expect(chan.next()).rejects.toBe(error);
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("sync return", async () => {
+  test("return value", async () => {
     const chan = new Channel((_, close) => {
       close();
       return -1;
     });
     await expect(chan.next()).resolves.toEqual({ value: -1, done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
-  });
-
-  test("async return", async () => {
-    const chan = new Channel(async (_, close) => {
-      close();
-      return Promise.resolve(-1);
-    });
-    await expect(chan.next()).resolves.toEqual({ value: -1, done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -216,6 +231,8 @@ describe("Channel", () => {
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).resolves.toEqual({ value: -1, done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -234,6 +251,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 4, done: false });
     await expect(chan.next()).resolves.toEqual({ value: -1, done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("executor throws error", async () => {
@@ -242,6 +261,8 @@ describe("Channel", () => {
       throw error;
     });
     await expect(chan.next()).rejects.toBe(error);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -256,6 +277,8 @@ describe("Channel", () => {
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).rejects.toBe(error);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -274,6 +297,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 4, done: false });
     await expect(chan.next()).rejects.toBe(error);
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("executor throws error after close", async () => {
@@ -286,6 +311,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).rejects.toBe(error);
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("executor throws async error after close", async () => {
@@ -297,6 +324,8 @@ describe("Channel", () => {
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).rejects.toBe(error);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -314,6 +343,8 @@ describe("Channel", () => {
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).rejects.toBe(error2);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -335,6 +366,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 2, done: false });
     await expect(chan.next()).rejects.toBe(error2);
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("executor returns value after close with error", async () => {
@@ -347,12 +380,16 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.next()).rejects.toBe(error);
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("executor returns rejected promise", async () => {
     const error = new Error("executor returns rejected promise");
     const chan = new Channel(() => Promise.reject(error));
     await expect(chan.next()).rejects.toBe(error);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -368,6 +405,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 2, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 3, done: false });
     await expect(chan.next()).rejects.toBe(error);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -490,6 +529,9 @@ describe("Channel", () => {
       }),
       expect(result4).resolves.toEqual({ value: 4, done: true }),
     ]);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("calls to next with buffer settle in order", async () => {
@@ -518,6 +560,9 @@ describe("Channel", () => {
       }),
       expect(result4).resolves.toEqual({ value: 4, done: true }),
     ]);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("pushing rejections settle in order", async () => {
@@ -545,6 +590,9 @@ describe("Channel", () => {
       expect(Promise.race([result3, result4])).rejects.toBe(error),
       expect(result4).resolves.toEqual({ done: true }),
     ]);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("push throws when buffer and push queue are full", async () => {
@@ -587,6 +635,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 2, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 3, done: false });
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("sliding buffer", async () => {
@@ -600,6 +650,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 97, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 98, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 99, done: false });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -627,6 +679,8 @@ describe("Channel", () => {
     expect(result).toEqual([1, 2, 3]);
     expect(spy).toHaveBeenCalledTimes(1);
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("early throw", async () => {
@@ -652,6 +706,8 @@ describe("Channel", () => {
     expect(result).toEqual([1, 2, 3]);
     expect(spy).toHaveBeenCalledTimes(1);
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("return method", async () => {
@@ -670,6 +726,8 @@ describe("Channel", () => {
       }
     }
     expect(result).toEqual([1, 2, 3]);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
@@ -694,6 +752,8 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 3, done: false });
     await expect(chan.return()).resolves.toEqual({ value: -1, done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("return method with value", async () => {
@@ -707,7 +767,11 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
     await expect(chan.return(-1)).resolves.toEqual({ value: -2, done: true });
     await expect(chan.return()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.return(-1)).resolves.toEqual({ value: -1, done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("throw method", async () => {
@@ -729,6 +793,7 @@ describe("Channel", () => {
     expect(result).toEqual([1, 2, 3]);
     await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("throw method before channel is started", async () => {
@@ -736,6 +801,8 @@ describe("Channel", () => {
     const chan = new Channel(() => mock());
     const error = new Error("throw method before channel is started");
     await expect(chan.throw(error)).rejects.toBe(error);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
     expect(mock).toHaveBeenCalledTimes(0);
   });
@@ -753,6 +820,7 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ value: 2, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 3, done: false });
     await expect(chan.throw(error)).rejects.toBe(error);
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
@@ -774,6 +842,7 @@ describe("Channel", () => {
     await expect(next).rejects.toBe(error);
     await expect(throwResult).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("throw method after close causes throw to reject", async () => {
@@ -793,6 +862,9 @@ describe("Channel", () => {
       }
     }
     expect(result).toEqual([1, 2, 3]);
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("stop resolves on close", async () => {
@@ -807,6 +879,8 @@ describe("Channel", () => {
     });
     await expect(chan.next()).resolves.toEqual({ done: false, value: 1 });
     await expect(chan.next()).resolves.toEqual({ done: false, value: 2 });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
     await expect(chan.next()).resolves.toEqual({ done: true });
     expect(mock).toHaveBeenCalled();
   });
@@ -829,6 +903,9 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
     expect(mock).toHaveBeenCalledTimes(1);
     await expect(returned).resolves.toEqual({ value: -1, done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
   test("stop resolves with argument passed to return", async () => {
@@ -842,9 +919,14 @@ describe("Channel", () => {
     });
     await expect(chan.next()).resolves.toEqual({ done: false, value: 1 });
     await expect(chan.next()).resolves.toEqual({ done: false, value: 2 });
+    expect(mock).toHaveBeenCalledTimes(0);
     const returned = chan.return(-2);
+    expect(mock).toHaveBeenCalledTimes(0);
     await expect(chan.next()).resolves.toEqual({ done: true });
     expect(mock).toHaveBeenCalledWith(-2);
     await expect(returned).resolves.toEqual({ value: -1, done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
+    await expect(chan.next()).resolves.toEqual({ done: true });
   });
 });
