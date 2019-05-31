@@ -22,8 +22,8 @@ export class ChannelOverflowError extends Error {
 // keep track of the arguments as they flow through channels.
 // Yield is the argument passed to AsyncIterator.next
 // Return is the argument passed to AsyncIterator.return
-type Yield = any;
-type Return = any;
+export type Yield = any;
+export type Return = any;
 
 interface PushOperation<T> {
   resolve(next?: Yield): void;
