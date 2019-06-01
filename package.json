@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "build": "yarn workspaces run build",
-    "test": "yarn workspaces run test",
+    "test": "yarn workspaces run test --detectLeaks",
     "lint": "yarn workspaces run lint",
     "prepublishOnly": "yarn run lint"
   },
