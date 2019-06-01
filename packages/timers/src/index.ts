@@ -15,34 +15,80 @@ export class TimeoutError extends Error {
   }
 }
 
-export function delay(
-  wait: number,
-  options: { reject?: boolean } = {},
-): Channel<number> {
-  return new Channel<number>(async (push, close, stop) => {
-    const timer = setTimeout(async () => {
-      if (options.reject == null) {
-        await push(Date.now());
-        close();
-      } else {
-        close(new TimeoutError(`${wait} milliseconds elapsed`));
-      }
-    }, wait);
-    await stop;
-    clearTimeout(timer);
+interface Timer {
+  resolve(timestamp: number): void;
+  reject(err: TimeoutError): void;
+  // The type returned by setTimeout and passed to clearTimeout. This type
+  // differs between the browser (number) and node.js (NodeJS.Timer).
+  timeout: any;
+}
+
+export function delay(wait: number): Channel<number> {
+  return new Channel(async (push, _close, stop) => {
+    let timers: Set<Timer> = new Set();
+    let stopped = false;
+    stop.then(() => (stopped = true));
+    do {
+      let resolve: (timestamp: number) => void;
+      let reject: (err: TimeoutError) => void;
+      await push(
+        new Promise<number>((resolve1, reject1) => {
+          resolve = resolve1;
+          reject = reject1;
+        }),
+      );
+      const timer: Timer = {
+        resolve: resolve!,
+        reject: reject!,
+        timeout: setTimeout(() => {
+          timers.delete(timer);
+          resolve(Date.now());
+        }, wait),
+      };
+      timers.add(timer);
+    } while (!stopped);
+    for (const timer of timers) {
+      clearTimeout(timer.timeout);
+      // Because channels swallow rejections which settle after stop, we use
+      // this mechanism to make pending calls to next return `{ done: true }`.
+      timer.reject(new TimeoutError("THIS ERROR SHOULD NEVER BE SEEN"));
+    }
   });
 }
 
-export function timeout(wait: number): Promise<void>;
-export function timeout<T>(wait: number, promise: Promise<T>): Promise<T>;
-export function timeout(wait: number, promise?: Promise<any>) {
-  const timer = delay(wait, { reject: true });
-  if (promise == null) {
-    return timer.next();
-  }
-  const result = Promise.race([promise, timer.next()]);
-  result.finally(() => timer.return()).catch(() => {});
-  return result;
+export function timeout(wait: number): Channel<number> {
+  return new Channel(async (push, _close, stop) => {
+    let timer: Timer | undefined;
+    let stopped = false;
+    stop.then(() => (stopped = true));
+    do {
+      let resolve: (timestamp: number) => void;
+      let reject: (err: TimeoutError) => void;
+      await push(
+        new Promise<number>((resolve1, reject1) => {
+          resolve = resolve1;
+          reject = reject1;
+        }),
+      );
+      if (timer != null) {
+        timer.resolve(Date.now());
+      }
+      timer = {
+        resolve: resolve!,
+        reject: reject!,
+        timeout: setTimeout(() => {
+          reject(
+            new TimeoutError(`${wait}ms elapsed without next being called`),
+          );
+        }, wait),
+      };
+    } while (!stopped);
+    if (timer != null) {
+      // Because channels swallow rejections which settle after stop, we use
+      // this mechanism to make pending calls to next return `{ done: true }`.
+      timer.reject(new TimeoutError("THIS ERROR SHOULD NEVER BE SEEN"));
+    }
+  });
 }
 
 export function interval(
