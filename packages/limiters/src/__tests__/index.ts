@@ -1,9 +1,6 @@
 import { throttler, semaphore } from "../index";
 
 describe("limiters", () => {
-  beforeEach(() => jest.useFakeTimers());
-  afterEach(() => jest.useRealTimers());
-
   test("semaphore", async () => {
     const tokens = semaphore(4);
     const t1 = (await tokens.next()).value;
@@ -23,28 +20,86 @@ describe("limiters", () => {
     expect(t6.remaining).toEqual(1);
   });
 
-  test("throttler cleans up", async () => {
-    const throttle = throttler(1000, 8);
-    await throttle.next();
-    expect(setInterval).toHaveBeenCalledTimes(1);
-    await throttle.return!();
-    expect(clearInterval).toHaveBeenCalledTimes(1);
+  test("throttler", async () => {
+    let prev = Date.now();
+    let i = 0;
+    const wait = 200;
+    for await (const _ of throttler(wait, 8)) {
+      const next = Date.now();
+      if (i !== 0 && i % 8 === 0) {
+        expect(prev + wait).toBeCloseTo(next, -1.5);
+      } else {
+        expect(prev).toBeCloseTo(next, -1.5);
+      }
+      if (i >= 40) {
+        break;
+      }
+      i++;
+      prev = next;
+    }
   });
 
-  test("throttler tracks remaining by interval", async () => {
+  test("throttler timer window slides", async () => {
+    let prev = Date.now();
+    let i = 0;
+    const wait = 200;
+    const spy = jest.spyOn(window, "setTimeout");
+    for await (const _ of throttler(wait, 8)) {
+      const next = Date.now();
+      expect(prev).toBeCloseTo(next, -1.5);
+      if (i >= 40) {
+        break;
+      }
+      if (i % 8 === 0) {
+        await new Promise((resolve) => setTimeout(resolve, wait * 2));
+      }
+      i++;
+      prev = Date.now();
+    }
+    expect(spy).toHaveBeenCalledTimes(12);
+  });
+
+  test("throttler token reset", async () => {
+    let i = 0;
+    const wait = 200;
+    for await (const token of throttler(wait, 8)) {
+      expect(token.reset).toBeCloseTo(Date.now() + wait, -1.5);
+      if (i >= 40) {
+        break;
+      }
+      i++;
+    }
+  });
+
+  test("throttler token remaining", async () => {
     let remaining = 8;
     let i = 0;
-    for await (const token of throttler(1000, 8)) {
+    let wait = 200;
+    for await (const token of throttler(wait, 8)) {
       remaining--;
       expect(token.remaining).toEqual(remaining);
       if (token.remaining === 0) {
-        jest.advanceTimersByTime(1000);
         remaining = 8;
       }
-      if (i++ >= 40) {
+      i++;
+      if (i >= 40) {
         break;
       }
     }
-    expect(clearInterval).toHaveBeenCalledTimes(1);
+  });
+
+  test("throttler cleans up", async () => {
+    try {
+      jest.useFakeTimers();
+      const throttle = throttler(200, 8);
+      await throttle.next();
+      await Promise.resolve(); // defer once to let throttle begin leaking
+      expect(setTimeout).toHaveBeenCalledTimes(1);
+      await expect(throttle.return!()).resolves.toEqual({ done: true });
+      expect(clearTimeout).toHaveBeenCalledTimes(2);
+      await expect(throttle.next()).resolves.toEqual({ done: true });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

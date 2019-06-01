@@ -1,10 +1,10 @@
 import { Channel, FixedBuffer } from "@channel/channel";
-import { interval } from "@channel/timers";
+import { delay } from "@channel/timers";
 
 export interface Token {
   readonly id: number;
   readonly limit: number;
-  remaining: number;
+  readonly remaining: number;
   release(): void;
 }
 
@@ -35,30 +35,42 @@ export async function* semaphore(limit: number): AsyncIterableIterator<Token> {
 // TODO: implement a resource pool
 
 export interface ThrottleToken extends Token {
-  reset: number;
+  readonly reset: number;
 }
 
+// TODO: is it possible to express leading/trailing logic from lodash with async iterators?
 export async function* throttler(
   wait: number,
   limit: number = 1,
 ): AsyncIterableIterator<ThrottleToken> {
-  const timer = interval(wait);
+  const timer = delay(wait);
   const tokens = new Set<Token>();
   let time = Date.now();
-  (async function leak() {
-    for await (time of timer) {
-      for (const token of tokens) {
-        token.release();
-      }
-      tokens.clear();
+  let leaking = false;
+  async function leak(): Promise<void> {
+    if (leaking) {
+      return;
     }
-  })();
+    leaking = true;
+    time = (await timer.next()).value;
+    leaking = false;
+    for (const token of tokens) {
+      token.release();
+    }
+    tokens.clear();
+  }
   try {
-    for await (const token of semaphore(limit)) {
-      yield { ...token, reset: time + wait };
+    const bucket = semaphore(limit);
+    for await (const token of bucket) {
+      leak();
       tokens.add(token);
+      yield { ...token, reset: time + wait };
     }
   } finally {
+    for (const token of tokens) {
+      token.release();
+    }
+    tokens.clear();
     await timer.return();
   }
 }
