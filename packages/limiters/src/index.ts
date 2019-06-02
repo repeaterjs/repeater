@@ -8,28 +8,51 @@ export interface Token {
   release(): void;
 }
 
-export async function* semaphore(limit: number): AsyncIterableIterator<Token> {
+export function semaphore(limit: number): Channel<Token> {
+  if (limit < 1) {
+    throw new RangeError("limit cannot be less than 1");
+  }
   let remaining = limit;
-  const released: Record<string, Token> = {};
-  const tokens = new Channel<Token>(async (push) => {
-    function release(id: number) {
-      if (released[id] != null) {
-        push(released[id]);
-        delete released[id];
+  const tokens: Record<number, Token> = {};
+  const bucket = new Channel<Token>((push) => {
+    let nextId = 0;
+    function release(this: null, id: number): void {
+      if (tokens[id] != null) {
+        const id1 = nextId++;
+        const token = {
+          ...tokens[id],
+          id: id1,
+          release: release.bind(null, id1),
+        };
+        push(token);
+        delete tokens[id];
         remaining++;
       }
     }
-    for (let id = 0; id < limit; id++) {
-      const token = { id, limit, remaining, release: release.bind(null, id) };
-      await push(token);
+    for (let i = 0; i < limit; i++) {
+      const id = nextId++;
+      const token: Token = {
+        id,
+        limit,
+        remaining,
+        release: release.bind(null, id),
+      };
+      push(token);
     }
   }, new FixedBuffer(limit));
-  for await (let token of tokens) {
-    remaining--;
-    token = { ...token, remaining };
-    released[token.id] = token;
-    yield token;
-  }
+  return new Channel<Token>(async (push, _, stop) => {
+    let stopped = false;
+    stop.then(() => (stopped = true));
+    for await (let token of Channel.race([bucket, stop])) {
+      if (stopped) {
+        break;
+      }
+      remaining--;
+      token = { ...token, remaining };
+      tokens[token.id] = token;
+      await push(token);
+    }
+  });
 }
 
 // TODO: implement a resource pool
@@ -39,40 +62,43 @@ export interface ThrottleToken extends Token {
 }
 
 // TODO: is it possible to express leading/trailing logic from lodash with async iterators?
-export async function* throttler(
+export function throttler(
   wait: number,
-  limit: number = 1,
-): AsyncIterableIterator<ThrottleToken> {
-  const timer = delay(wait);
-  const tokens = new Set<Token>();
-  let time = Date.now();
-  let leaking = false;
-  async function leak(): Promise<void> {
-    if (leaking) {
-      return;
-    }
-    leaking = true;
-    time = (await timer.next()).value;
-    leaking = false;
-    for (const token of tokens) {
-      token.release();
-    }
-    tokens.clear();
+  options: { limit?: number } = {},
+): Channel<ThrottleToken> {
+  const { limit = 1 } = options;
+  if (limit < 1) {
+    throw new RangeError("options.limit cannot be less than 1");
   }
-  try {
-    const bucket = semaphore(limit);
-    for await (const token of bucket) {
-      leak();
-      tokens.add(token);
-      yield { ...token, reset: time + wait };
+  return new Channel<ThrottleToken>(async (push, close, stop) => {
+    const timer = delay(wait);
+    const tokens = new Set<Token>();
+    let time = Date.now();
+    let leaking = false;
+    async function leak(): Promise<void> {
+      if (leaking) {
+        return;
+      }
+      time = Date.now();
+      leaking = true;
+      await timer.next();
+      for (const token of tokens) {
+        token.release();
+      }
+      tokens.clear();
+      leaking = false;
     }
-  } finally {
-    for (const token of tokens) {
-      token.release();
+    let stopped = false;
+    stop.then(() => (stopped = true));
+    for await (const token of Channel.race([semaphore(limit), stop])) {
+      if (stopped) {
+        break;
+      }
+      tokens.add(token);
+      leak();
+      await push({ ...token, reset: time + wait });
     }
     tokens.clear();
     await timer.return();
-  }
+  });
 }
-
-// TODO: implement a debouncer
