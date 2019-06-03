@@ -104,6 +104,21 @@ describe("limiters", () => {
     }
   });
 
+  test("throttler with cooldown", async () => {
+    let i = 0;
+    const wait = 200;
+    let prev = Date.now();
+    for await (const _ of throttler(wait, { cooldown: true })) {
+      const next = Date.now();
+      expect(prev + wait).toBeCloseTo(next, -1.5);
+      if (i >= 4) {
+        break;
+      }
+      i++;
+      prev = next;
+    }
+  });
+
   test("throttler cleans up", async () => {
     try {
       jest.useFakeTimers();

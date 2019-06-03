@@ -61,42 +61,46 @@ export interface ThrottleToken extends Token {
   readonly reset: number;
 }
 
-// TODO: is it possible to express leading/trailing logic from lodash with async iterators?
 export function throttler(
   wait: number,
-  options: { limit?: number } = {},
+  options: { limit?: number; cooldown?: boolean } = {},
 ): Channel<ThrottleToken> {
-  const { limit = 1 } = options;
+  const { limit = 1, cooldown = false } = options;
   if (limit < 1) {
     throw new RangeError("options.limit cannot be less than 1");
   }
   return new Channel<ThrottleToken>(async (push, close, stop) => {
     const timer = delay(wait);
     const tokens = new Set<Token>();
-    let time = Date.now();
-    let leaking = false;
+    let start = Date.now();
+    let leaking: Promise<void> | undefined;
     async function leak(): Promise<void> {
-      if (leaking) {
-        return;
+      if (leaking != null) {
+        return leaking;
       }
-      time = Date.now();
-      leaking = true;
+      start = Date.now();
       await timer.next();
       for (const token of tokens) {
         token.release();
       }
       tokens.clear();
-      leaking = false;
+      leaking = undefined;
     }
+
     let stopped = false;
     stop.then(() => (stopped = true));
-    for await (const token of Channel.race([semaphore(limit), stop])) {
+    for await (let token of Channel.race([semaphore(limit), stop])) {
       if (stopped) {
         break;
       }
+      leaking = leak();
+      token = { ...token, reset: start + wait };
       tokens.add(token);
-      leak();
-      await push({ ...token, reset: time + wait });
+      if (cooldown && token.remaining === 0) {
+        await Promise.race([stop, leaking]);
+        token = { ...token, remaining: limit };
+      }
+      await push(token);
     }
     tokens.clear();
     await timer.return();
