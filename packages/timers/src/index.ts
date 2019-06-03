@@ -1,4 +1,10 @@
-import { Channel, ChannelBuffer, SlidingBuffer } from "@channel/channel";
+import {
+  Channel,
+  ChannelBuffer,
+  ChannelOverflowError,
+  MAX_QUEUE_LENGTH,
+  SlidingBuffer,
+} from "@channel/channel";
 
 export class TimeoutError extends Error {
   constructor(message: string) {
@@ -15,78 +21,89 @@ export class TimeoutError extends Error {
   }
 }
 
-interface Timer {
-  resolve(timestamp: number): void;
-  reject(err: TimeoutError): void;
-  // The type returned by setTimeout and passed to clearTimeout. This type
-  // differs between the browser (number) and node.js (NodeJS.Timer).
-  timeout: any;
+class DeferredTimer<T> {
+  resolve!: (value: T) => void;
+  promise: Promise<T>;
+  private reject!: (err: any) => void;
+  private timeout: any;
+
+  constructor(private wait: number) {
+    this.promise = new Promise((resolve, reject) => {
+      this.resolve = resolve;
+      this.reject = reject;
+    });
+  }
+
+  run(fn: () => T): void {
+    if (this.timeout != null) {
+      throw new Error("Cannot run a timer multiple times");
+    }
+    this.timeout = setTimeout(() => {
+      try {
+        const value = fn();
+        this.resolve(value);
+      } catch (err) {
+        this.reject(err);
+      }
+    }, this.wait);
+  }
+
+  clear(): void {
+    clearTimeout(this.timeout);
+    // In the code below, this method is only called after the channel is
+    // closed. Because channels swallow rejections which settle after stop, we
+    // use this mechanism to make any pending call which has received the
+    // deferred promise resolve to `{ done: true }`.
+    this.reject(new TimeoutError("THIS ERROR SHOULD NEVER BE SEEN"));
+  }
 }
 
 export function delay(wait: number): Channel<number> {
   return new Channel(async (push, _close, stop) => {
-    let timers: Set<Timer> = new Set();
-    let stopped = false;
-    stop.then(() => (stopped = true));
-    do {
-      let resolve: (timestamp: number) => void;
-      let reject: (err: TimeoutError) => void;
-      await push(
-        new Promise<number>((resolve1, reject1) => {
-          resolve = resolve1;
-          reject = reject1;
-        }),
-      );
-      const timer: Timer = {
-        resolve: resolve!,
-        reject: reject!,
-        timeout: setTimeout(() => {
+    let timers: Set<DeferredTimer<number>> = new Set();
+    try {
+      let stopped = false;
+      stop.then(() => (stopped = true));
+      do {
+        const timer: DeferredTimer<number> = new DeferredTimer(wait);
+        await push(timer.promise);
+        timers.add(timer);
+        if (timers.size > MAX_QUEUE_LENGTH) {
+          throw new ChannelOverflowError(
+            `No more than ${MAX_QUEUE_LENGTH} calls to next are allowed on a single delay channel.`,
+          );
+        }
+        timer.run(() => {
           timers.delete(timer);
-          resolve(Date.now());
-        }, wait),
-      };
-      timers.add(timer);
-    } while (!stopped);
-    for (const timer of timers) {
-      clearTimeout(timer.timeout);
-      // Because channels swallow rejections which settle after stop, we use
-      // this mechanism to make pending calls to next return `{ done: true }`.
-      timer.reject(new TimeoutError("THIS ERROR SHOULD NEVER BE SEEN"));
+          return Date.now();
+        });
+      } while (!stopped);
+    } finally {
+      for (const timer of timers) {
+        timer.clear();
+      }
     }
   });
 }
 
-export function timeout(wait: number): Channel<number> {
+export function timeout(wait: number): Channel<undefined> {
   return new Channel(async (push, _close, stop) => {
-    let timer: Timer | undefined;
+    let timer: DeferredTimer<undefined> | undefined;
     let stopped = false;
     stop.then(() => (stopped = true));
     do {
-      let resolve: (timestamp: number) => void;
-      let reject: (err: TimeoutError) => void;
-      await push(
-        new Promise<number>((resolve1, reject1) => {
-          resolve = resolve1;
-          reject = reject1;
-        }),
-      );
+      const timer1: DeferredTimer<undefined> = new DeferredTimer(wait);
+      await push(timer1.promise);
       if (timer != null) {
-        timer.resolve(Date.now());
+        timer.resolve(undefined);
       }
-      timer = {
-        resolve: resolve!,
-        reject: reject!,
-        timeout: setTimeout(() => {
-          reject(
-            new TimeoutError(`${wait}ms elapsed without next being called`),
-          );
-        }, wait),
-      };
+      timer1.run(() => {
+        throw new TimeoutError(`${wait}ms elapsed without next being called`);
+      });
+      timer = timer1;
     } while (!stopped);
     if (timer != null) {
-      // Because channels swallow rejections which settle after stop, we use
-      // this mechanism to make pending calls to next return `{ done: true }`.
-      timer.reject(new TimeoutError("THIS ERROR SHOULD NEVER BE SEEN"));
+      timer.clear();
     }
   });
 }
