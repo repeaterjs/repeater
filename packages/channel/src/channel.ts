@@ -435,6 +435,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
             Promise.resolve(result1)
               .then((result1) => {
                 if (result1.done) {
+                  close();
                   result = result || result1;
                 }
               })
