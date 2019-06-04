@@ -25,6 +25,7 @@
     "weak": "^1.0.1"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "website"
   ]
 }
