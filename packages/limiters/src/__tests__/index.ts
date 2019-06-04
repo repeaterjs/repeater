@@ -124,7 +124,6 @@ describe("limiters", () => {
       jest.useFakeTimers();
       const throttle = throttler(200, { limit: 8 });
       await throttle.next();
-      await Promise.resolve(); // defer once to let throttle begin
       expect(setTimeout).toHaveBeenCalledTimes(1);
       await expect(throttle.return()).resolves.toEqual({ done: true });
       expect(clearTimeout).toHaveBeenCalledTimes(2);
