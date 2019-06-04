@@ -334,6 +334,7 @@ function iterators<T>(
       iters.push((contender as Iterable<T>)[Symbol.iterator]());
     } else {
       iters.push(
+        /* eslint-disable-next-line @typescript-eslint/no-use-before-define */
         new Channel<T>((_, close) => {
           close();
           return contender as Promise<T> | T;
