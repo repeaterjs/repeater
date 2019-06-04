@@ -315,17 +315,6 @@ class ChannelController<T> implements AsyncIterator<T> {
   }
 }
 
-function constant<T>(value: Promise<T> | T): AsyncIterator<T> {
-  return {
-    next(): Promise<IteratorResult<T>> {
-      return Promise.resolve(value).then((value) => ({ value, done: true }));
-    },
-    return(): Promise<IteratorResult<T>> {
-      return Promise.resolve(value).then((value) => ({ value, done: true }));
-    },
-  };
-}
-
 export type Contender<T> = AsyncIterable<T> | Iterable<T> | Promise<T> | T;
 
 function iterators<T>(
@@ -344,7 +333,12 @@ function iterators<T>(
     ) {
       iters.push((contender as Iterable<T>)[Symbol.iterator]());
     } else {
-      iters.push(constant(contender as Promise<T> | T));
+      iters.push(
+        new Channel<T>((_, close) => {
+          close();
+          return contender as Promise<T> | T;
+        }),
+      );
     }
   }
   return iters;
@@ -454,7 +448,6 @@ export class Channel<T> implements AsyncIterableIterator<T> {
           }
           await push(result1.value);
         }
-        close();
         return result && result.value;
       } catch (err) {
         close(err);
