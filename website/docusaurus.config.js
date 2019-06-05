@@ -1,9 +1,9 @@
 module.exports = {
   title: "Channel.js",
-  tagline: "The missing constructor for async iterators",
+  tagline: "The missing constructor for creating safe async iterators",
   url: "https://your-docusaurus-test-site.com",
   baseUrl: "/",
-  favicon: "img/favicon.ico",
+  favicon: "img/logo.ico",
   themeConfig: {
     navbar: {
       title: "Channel.js",
