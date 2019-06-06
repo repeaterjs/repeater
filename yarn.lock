@@ -698,7 +698,7 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@docusaurus/core@^2.0.0-alpha.18":
+"@docusaurus/core@^2.0.0-alpha.19":
   version "2.0.0-alpha.19"
   resolved "https://registry.yarnpkg.com/@docusaurus/core/-/core-2.0.0-alpha.19.tgz#4285b94e6b368448864f316b98af6ad732e69e13"
   integrity sha512-I9MqFROnlblMVsFjAUuSPMxCIM+MJ02/0P9A/4BHls/NV735RdLtYZRdI8Cz1Cp6hs06jHd1mBWA3KsXuzWwig==
@@ -808,7 +808,7 @@
   dependencies:
     sitemap "^2.1.0"
 
-"@docusaurus/preset-classic@^2.0.0-alpha.18":
+"@docusaurus/preset-classic@^2.0.0-alpha.19":
   version "2.0.0-alpha.19"
   resolved "https://registry.yarnpkg.com/@docusaurus/preset-classic/-/preset-classic-2.0.0-alpha.19.tgz#bccbf35e7282625fd7a92be7e7481fa0903b9961"
   integrity sha512-cyfffQzQAvfkUd60r0zZstDbzTpym8dpOzrbVbtFPQbiXUQWx4zkoaRkVi7tRkqMFygO8IcodIvieO3SXIjvNw==
