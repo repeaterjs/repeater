@@ -23,18 +23,22 @@ export class ChannelOverflowError extends Error {
 // TODO: parameterize these types when this PR lands (https://github.com/microsoft/TypeScript/pull/30790)
 // Next is the argument passed to AsyncIterator.next
 // Return is the argument passed to AsyncIterator.return
-export type Next = any;
-export type Return = any;
+type Next = any;
+type Return = any;
+
+export type Push<T> = (value: PromiseLike<T> | T) => Promise<Next | void>;
+export interface Stop extends Promise<Return | void> {
+  (error?: any): void;
+}
 
 export type ChannelExecutor<T> = (
-  push: (value: Promise<T> | T) => Promise<Next | void>,
-  close: (error?: any) => void,
-  stop: Promise<Return | void>,
-) => Promise<T | void> | T | void;
+  push: Push<T>,
+  stop: Stop,
+) => Promise<Return | void> | Return | void;
 
 interface PushOperation<T> {
   resolve(next?: Next): void;
-  value: Promise<T> | T;
+  value: PromiseLike<T> | T;
 }
 
 interface PullOperation<T> {
@@ -53,14 +57,14 @@ enum ChannelState {
 /**
  * The functionality for channels is implemented in this helper class and
  * hidden using a private WeakMap to make channels themselves opaque and
- * maximally compatible with the AsyncIterableIterator interface.
+ * maximally compatible with async generators.
  */
 class ChannelController<T> implements AsyncIterator<T> {
   // pushQueue and pullQueue will never both contain operations at the same time
   private pushQueue: PushOperation<T>[] = [];
   private pullQueue: PullOperation<T>[] = [];
 
-  private onclose?: (value?: Return) => void;
+  private onstop?: (value?: Return) => void;
   private state: ChannelState = ChannelState.Initial;
 
   // pending is a promise which is continuously reassigned as the channel is
@@ -72,7 +76,7 @@ class ChannelController<T> implements AsyncIterator<T> {
 
   constructor(
     private executor: ChannelExecutor<T>,
-    private buffer: ChannelBuffer<Promise<T> | T>,
+    private buffer: ChannelBuffer<PromiseLike<T> | T>,
   ) {}
 
   /**
@@ -85,28 +89,27 @@ class ChannelController<T> implements AsyncIterator<T> {
       return;
     }
     this.state = ChannelState.Started;
-    const stop = new Promise<Return | void>(
-      (onclose) => (this.onclose = onclose),
-    );
+    const push: Push<T> = this.push.bind(this);
+    const stop: Stop = this.stop.bind(this) as Stop;
+    const stopP = new Promise<Return>((onstop) => (this.onstop = onstop));
+    stop.then = stopP.then.bind(stopP);
+    stop.catch = stopP.catch.bind(stopP);
+    stop.finally = stopP.finally.bind(stopP);
     // Errors which occur in the executor take precedence over errors which are
-    // passed to closed so calling this.close with an error would be redundant.
+    // passed to stop so calling this.stop with an error would be redundant.
     try {
-      const value = this.executor(
-        this.push.bind(this),
-        this.close.bind(this),
-        stop,
-      );
-      Promise.resolve(value).catch(() => this.close());
+      const value = this.executor(push, stop);
+      Promise.resolve(value).catch(() => this.stop());
       this.execution = value;
     } catch (err) {
       this.execution = Promise.reject(err);
-      this.execution.catch(() => this.close());
+      this.execution.catch(() => this.stop());
     }
   }
 
   /**
    * A helper method which is called when a promise passed to push rejects.
-   * Rejections which settle after the channel closes are ignored. This
+   * Rejections which settle after the channel stops are ignored. This
    * behavior is useful when you have yielded a pending promise but want
    * the channel to finish instead.
    */
@@ -127,7 +130,7 @@ class ChannelController<T> implements AsyncIterator<T> {
    * prevents types of Channel<Promise<any>> and mimics the awaiting/unwrapping
    * behavior of async generators where `yield` is equivalent to `yield await`.
    */
-  private unwrap(value: Promise<T> | T): Promise<IteratorResult<T>> {
+  private unwrap(value: PromiseLike<T> | T): Promise<IteratorResult<T>> {
     if (this.pending == null) {
       this.pending = Promise.resolve(value).then(
         (value) => {
@@ -156,9 +159,10 @@ class ChannelController<T> implements AsyncIterator<T> {
    * A helper method which “consumes” the final iteration of the channel,
    * mimicking the returning/throwing behavior of generators.
    *
-   * The difference between closing a channel vs finishing a channel is that
-   * close will allow next to continue to drain values from the buffer, while
-   * finish will clear the buffer and end iteration.
+   * The difference between stopping a channel vs finishing a channel is that
+   * stopping a channel allows next to continue draining values from the
+   * pushQueue/buffer, while finishing a channel will clear the buffer and end
+   * all iteration.
    *
    * Advances state to ChannelState.Finished.
    */
@@ -167,7 +171,7 @@ class ChannelController<T> implements AsyncIterator<T> {
     const error = this.error;
     if (this.state < ChannelState.Finished) {
       if (this.state < ChannelState.Stopped) {
-        this.close();
+        this.stop();
       }
       this.state = ChannelState.Finished;
       this.pushQueue = [];
@@ -202,9 +206,9 @@ class ChannelController<T> implements AsyncIterator<T> {
   }
 
   /**
-   * this method is bound and passed to the executor as `push`
+   * This method is bound and passed to the executor as `push`.
    */
-  private push(value: Promise<T> | T): Promise<Next | void> {
+  private push(value: PromiseLike<T> | T): Promise<Next | void> {
     Promise.resolve(value).catch(() => {});
     if (this.state >= ChannelState.Stopped) {
       return Promise.resolve();
@@ -224,15 +228,15 @@ class ChannelController<T> implements AsyncIterator<T> {
   }
 
   /**
-   * this method is bound and passed to the executor as `close`.
+   * This method is bound and passed to the executor as `stop`.
    *
    * Advances state to ChannelState.Stopped.
    */
-  private close(error?: any): void {
+  private stop(error?: any): void {
     if (this.state >= ChannelState.Stopped) {
       return;
-    } else if (this.onclose != null) {
-      this.onclose();
+    } else if (this.onstop != null) {
+      this.onstop();
     }
     this.state = ChannelState.Stopped;
     this.error = error;
@@ -262,9 +266,6 @@ class ChannelController<T> implements AsyncIterator<T> {
       }
       return result;
     } else if (this.pushQueue.length) {
-      // This branch only executes if we’re using a FixedBuffer with no
-      // capacity (the default buffer passed to the constructor), because then
-      // the buffer is both empty and full at the same time.
       const push = this.pushQueue.shift()!;
       push.resolve(value);
       return this.unwrap(push.value);
@@ -291,10 +292,10 @@ class ChannelController<T> implements AsyncIterator<T> {
         );
       }
       return this.pending;
-    } else if (this.onclose != null) {
-      this.onclose(value);
+    } else if (this.onstop != null) {
+      this.onstop(value);
     }
-    this.close();
+    this.stop();
     return this.finish();
   }
 
@@ -310,12 +311,12 @@ class ChannelController<T> implements AsyncIterator<T> {
       }
       return this.pending;
     }
-    this.close(error);
+    this.stop(error);
     return this.finish();
   }
 }
 
-export type Contender<T> = AsyncIterable<T> | Iterable<T> | Promise<T> | T;
+export type Contender<T> = AsyncIterable<T> | Iterable<T> | PromiseLike<T> | T;
 
 function iterators<T>(
   contenders: Iterable<Contender<T>>,
@@ -335,10 +336,7 @@ function iterators<T>(
     } else {
       iters.push(
         /* eslint-disable-next-line @typescript-eslint/no-use-before-define */
-        new Channel<T>((_, close) => {
-          close();
-          return contender as Promise<T> | T;
-        }),
+        new Channel<T>((_, stop) => (stop(), contender as PromiseLike<T> | T)),
       );
     }
   }
@@ -352,7 +350,7 @@ const controllers: ChannelControllerMap = new WeakMap();
 export class Channel<T> implements AsyncIterableIterator<T> {
   constructor(
     executor: ChannelExecutor<T>,
-    buffer: ChannelBuffer<Promise<T> | T> = new FixedBuffer(0),
+    buffer: ChannelBuffer<PromiseLike<T> | T> = new FixedBuffer(0),
   ) {
     controllers.set(this, new ChannelController(executor, buffer));
   }
@@ -415,9 +413,9 @@ export class Channel<T> implements AsyncIterableIterator<T> {
   static race(contenders: []): Channel<void>;
   static race<T>(contenders: Iterable<Contender<T>>): Channel<T> {
     const iters = iterators(contenders);
-    return new Channel<T>(async (push, close, stop) => {
+    return new Channel<T>(async (push, stop) => {
       if (!iters.length) {
-        close();
+        stop();
         return;
       }
       let stopped = false;
@@ -435,11 +433,11 @@ export class Channel<T> implements AsyncIterableIterator<T> {
             Promise.resolve(result1)
               .then((result1) => {
                 if (result1.done) {
-                  close();
+                  stop();
                   result = result || result1;
                 }
               })
-              .catch(close);
+              .catch(stop);
           }
           results.unshift(finish);
           const result1 = await Promise.race(results);
@@ -451,9 +449,9 @@ export class Channel<T> implements AsyncIterableIterator<T> {
         }
         return result && result.value;
       } catch (err) {
-        close(err);
+        stop(err);
       } finally {
-        close();
+        stop();
         await Promise.race<any>(
           iters.map((iter) => iter.return && iter.return(returned)),
         );
@@ -485,9 +483,9 @@ export class Channel<T> implements AsyncIterableIterator<T> {
   static merge(contenders: []): Channel<void>;
   static merge<T>(contenders: Iterable<Contender<T>>): Channel<T> {
     const iters = iterators(contenders);
-    return new Channel<T>(async (push, close, stop) => {
+    return new Channel<T>(async (push, stop) => {
       if (!iters.length) {
-        close();
+        stop();
         return;
       }
       let stopped = false;
@@ -510,7 +508,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
               await push(result.value);
             }
           } catch (err) {
-            close(err);
+            stop(err);
           } finally {
             if (iter.return != null) {
               await iter.return(returned);
@@ -518,7 +516,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
           }
         }),
       );
-      close();
+      stop();
       return value;
     });
   }
@@ -547,9 +545,9 @@ export class Channel<T> implements AsyncIterableIterator<T> {
   static zip(contenders: []): Channel<[]>;
   static zip<T>(contenders: Iterable<Contender<T>>): Channel<T[]> {
     const iters = iterators(contenders);
-    return new Channel<T[]>(async (push, close, stop) => {
+    return new Channel<T[]>(async (push, stop) => {
       if (!iters.length) {
-        close();
+        stop();
         return [];
       }
       let stopped = false;
@@ -580,9 +578,9 @@ export class Channel<T> implements AsyncIterableIterator<T> {
           await push(values);
         }
       } catch (err) {
-        close(err);
+        stop(err);
       } finally {
-        close();
+        stop();
         if (!stopped) {
           await Promise.all<any>(
             iters.map((iter) => iter.return && iter.return(returned)),
@@ -616,9 +614,9 @@ export class Channel<T> implements AsyncIterableIterator<T> {
   static latest(contenders: []): Channel<[]>;
   static latest<T>(contenders: Iterable<Contender<T>>): Channel<T[]> {
     const iters = iterators(contenders);
-    return new Channel<T[]>(async (push, close, stop) => {
+    return new Channel<T[]>(async (push, stop) => {
       if (!iters.length) {
-        close();
+        stop();
         return [];
       }
       let stopped = false;
@@ -661,7 +659,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
               await push(values.slice());
             }
           } catch (err) {
-            close(err);
+            stop(err);
           } finally {
             if (iter.return != null) {
               await iter.return(returned);
@@ -669,7 +667,7 @@ export class Channel<T> implements AsyncIterableIterator<T> {
           }
         }),
       );
-      close();
+      stop();
       return result;
     });
   }

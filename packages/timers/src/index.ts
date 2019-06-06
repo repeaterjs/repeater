@@ -51,7 +51,7 @@ class DeferredTimer<T> {
   clear(): void {
     clearTimeout(this.timeout);
     // In the code below, this method is only called after the channel is
-    // closed. Because channels swallow rejections which settle after stop, we
+    // stopped. Because channels swallow rejections which settle after stop, we
     // use this mechanism to make any pending call which has received the
     // deferred promise resolve to `{ done: true }`.
     this.reject(new TimeoutError("THIS ERROR SHOULD NEVER BE SEEN"));
@@ -59,7 +59,7 @@ class DeferredTimer<T> {
 }
 
 export function delay(wait: number): Channel<number> {
-  return new Channel(async (push, _close, stop) => {
+  return new Channel(async (push, stop) => {
     let timers: Set<DeferredTimer<number>> = new Set();
     try {
       let stopped = false;
@@ -87,7 +87,7 @@ export function delay(wait: number): Channel<number> {
 }
 
 export function timeout(wait: number): Channel<undefined> {
-  return new Channel(async (push, _close, stop) => {
+  return new Channel(async (push, stop) => {
     let timer: DeferredTimer<undefined> | undefined;
     let stopped = false;
     stop.then(() => (stopped = true));
@@ -112,7 +112,7 @@ export function interval(
   wait: number,
   buffer: ChannelBuffer<number> = new SlidingBuffer(1),
 ): Channel<number> {
-  return new Channel<number>(async (push, _, stop) => {
+  return new Channel<number>(async (push, stop) => {
     push(Date.now());
     const timer = setInterval(() => push(Date.now()), wait);
     await stop;
