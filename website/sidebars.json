@@ -1,9 +1,15 @@
 {
   "docs": {
-    "Docusaurus": ["get-started", "doc2", "doc3"],
-    "Utilities": ["style-guide"]
-  },
-  "docs-other": {
-    "First Category": ["doc4", "doc5"]
+    "Getting Started": [
+      "quickstart",
+      "overview",
+      "combinators",
+      "utilities"
+    ],
+    "Guides": [
+      "safety",
+      "errors",
+      "anti-patterns"
+    ]
   }
 }

@@ -3,21 +3,35 @@ module.exports = {
   tagline: "The missing constructor for creating safe async iterators",
   url: "https://your-docusaurus-test-site.com",
   baseUrl: "/",
-  favicon: "img/logo.ico",
+  favicon: "img/favicon.ico",
   themeConfig: {
     navbar: {
       title: "Channel.js",
-      logo: {
-        alt: "Channel.js logo",
-        src: "img/logo.svg",
-      },
+      logo: { alt: "Channel.js logo", src: "img/logo.svg" },
       links: [
-        { to: "docs/get-started", label: "Docs", position: "left" },
-        { to: "api", label: "API", position: "left" },
-        { to: "blog", label: "Blog", position: "left" },
+        {
+          to: "docs/quickstart",
+          label: "Docs",
+          position: "left",
+        },
+        {
+          to: "api",
+          label: "API",
+          position: "left",
+        },
+        {
+          to: "blog",
+          label: "Blog",
+          position: "left",
+        },
         {
           href: "https://github.com/channeljs/channel",
           label: "GitHub",
+          position: "right",
+        },
+        {
+          href: "https://www.npm.im/@channel/channel",
+          label: "NPM",
           position: "right",
         },
       ],
@@ -34,6 +48,7 @@ module.exports = {
       "@docusaurus/preset-classic",
       {
         docs: {
+          path: "./docs",
           sidebarPath: require.resolve("./sidebars.json"),
         },
       },
