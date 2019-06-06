@@ -40,7 +40,7 @@ export function semaphore(limit: number): Channel<Token> {
       push(token);
     }
   }, new FixedBuffer(limit));
-  return new Channel<Token>(async (push, _, stop) => {
+  return new Channel<Token>(async (push, stop) => {
     let stopped = false;
     stop.then(() => (stopped = true));
     for await (let token of Channel.race([bucket, stop])) {
@@ -69,7 +69,7 @@ export function throttler(
   if (limit < 1) {
     throw new RangeError("options.limit cannot be less than 1");
   }
-  return new Channel<ThrottleToken>(async (push, close, stop) => {
+  return new Channel<ThrottleToken>(async (push, stop) => {
     const timer = delay(wait);
     const tokens = new Set<Token>();
     let start = Date.now();

@@ -1,33 +1,32 @@
 import { Channel, ChannelBuffer } from "@channel/channel";
 
 export interface PubSub<T> {
-  publish(topic: string, value: T): Promise<void>;
-  unpublish(topic: string, reason?: any): void;
+  publish(topic: string, value: T): Promise<void> | void;
+  unpublish(topic: string, reason?: any): Promise<void> | void;
   subscribe(topic: string, buffer?: ChannelBuffer<T>): AsyncIterableIterator<T>;
-  close(reason?: any): void;
+  close(reason?: any): Promise<void> | void;
 }
 
 interface Publisher<T> {
   push(value: T): void;
-  close(reason?: any): void;
+  stop(reason?: any): void;
 }
 
 export class InMemoryPubSub<T> implements PubSub<T> {
   protected publishers: Record<string, Set<Publisher<T>>> = {};
 
-  publish(topic: string, value: T): Promise<void> {
+  publish(topic: string, value: T): void {
     const publishers = this.publishers[topic];
     if (publishers != null) {
-      for (const { push, close } of publishers) {
+      for (const { push, stop } of publishers) {
         try {
           push(value);
         } catch (err) {
           // push queue is full
-          close(err);
+          stop(err);
         }
       }
     }
-    return Promise.resolve();
   }
 
   unpublish(topic: string, reason?: any): void {
@@ -35,8 +34,8 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     if (publishers == null) {
       return;
     }
-    for (const { close } of publishers) {
-      close(reason);
+    for (const { stop } of publishers) {
+      stop(reason);
     }
     publishers.clear();
   }
@@ -45,8 +44,8 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     if (this.publishers[topic] == null) {
       this.publishers[topic] = new Set();
     }
-    return new Channel<T>(async (push, close, stop) => {
-      const publisher = { push, close };
+    return new Channel<T>(async (push, stop) => {
+      const publisher = { push, stop };
       this.publishers[topic].add(publisher);
       await stop;
       this.publishers[topic].delete(publisher);

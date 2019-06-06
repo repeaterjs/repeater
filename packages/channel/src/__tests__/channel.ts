@@ -172,9 +172,9 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("close", async () => {
-    const chan = new Channel((_, close) => {
-      close();
+  test("stop", async () => {
+    const chan = new Channel((_, stop) => {
+      stop();
       return -1;
     });
     await expect(chan.next()).resolves.toEqual({ value: -1, done: true });
@@ -183,10 +183,10 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("close with error", async () => {
-    const error = new Error("close with error");
-    const chan = new Channel(async (push, close) => {
-      close(error);
+  test("stop with error", async () => {
+    const error = new Error("stop with error");
+    const chan = new Channel(async (push, stop) => {
+      stop(error);
       return -1;
     });
     await expect(chan.next()).rejects.toBe(error);
@@ -195,13 +195,13 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("push and close", async () => {
-    const chan = new Channel((push, close) => {
+  test("push and stop", async () => {
+    const chan = new Channel((push, stop) => {
       push(1);
       push(2);
       push(3);
       push(4);
-      close();
+      stop();
       return -1;
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -214,13 +214,13 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("async push and close", async () => {
-    const chan = new Channel(async (push, close) => {
+  test("async push and stop", async () => {
+    const chan = new Channel(async (push, stop) => {
       await push(1);
       await push(2);
       await push(3);
       await push(4);
-      close();
+      stop();
       return -1;
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -233,14 +233,14 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("push and close with error", async () => {
-    const error = new Error("push and close with error");
-    const chan = new Channel((push, close) => {
+  test("push and stop with error", async () => {
+    const error = new Error("push and stop with error");
+    const chan = new Channel((push, stop) => {
       push(1);
       push(2);
       push(3);
       push(4);
-      close(error);
+      stop(error);
       return -1;
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -253,14 +253,14 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("async push and close with error", async () => {
-    const error = new Error("async push and close with error");
-    const chan = new Channel(async (push, close) => {
+  test("async push and stop with error", async () => {
+    const error = new Error("async push and stop with error");
+    const chan = new Channel(async (push, stop) => {
       await push(1);
       await push(2);
       await push(3);
       await push(4);
-      close(error);
+      stop(error);
       return -1;
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -273,13 +273,13 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("push promise and close", async () => {
-    const chan = new Channel((push, close) => {
+  test("push promise and stop", async () => {
+    const chan = new Channel((push, stop) => {
       push(1);
       push(2);
       push(Promise.resolve(3));
       push(4);
-      close();
+      stop();
       return -1;
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -292,14 +292,14 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("push rejection and close", async () => {
-    const error = new Error("push rejection and close");
-    const chan = new Channel((push, close) => {
+  test("push rejection and stop", async () => {
+    const error = new Error("push rejection and stop");
+    const chan = new Channel((push, stop) => {
       push(1);
       push(2);
       push(Promise.reject(error));
       push(4);
-      close();
+      stop();
       return -1;
     });
 
@@ -311,13 +311,13 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("push delayed promise and close", async () => {
-    const chan = new Channel((push, close) => {
+  test("push delayed promise and stop", async () => {
+    const chan = new Channel((push, stop) => {
       push(1);
       push(2);
       push(delayPromise(50, 3));
       push(4);
-      close();
+      stop();
       return -1;
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -330,14 +330,14 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("push delayed rejection and close", async () => {
-    const error = new Error("pushing delayed rejection and close");
-    const chan = new Channel((push, close) => {
+  test("push delayed rejection and stop", async () => {
+    const error = new Error("pushing delayed rejection and stop");
+    const chan = new Channel((push, stop) => {
       push(1);
       push(2);
       push(delayPromise(50, 3, error));
       push(4);
-      close();
+      stop();
       return -1;
     });
 
@@ -349,15 +349,15 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("async push rejection and close with error", async () => {
-    const error1 = new Error("async push rejection and close with error 1");
-    const error2 = new Error("async push rejection and close with error 2");
-    const chan = new Channel(async (push, close) => {
+  test("async push rejection and stop with error", async () => {
+    const error1 = new Error("async push rejection and stop with error 1");
+    const error2 = new Error("async push rejection and stop with error 2");
+    const chan = new Channel(async (push, stop) => {
       await push(1);
       await push(2);
       await push(Promise.reject(error1));
       await push(4);
-      close(error2);
+      stop(error2);
       return -1;
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -386,11 +386,11 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("async push delayed promises and close with pending next", async () => {
-    const chan = new Channel(async (push, close) => {
+  test("async push delayed promises and stop with pending next", async () => {
+    const chan = new Channel(async (push, stop) => {
       await push(delayPromise(50, 1));
       await push(delayPromise(50, 2));
-      close();
+      stop();
       return -1;
     });
     const result1 = chan.next();
@@ -453,11 +453,11 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("throw error after push and close", async () => {
-    const error = new Error("throw error after push and close");
-    const chan = new Channel((push, close) => {
+  test("throw error after push and stop", async () => {
+    const error = new Error("throw error after push and stop");
+    const chan = new Channel((push, stop) => {
       push(1);
-      close();
+      stop();
       throw error;
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -467,14 +467,14 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("throw error after async push and close", async () => {
-    const error = new Error("throw error after async push and close");
-    const chan = new Channel(async (push, close) => {
+  test("throw error after async push and stop", async () => {
+    const error = new Error("throw error after async push and stop");
+    const chan = new Channel(async (push, stop) => {
       await push(1);
       await push(2);
       await push(3);
       await push(4);
-      close();
+      stop();
       throw error;
     });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -487,11 +487,11 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("throw error after close with error", async () => {
-    const error1 = new Error("throw error after close with error 1");
-    const error2 = new Error("throw error after close with error 2");
-    const chan = new Channel((push, close) => {
-      close(error1);
+  test("throw error after stop with error", async () => {
+    const error1 = new Error("throw error after stop with error 1");
+    const error2 = new Error("throw error after stop with error 2");
+    const chan = new Channel((push, stop) => {
+      stop(error1);
       throw error2;
     });
     await expect(chan.next()).rejects.toBe(error2);
@@ -500,11 +500,11 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("throw error after async close with error", async () => {
-    const error1 = new Error("throw error after async close with error 1");
-    const error2 = new Error("throw error after async close with error 2");
-    const chan = new Channel(async (_, close) => {
-      close(error1);
+  test("throw error after async stop with error", async () => {
+    const error1 = new Error("throw error after async stop with error 1");
+    const error2 = new Error("throw error after async stop with error 2");
+    const chan = new Channel(async (_, stop) => {
+      stop(error1);
       await delayPromise(100);
       throw error2;
     });
@@ -635,11 +635,11 @@ describe("Channel", () => {
   });
 
   test("results settle in order", async () => {
-    const chan = new Channel(async (push, close) => {
+    const chan = new Channel(async (push, stop) => {
       await push(delayPromise(200, 1));
       await push(delayPromise(20, 2));
       await push(delayPromise(2, 3));
-      close();
+      stop();
       return -1;
     });
     const result1 = chan.next();
@@ -666,11 +666,11 @@ describe("Channel", () => {
   });
 
   test("results settle in order with buffer", async () => {
-    const chan = new Channel<number>(async (push, close) => {
+    const chan = new Channel<number>(async (push, stop) => {
       await push(delayPromise(200, 1));
       await push(delayPromise(20, 2));
       await push(delayPromise(2, 3));
-      close();
+      stop();
       return -1;
     }, new FixedBuffer(100));
     const result1 = chan.next();
@@ -753,11 +753,11 @@ describe("Channel", () => {
   });
 
   test("dropping buffer", async () => {
-    const chan = new Channel<number>((push, close) => {
+    const chan = new Channel<number>((push, stop) => {
       for (let i = 0; i < 100; i++) {
         push(i);
       }
-      close();
+      stop();
     }, new DroppingBuffer(3));
     await expect(chan.next()).resolves.toEqual({ value: 0, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -768,11 +768,11 @@ describe("Channel", () => {
   });
 
   test("sliding buffer", async () => {
-    const chan = new Channel<number>((push, close) => {
+    const chan = new Channel<number>((push, stop) => {
       for (let i = 0; i < 100; i++) {
         push(i);
       }
-      close();
+      stop();
     }, new SlidingBuffer(3));
     await expect(chan.next()).resolves.toEqual({ value: 97, done: false });
     await expect(chan.next()).resolves.toEqual({ value: 98, done: false });
@@ -876,12 +876,12 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("return method with buffer after close", async () => {
-    const chan = new Channel<number>(async (push, close) => {
+  test("return method with buffer after stop", async () => {
+    const chan = new Channel<number>(async (push, stop) => {
       for (let i = 1; i < 100; i++) {
         push(i);
       }
-      close();
+      stop();
       return -1;
     }, new FixedBuffer(100));
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -893,13 +893,13 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("return method with buffer after close with error", async () => {
-    const error = new Error("return method with buffer after close with error");
-    const chan = new Channel<number>(async (push, close) => {
+  test("return method with buffer after stop with error", async () => {
+    const error = new Error("return method with buffer after stop with error");
+    const chan = new Channel<number>(async (push, stop) => {
       for (let i = 1; i < 100; i++) {
         push(i);
       }
-      close(error);
+      stop(error);
       return -1;
     }, new FixedBuffer(100));
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -912,7 +912,7 @@ describe("Channel", () => {
   });
 
   test("return method with argument", async () => {
-    const chan = new Channel(async (push, _, stop) => {
+    const chan = new Channel(async (push, stop) => {
       await push(1);
       await push(2);
       await push(3);
@@ -931,7 +931,7 @@ describe("Channel", () => {
 
   test("throw method", async () => {
     const error = new Error("throw method");
-    const chan = new Channel<number>(async (push, _, stop) => {
+    const chan = new Channel<number>(async (push, stop) => {
       await push(1);
       await push(2);
       await push(3);
@@ -979,13 +979,13 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("throw method with buffer after close", async () => {
-    const error = new Error("throw method with buffer after close");
-    const chan = new Channel<number>(async (push, close) => {
+  test("throw method with buffer after stop", async () => {
+    const error = new Error("throw method with buffer after stop");
+    const chan = new Channel<number>(async (push, stop) => {
       for (let i = 1; i < 100; i++) {
         push(i);
       }
-      close();
+      stop();
       return -1;
     }, new FixedBuffer(100));
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -997,18 +997,18 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("throw method with buffer after close with error", async () => {
+  test("throw method with buffer after stop with error", async () => {
     const error1 = new Error(
-      "throw method with buffer after close with error 1",
+      "throw method with buffer after stop with error 1",
     );
     const error2 = new Error(
-      "throw method with buffer after close with error 2",
+      "throw method with buffer after stop with error 2",
     );
-    const chan = new Channel<number>(async (push, close) => {
+    const chan = new Channel<number>(async (push, stop) => {
       for (let i = 1; i < 100; i++) {
         push(i);
       }
-      close(error1);
+      stop(error1);
       return -1;
     }, new FixedBuffer(100));
     await expect(chan.next()).resolves.toEqual({ value: 1, done: false });
@@ -1022,7 +1022,7 @@ describe("Channel", () => {
 
   test("throw method with pending next", async () => {
     const error = new Error("throw method with pending next");
-    const chan = new Channel<number>(async (push, _, stop) => {
+    const chan = new Channel<number>(async (push, stop) => {
       await push(1);
       await push(2);
       await push(3);
@@ -1063,12 +1063,12 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("stop", async () => {
+  test("stop promise", async () => {
     const mock = jest.fn();
-    const chan = new Channel<number>(async (push, close, stop) => {
+    const chan = new Channel<number>(async (push, stop) => {
       push(1);
       push(2);
-      setTimeout(() => close());
+      setTimeout(() => stop());
       await stop;
       push(3);
       mock();
@@ -1081,9 +1081,9 @@ describe("Channel", () => {
     expect(mock).toHaveBeenCalled();
   });
 
-  test("stop and return method", async () => {
+  test("stop promise and return method", async () => {
     const mock = jest.fn();
-    const chan = new Channel<number>(async (push, _, stop) => {
+    const chan = new Channel<number>(async (push, stop) => {
       push(1);
       push(2);
       await stop;
@@ -1104,9 +1104,9 @@ describe("Channel", () => {
     await expect(chan.next()).resolves.toEqual({ done: true });
   });
 
-  test("stop and return method with argument", async () => {
+  test("stop promise and return method with argument", async () => {
     const mock = jest.fn();
-    const chan = new Channel<number>(async (push, _, stop) => {
+    const chan = new Channel<number>(async (push, stop) => {
       push(1);
       push(2);
       mock(await stop);

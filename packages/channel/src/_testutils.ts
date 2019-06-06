@@ -56,11 +56,11 @@ export function delayChannel<T>(
   returned?: T,
   error?: Error,
 ): Channel<T> {
-  return new Channel<T>(async (push, close, stop) => {
+  return new Channel<T>(async (push, stop) => {
     let i = 0;
     const timer = setInterval(() => {
       if (i >= values.length) {
-        close(error);
+        stop(error);
       }
       push(values[i++]);
     }, wait);
