@@ -30,7 +30,7 @@ module.exports = {
           position: "right",
         },
         {
-          href: "https://www.npm.im/@channel/channel",
+          href: "https://www.npmjs.com/package/@channel/channel",
           label: "NPM",
           position: "right",
         },

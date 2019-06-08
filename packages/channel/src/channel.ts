@@ -95,8 +95,8 @@ class ChannelController<T> implements AsyncIterator<T> {
     stop.then = stopP.then.bind(stopP);
     stop.catch = stopP.catch.bind(stopP);
     stop.finally = stopP.finally.bind(stopP);
-    // Errors which occur in the executor take precedence over errors which are
-    // passed to stop so calling this.stop with an error would be redundant.
+    // Errors which occur in the executor take precedence over those passed to
+    // this.stop, so calling this.stop with the caught error would be redundant.
     try {
       const value = this.executor(push, stop);
       Promise.resolve(value).catch(() => this.stop());
@@ -109,9 +109,8 @@ class ChannelController<T> implements AsyncIterator<T> {
 
   /**
    * A helper method which is called when a promise passed to push rejects.
-   * Rejections which settle after the channel stops are ignored. This
-   * behavior is useful when you have yielded a pending promise but want
-   * the channel to finish instead.
+   * Rejections which settle after stop are ignored. This behavior is useful
+   * when you have yielded a pending promise but want to finish instead.
    */
   private reject(err: any): Promise<IteratorResult<T>> {
     if (this.state >= ChannelState.Stopped) {

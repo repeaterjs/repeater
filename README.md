@@ -108,7 +108,7 @@ Similar to the `Promise` constructor, the `Channel` constructor takes an *execut
 ## How are channels “safe”?
 Most async iterator libraries currently available are prone to causing memory leaks through normal usage. Channels use the following design principles to prevent leaks:
 
-### Channels execute lazily.
+### Channels execute lazily
 There are several existing async iterator libraries which provide tightly-coupled wrappers around event emitters, streams, or other callback-based APIs. Almost all of them make the critical mistake of registering callbacks eagerly, i.e. when the iterator is created. Consider the following naive async iterator returning function:
 
 ```js

@@ -12,15 +12,12 @@ import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import withBaseUrl from "@docusaurus/withBaseUrl";
 
 import Layout from "@theme/Layout";
-import CodeBlock from "@theme/CodeBlock";
+
 import styles from "./styles.module.css";
 
-function Button({ text, to, children }) {
+function Button({ to, children }) {
   return (
-    <Link
-      className="button button--outline button--primary button--lg"
-      to={to}
-    >
+    <Link to={to} className="button button--outline button--primary button--lg">
       {children}
     </Link>
   );
@@ -30,7 +27,7 @@ function Hero() {
   const context = useDocusaurusContext();
   const { siteConfig = {} } = context;
   return (
-    <header className={classnames("hero hero--dark", styles.hero)}>
+    <header className={classnames("hero", styles.hero)}>
       <div
         className={styles.background}
         style={{ backgroundImage: `url(${withBaseUrl("img/smpte.svg")})` }}
@@ -39,60 +36,64 @@ function Hero() {
         <img src={withBaseUrl("img/logo.svg")} alt="logo" />
         <h1 className="hero__title">{siteConfig.title}</h1>
         <p className="hero__subtitle">{siteConfig.tagline}</p>
+        <Button to={withBaseUrl("docs/quickstart")}>Get Started</Button>
       </div>
     </header>
   );
 }
 
+function Feature({ title, children, color = "white" }) {
+  return (
+    <div className="col">
+      <h2 className="text--center" style={{ color }}>
+        {title}
+      </h2>
+      <p className="text--justify">{children}</p>
+    </div>
+  );
+}
+
 function Body() {
   return (
-    <main className="container margin-vert--xl">
-      <div className="row margin--xl">
-        <div className="col">
-          <h2 className="text--center">Convenient</h2>
-          <p className="text--justify">Channels provide a promise-fluent API for setting up and tearing down callbacks. The same constructor function can be used to convert *any* callback-based source of data (event emitters, streams, observables) into an async iterator.</p>
-        </div>
-        <div className="col">
-          <h2 className="text--center">Safe</h2>
-          <p className="text--justify">Channels are carefully designed to prevent many common async iterators mistakes from ever happening. They initialize lazily, provide strategies for dealing with backpressure and propagate errors in a predictable fashion.</p>
-        </div>
-        <div className="col">
-          <h2 className="text--center">Powerful</h2>
-          <p className="text--justify">
-            TKTK The Channel class emulates the simplicity of the Promise constructor. Channels are designed with the explicit goal of behaving exactly like async generators and contain no methods or properties not found on the async iterator interface.
-          </p>
-        </div>
-      </div>
+    <main className="container padding-horiz--md margin-vert--xl">
       <div className="row">
-        <div className="col">
-          <h2>Quickstart</h2>
-          <CodeBlock>$ npm install @channel/channel</CodeBlock>
-          <br />
-          <CodeBlock>$ yarn add @channel/channel</CodeBlock>
-          <br />
-          <CodeBlock className="javascript">{`
-import { Channel } from "@channel/channel";
-
-const timestamps = new Channel(async (push, _, stop) => {
-  push(Date.now());
-  const timer = setInterval(() => push(Date.now()), 1000);
-  await stop;
-  clearInterval(timer);
-});
-
-(async function() {
-  let i = 0;
-  for await (const timestamp of timestamps) {
-    console.log(timestamp);
-    i++;
-    if (i >= 10) {
-      console.log("ALL DONE!");
-      break; // triggers clearInterval above
-    }
-  }
-})();
-          `}</CodeBlock>
-        </div>
+        <Feature title="Convenient" color="#00C4C3">
+          The Channel class provides a promise-fluent API for creating async
+          iterators. The same constructor can be used to convert event emitters,
+          streams, websockets, web workers, mutation observers, observables or
+          any other callback-based source of data into objects which can be
+          consumed using <code>async/await</code> and <code>for await…of</code>{" "}
+          statements.
+        </Feature>
+        <Feature title="Safe" color="#D300C5">
+          Channels prevent common mistakes that are made when rolling async
+          iterators by hand. By{" "}
+          <Link to={withBaseUrl("docs/safety#channels-execute-lazily")}>
+            initializing lazily
+          </Link>
+          ,{" "}
+          <Link
+            to={withBaseUrl("docs/safety#channels-respond-to-backpressure")}
+          >
+            providing strategies for dealing with backpressure
+          </Link>
+          , and{" "}
+          <Link to={withBaseUrl("docs/errors")}>
+            propagating errors in a predictable fashion
+          </Link>
+          , channels ensure that event handlers are cleaned up and help you
+          quickly identify potential bottlenecks and deadlocks.
+        </Feature>
+        <Feature title="Powerful" color="#00CA00">
+          The Channel constructor is well-specified and flexible enough to model
+          complex patterns like cancelable timers, async semaphores, and generic
+          pubsub classes. The Channel class also provides{" "}
+          <Link to={withBaseUrl("docs/combinators")}>
+            static combinator methods
+          </Link>{" "}
+          like <code>Channel.merge</code> which allow you to use async iterators
+          for reactive programming purposes.
+        </Feature>
       </div>
     </main>
   );
