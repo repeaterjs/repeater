@@ -3,8 +3,8 @@ module.exports = {
   tagline: "The missing constructor for creating safe async iterators",
   organizationName: "channeljs",
   projectName: "channel",
-  url: "channeljs.github.io",
-  baseUrl: "/channel/",
+  url: "channel.js.org",
+  baseUrl: "/",
   favicon: "img/favicon.ico",
   themeConfig: {
     navbar: {
