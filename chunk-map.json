@@ -1,66 +1,66 @@
 {
   "main": [
-    "channelmain.79f4fd2694233a35a9cb.css",
-    "channelmain.79f4fd2694233a35a9cb.js"
+    "channel/main.87e6e03d99268fd7e8b4.css",
+    "channel/main.87e6e03d99268fd7e8b4.js"
   ],
   "component---users-brian-projects-channel-website-pages-index-js-67-a-f1b": [
-    "channelcomponent---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.css",
-    "channelcomponent---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.js"
+    "channel/component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.css",
+    "channel/component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.js"
   ],
-  "metadata---channele-80-cdc": [
-    "channelmetadata---channele-80-cdc.976471f4be6b7ee37c90.js"
+  "metadata---channel-8-c-0-053": [
+    "channel/metadata---channel-8-c-0-053.6ae64fc2a720d906d98b.js"
   ],
   "component---theme-doc-page-1-be-9be": [],
   "docsMetadata---channel-docs-6-e-9-642": [
-    "channeldocsMetadata---channel-docs-6-e-9-642.8425999e8b05d87deef5.js"
+    "channel/docsMetadata---channel-docs-6-e-9-642.1bd8b3f090c710df2414.js"
   ],
   "component---theme-doc-item-178-a40": [],
-  "content---channel-docs-anti-patterns-68-d-c0f": [
-    "channelcontent---channel-docs-anti-patterns-68-d-c0f.ae14ed0595a95a4c5cd8.js"
-  ],
-  "metadata---channel-docs-anti-patterns-50-b-9a6": [
-    "channelmetadata---channel-docs-anti-patterns-50-b-9a6.ee4f2cfe212d836da9ae.js"
-  ],
-  "content---channel-docs-combinators-7-e-1-d00": [
-    "channelcontent---channel-docs-combinators-7-e-1-d00.5135b246bbbab8a64073.js"
-  ],
-  "metadata---channel-docs-combinators-98-c-504": [
-    "channelmetadata---channel-docs-combinators-98-c-504.bd8c88e65788eeb6eace.js"
-  ],
-  "content---channel-docs-errors-670-cc4": [
-    "channelcontent---channel-docs-errors-670-cc4.f31cfe511c047344864c.js"
-  ],
-  "metadata---channel-docs-errorsda-6-1a6": [
-    "channelmetadata---channel-docs-errorsda-6-1a6.703affd58863da270f99.js"
-  ],
   "content---channel-docs-overviewf-1-b-116": [
-    "channelcontent---channel-docs-overviewf-1-b-116.8c3ea308244b53795d24.js"
+    "channel/content---channel-docs-overviewf-1-b-116.b333fc2df4c3026d0720.js"
   ],
   "metadata---channel-docs-overview-4-a-2-098": [
-    "channelmetadata---channel-docs-overview-4-a-2-098.e61717bf5505277f19e9.js"
+    "channel/metadata---channel-docs-overview-4-a-2-098.23d03ba22758c5bc6443.js"
+  ],
+  "content---channel-docs-errors-670-cc4": [
+    "channel/content---channel-docs-errors-670-cc4.4d2a12231da5121c8610.js"
+  ],
+  "metadata---channel-docs-errorsda-6-1a6": [
+    "channel/metadata---channel-docs-errorsda-6-1a6.32aafcb2dc3e8e572c05.js"
+  ],
+  "content---channel-docs-combinators-7-e-1-d00": [
+    "channel/content---channel-docs-combinators-7-e-1-d00.5b5afe00d4a195f8c9ab.js"
+  ],
+  "metadata---channel-docs-combinators-98-c-504": [
+    "channel/metadata---channel-docs-combinators-98-c-504.9baef32ebae527d9f8bf.js"
+  ],
+  "content---channel-docs-anti-patterns-68-d-c0f": [
+    "channel/content---channel-docs-anti-patterns-68-d-c0f.c7dcd5866b59ce3284b1.js"
+  ],
+  "metadata---channel-docs-anti-patterns-50-b-9a6": [
+    "channel/metadata---channel-docs-anti-patterns-50-b-9a6.0ee76da34819cf0eac5c.js"
   ],
   "content---channel-docs-quickstartfdb-c12": [
-    "channelcontent---channel-docs-quickstartfdb-c12.f8c421096a0fb77b6326.js"
+    "channel/content---channel-docs-quickstartfdb-c12.f8c421096a0fb77b6326.js"
   ],
   "metadata---channel-docs-quickstartc-4-e-663": [
-    "channelmetadata---channel-docs-quickstartc-4-e-663.4b979b7bfd27fd15f23a.js"
+    "channel/metadata---channel-docs-quickstartc-4-e-663.2556692177ae7bbaefc5.js"
   ],
   "content---channel-docs-rationale-84-f-35b": [
-    "channelcontent---channel-docs-rationale-84-f-35b.993a9f80c4ab697d3c05.js"
+    "channel/content---channel-docs-rationale-84-f-35b.993a9f80c4ab697d3c05.js"
   ],
   "metadata---channel-docs-rationaled-48-494": [
-    "channelmetadata---channel-docs-rationaled-48-494.784bf292ffed60d3968f.js"
+    "channel/metadata---channel-docs-rationaled-48-494.ff62fef36cda9757569d.js"
   ],
   "content---channel-docs-safety-848-31f": [
-    "channelcontent---channel-docs-safety-848-31f.35b250b9de83b2436018.js"
+    "channel/content---channel-docs-safety-848-31f.35b250b9de83b2436018.js"
   ],
   "metadata---channel-docs-safety-74-c-c2f": [
-    "channelmetadata---channel-docs-safety-74-c-c2f.63ada78d48ada60ab532.js"
+    "channel/metadata---channel-docs-safety-74-c-c2f.8aeaf9752b5f27650a66.js"
   ],
   "content---channel-docs-utilities-2-c-6-a3f": [
-    "channelcontent---channel-docs-utilities-2-c-6-a3f.f3ef6cadb4ed502bb040.js"
+    "channel/content---channel-docs-utilities-2-c-6-a3f.f3ef6cadb4ed502bb040.js"
   ],
   "metadata---channel-docs-utilities-0-f-5-ccb": [
-    "channelmetadata---channel-docs-utilities-0-f-5-ccb.08bf16b175ab7308f2ac.js"
+    "channel/metadata---channel-docs-utilities-0-f-5-ccb.9588da6505dfe82a4964.js"
   ]
 }
