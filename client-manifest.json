@@ -1,0 +1,338 @@
+{
+  "entrypoints": [
+    "main"
+  ],
+  "origins": {
+    "@theme/DocPage": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      0
+    ],
+    "@theme/DocItem": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      0
+    ],
+    "@theme/NotFound": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      0
+    ],
+    "/Users/brian/Projects/channel/website/pages/index.js": [
+      0,
+      1
+    ],
+    "/Users/brian/Projects/channel/website/docs/anti-patterns.md": [
+      0,
+      2
+    ],
+    "/Users/brian/Projects/channel/website/docs/combinators.md": [
+      0,
+      3
+    ],
+    "/Users/brian/Projects/channel/website/docs/errors.md": [
+      0,
+      4
+    ],
+    "/Users/brian/Projects/channel/website/docs/overview.md": [
+      0,
+      5
+    ],
+    "/Users/brian/Projects/channel/website/docs/quickstart.md": [
+      0,
+      6
+    ],
+    "/Users/brian/Projects/channel/website/docs/rationale.md": [
+      0,
+      7
+    ],
+    "/Users/brian/Projects/channel/website/docs/safety.md": [
+      0,
+      8
+    ],
+    "/Users/brian/Projects/channel/website/docs/utilities.md": [
+      0,
+      9
+    ],
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-b05.json": [
+      10
+    ],
+    "main": [
+      21,
+      11
+    ],
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-anti-patterns-287.json": [
+      12
+    ],
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-combinators-3b9.json": [
+      13
+    ],
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-errors-90e.json": [
+      14
+    ],
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-overview-45e.json": [
+      15
+    ],
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-quickstart-514.json": [
+      16
+    ],
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-rationale-a0e.json": [
+      17
+    ],
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-safety-c57.json": [
+      18
+    ],
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-utilities-50a.json": [
+      19
+    ],
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-pages/channel-c48.json": [
+      20
+    ],
+    "runtime~main": [
+      11,
+      21
+    ]
+  },
+  "assets": {
+    "0": {
+      "css": [
+        {
+          "file": "vendors.c08a002fc196d402aad1.css",
+          "hash": "c08a002fc196d402aad1",
+          "publicPath": "vendors.c08a002fc196d402aad1.css"
+        }
+      ],
+      "js": [
+        {
+          "file": "vendors.c08a002fc196d402aad1.js",
+          "hash": "c08a002fc196d402aad1",
+          "publicPath": "vendors.c08a002fc196d402aad1.js"
+        }
+      ]
+    },
+    "1": {
+      "css": [
+        {
+          "file": "component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.css",
+          "hash": "d4dbe3b54ef9f218d1c7",
+          "publicPath": "component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.css"
+        }
+      ],
+      "js": [
+        {
+          "file": "component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.js",
+          "hash": "d4dbe3b54ef9f218d1c7",
+          "publicPath": "component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.js"
+        }
+      ]
+    },
+    "2": {
+      "js": [
+        {
+          "file": "content---channel-docs-anti-patterns-68-d-c0f.ae14ed0595a95a4c5cd8.js",
+          "hash": "ae14ed0595a95a4c5cd8",
+          "publicPath": "content---channel-docs-anti-patterns-68-d-c0f.ae14ed0595a95a4c5cd8.js"
+        }
+      ]
+    },
+    "3": {
+      "js": [
+        {
+          "file": "content---channel-docs-combinators-7-e-1-d00.5135b246bbbab8a64073.js",
+          "hash": "5135b246bbbab8a64073",
+          "publicPath": "content---channel-docs-combinators-7-e-1-d00.5135b246bbbab8a64073.js"
+        }
+      ]
+    },
+    "4": {
+      "js": [
+        {
+          "file": "content---channel-docs-errors-670-cc4.f31cfe511c047344864c.js",
+          "hash": "f31cfe511c047344864c",
+          "publicPath": "content---channel-docs-errors-670-cc4.f31cfe511c047344864c.js"
+        }
+      ]
+    },
+    "5": {
+      "js": [
+        {
+          "file": "content---channel-docs-overviewf-1-b-116.8c3ea308244b53795d24.js",
+          "hash": "8c3ea308244b53795d24",
+          "publicPath": "content---channel-docs-overviewf-1-b-116.8c3ea308244b53795d24.js"
+        }
+      ]
+    },
+    "6": {
+      "js": [
+        {
+          "file": "content---channel-docs-quickstartfdb-c12.f8c421096a0fb77b6326.js",
+          "hash": "f8c421096a0fb77b6326",
+          "publicPath": "content---channel-docs-quickstartfdb-c12.f8c421096a0fb77b6326.js"
+        }
+      ]
+    },
+    "7": {
+      "js": [
+        {
+          "file": "content---channel-docs-rationale-84-f-35b.993a9f80c4ab697d3c05.js",
+          "hash": "993a9f80c4ab697d3c05",
+          "publicPath": "content---channel-docs-rationale-84-f-35b.993a9f80c4ab697d3c05.js"
+        }
+      ]
+    },
+    "8": {
+      "js": [
+        {
+          "file": "content---channel-docs-safety-848-31f.35b250b9de83b2436018.js",
+          "hash": "35b250b9de83b2436018",
+          "publicPath": "content---channel-docs-safety-848-31f.35b250b9de83b2436018.js"
+        }
+      ]
+    },
+    "9": {
+      "js": [
+        {
+          "file": "content---channel-docs-utilities-2-c-6-a3f.f3ef6cadb4ed502bb040.js",
+          "hash": "f3ef6cadb4ed502bb040",
+          "publicPath": "content---channel-docs-utilities-2-c-6-a3f.f3ef6cadb4ed502bb040.js"
+        }
+      ]
+    },
+    "10": {
+      "js": [
+        {
+          "file": "docsMetadata---channel-docs-6-e-9-642.8425999e8b05d87deef5.js",
+          "hash": "8425999e8b05d87deef5",
+          "publicPath": "docsMetadata---channel-docs-6-e-9-642.8425999e8b05d87deef5.js"
+        }
+      ]
+    },
+    "11": {
+      "css": [
+        {
+          "file": "main.79f4fd2694233a35a9cb.css",
+          "hash": "79f4fd2694233a35a9cb",
+          "publicPath": "main.79f4fd2694233a35a9cb.css"
+        }
+      ],
+      "js": [
+        {
+          "file": "main.79f4fd2694233a35a9cb.js",
+          "hash": "79f4fd2694233a35a9cb",
+          "publicPath": "main.79f4fd2694233a35a9cb.js"
+        }
+      ]
+    },
+    "12": {
+      "js": [
+        {
+          "file": "metadata---channel-docs-anti-patterns-50-b-9a6.ee4f2cfe212d836da9ae.js",
+          "hash": "ee4f2cfe212d836da9ae",
+          "publicPath": "metadata---channel-docs-anti-patterns-50-b-9a6.ee4f2cfe212d836da9ae.js"
+        }
+      ]
+    },
+    "13": {
+      "js": [
+        {
+          "file": "metadata---channel-docs-combinators-98-c-504.bd8c88e65788eeb6eace.js",
+          "hash": "bd8c88e65788eeb6eace",
+          "publicPath": "metadata---channel-docs-combinators-98-c-504.bd8c88e65788eeb6eace.js"
+        }
+      ]
+    },
+    "14": {
+      "js": [
+        {
+          "file": "metadata---channel-docs-errorsda-6-1a6.703affd58863da270f99.js",
+          "hash": "703affd58863da270f99",
+          "publicPath": "metadata---channel-docs-errorsda-6-1a6.703affd58863da270f99.js"
+        }
+      ]
+    },
+    "15": {
+      "js": [
+        {
+          "file": "metadata---channel-docs-overview-4-a-2-098.e61717bf5505277f19e9.js",
+          "hash": "e61717bf5505277f19e9",
+          "publicPath": "metadata---channel-docs-overview-4-a-2-098.e61717bf5505277f19e9.js"
+        }
+      ]
+    },
+    "16": {
+      "js": [
+        {
+          "file": "metadata---channel-docs-quickstartc-4-e-663.4b979b7bfd27fd15f23a.js",
+          "hash": "4b979b7bfd27fd15f23a",
+          "publicPath": "metadata---channel-docs-quickstartc-4-e-663.4b979b7bfd27fd15f23a.js"
+        }
+      ]
+    },
+    "17": {
+      "js": [
+        {
+          "file": "metadata---channel-docs-rationaled-48-494.784bf292ffed60d3968f.js",
+          "hash": "784bf292ffed60d3968f",
+          "publicPath": "metadata---channel-docs-rationaled-48-494.784bf292ffed60d3968f.js"
+        }
+      ]
+    },
+    "18": {
+      "js": [
+        {
+          "file": "metadata---channel-docs-safety-74-c-c2f.63ada78d48ada60ab532.js",
+          "hash": "63ada78d48ada60ab532",
+          "publicPath": "metadata---channel-docs-safety-74-c-c2f.63ada78d48ada60ab532.js"
+        }
+      ]
+    },
+    "19": {
+      "js": [
+        {
+          "file": "metadata---channel-docs-utilities-0-f-5-ccb.08bf16b175ab7308f2ac.js",
+          "hash": "08bf16b175ab7308f2ac",
+          "publicPath": "metadata---channel-docs-utilities-0-f-5-ccb.08bf16b175ab7308f2ac.js"
+        }
+      ]
+    },
+    "20": {
+      "js": [
+        {
+          "file": "metadata---channele-80-cdc.976471f4be6b7ee37c90.js",
+          "hash": "976471f4be6b7ee37c90",
+          "publicPath": "metadata---channele-80-cdc.976471f4be6b7ee37c90.js"
+        }
+      ]
+    },
+    "21": {
+      "js": [
+        {
+          "file": "runtime~main.43c1641b871801903700.js",
+          "hash": "43c1641b871801903700",
+          "publicPath": "runtime~main.43c1641b871801903700.js"
+        }
+      ]
+    }
+  }
+}
