@@ -1,6 +1,6 @@
 # Channel.js
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/channeljs/channel/master/website/static/logo.svg?sanitize=true" alt="Channel.js logo">
+  <img src="https://raw.githubusercontent.com/channeljs/channel/docs/website/static/img/logo.svg" alt="Channel.js logo">
   The missing constructor for creating safe async iterators
 </h1>
 
