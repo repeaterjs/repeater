@@ -4,38 +4,39 @@ The missing constructor for creating safe async iterators
 ## API
 
 ```ts
-export declare class Channel<T = any, TYield = T, TReturn = TYield>
-  implements AsyncIterableIterator<T> {
-  constructor(
-    executor: ChannelExecutor<T, TYield, TReturn>,
-    buffer?: ChannelBuffer<T>,
-  );
-  next(value?: TYield): Promise<IteratorResult<T>>;
-  return(value?: TReturn): Promise<IteratorResult<T>>;
-  throw(error?: any): Promise<IteratorResult<T>>;
+class Channel<T> implements AsyncIterableIterator<T> {
+  constructor(executor: ChannelExecutor<T>, buffer?: ChannelBuffer<T>);
+  next(value?: any): Promise<IteratorResult<T>>;
+  return(value?: any): Promise<IteratorResult<T>>;
+  throw(error: any): Promise<IteratorResult<T>>;
   [Symbol.asyncIterator](): this;
 }
 ```
 
-The `Channel` class implements the `AsyncIterableIterator` interface. Channels are virtually indistinguishable from async generator objects.
+The `Channel` class implements the `AsyncIterableIterator` interface. Channels are designed to be indistinguishable from async generator objects.
 
 ```ts
-type ChannelExecutor<T, TYield, TReturn> = (
-  push: (value: T) => Promise<TYield | void>,
-  close: (error?: any) => void,
-  stop: Promise<TReturn | void>,
+type Push<T> = (value: PromiseLike<T> | T) => Promise<any | void>;
+
+interface Stop extends Promise<any | void> {
+  (error?: any): void;
+}
+
+type ChannelExecutor<T> = (
+  push: Push<T>,
+  stop: Stop
 ) => Promise<T | void> | T | void;
 ```
 
-The `ChannelExecutor` is passed three values: `push`, `close` and `stop`.
+The `ChannelExecutor` is passed the arguments `push` and `stop`.
 
-`push` is a function which allows you to enqueue values onto the channel. It synchronously throws errors if there are too many pending pushes on the channel (currently set to 1024). It returns a promise which resolves when it’s safe to push more values. If you pass a value to `Channel.prototype.next`, the oldest pending push call will resolve to that value.
+`push` is a function which allows you to enqueue values onto the channel. It synchronously throws an error if there are too many pending pushes on the channel (currently set to 1024). It returns a promise which resolves when it’s safe to push more values.
 
-`close` is a function which allows you to close the channel. Passing zero arguments to `close` closes the channel without error, while passing an error both closes the channel and causes the final iteration to reject with that error. Calling `close` on an already closed channel has no effect.
+`stop` is a both a promise and a function. As a function, `stop` can be called to stop a channel. Calling `stop` without any arguments stops the channel without error, and passing an error both stops the channel and causes the final iteration to reject with that error.
 
-`stop` is a promise which resolves when the channel is closed. It is useful to await `stop` to delay removing event handlers, and it can be used with `Promise.race` to cancel promises within the executor. If you pass a value to `Channel.prototype.return`, `stop` will resolve to that value.
+As a promise, `stop` can be awaited to defer event handler cleanup, and it can also be used with `Promise.race` to abort pending promises. If you pass a value to `Channel.prototype.return`, `stop` will resolve to that value.
 
-The channel will automatically close when the executor returns, so it is advisable to make the executor asynchronous and await the `stop` promise to ensure the channel does not close prematurely.
+The value of the final interation of the channel will be the return value of the executor. If the executor throws an error or returns a promise rejection, the channel will be immediately stopped and the final iteration will throw.
 
 ```ts
 interface ChannelBuffer<T> {

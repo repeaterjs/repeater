@@ -15,16 +15,6 @@ module.exports = {
           position: "left",
         },
         {
-          to: "api",
-          label: "API",
-          position: "left",
-        },
-        {
-          to: "blog",
-          label: "Blog",
-          position: "left",
-        },
-        {
           href: "https://github.com/channeljs/channel",
           label: "GitHub",
           position: "right",

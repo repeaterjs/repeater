@@ -7,15 +7,18 @@ Basic async iterators for limiting concurrency, implemented with channels
 interface Token {
   readonly id: number;
   readonly limit: number;
-  remaining: number;
+  readonly remaining: number;
   release(): void;
 }
 
-function semaphore(limit: number): AsyncIterableIterator<Token>;
+function semaphore(limit: number): Channel<Token>;
 
 interface ThrottleToken extends Token {
-  reset: number;
+    readonly reset: number;
 }
 
-function throttler(wait: number, limit?: number): AsyncIterableIterator<ThrottleToken>;
+function throttler(wait: number, options?: {
+    limit?: number;
+    cooldown?: boolean;
+}): Channel<ThrottleToken>;
 ```

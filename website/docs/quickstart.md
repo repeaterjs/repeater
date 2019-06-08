@@ -22,7 +22,7 @@ In addition, channels are most useful when used with `async/await` and `for awai
 
 ## Examples
 
-### Logging timestamps with setInterval
+#### Logging timestamps with setInterval
 
 ```js
 import { Channel } from "@channel/channel";
@@ -47,7 +47,7 @@ const timestamps = new Channel(async (push, stop) => {
 })();
 ```
 
-### Creating a channel from a websocket
+#### Creating a channel from a websocket
 
 ```js
 import { Channel } from "@channel/channel";
@@ -71,7 +71,7 @@ const messages = new Channel(async (push, stop) => {
 })();
 ```
 
-### Listening for the [Konami Code](https://en.wikipedia.org/wiki/Konami_Code)
+#### Listening for the [Konami Code](https://en.wikipedia.org/wiki/Konami_Code)
 
 ```js
 import { Channel } from "@channel/channel";

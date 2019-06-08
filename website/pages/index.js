@@ -62,37 +62,22 @@ function Body() {
           iterators. The same constructor can be used to convert event emitters,
           streams, websockets, web workers, mutation observers, observables or
           any other callback-based source of data into objects which can be
-          consumed using <code>async/await</code> and <code>for await…of</code>{" "}
+          consumed using <code>async/await</code> and <code>for await…of</code>
           statements.
         </Feature>
         <Feature title="Safe" color="#D300C5">
           Channels prevent common mistakes that are made when rolling async
-          iterators by hand. By{" "}
-          <Link to={withBaseUrl("docs/safety#channels-execute-lazily")}>
-            initializing lazily
-          </Link>
-          ,{" "}
-          <Link
-            to={withBaseUrl("docs/safety#channels-respond-to-backpressure")}
-          >
-            providing strategies for dealing with backpressure
-          </Link>
-          , and{" "}
-          <Link to={withBaseUrl("docs/errors")}>
-            propagating errors in a predictable fashion
-          </Link>
-          , channels ensure that event handlers are cleaned up and help you
-          quickly identify potential bottlenecks and deadlocks.
+          iterators by hand. By initializing lazily, providing strategies for
+          dealing with backpressure, and propagating errors in a predictable
+          fashion, channels ensure that event handlers are cleaned up and help
+          you quickly identify potential bottlenecks and deadlocks.
         </Feature>
         <Feature title="Powerful" color="#00CA00">
           The Channel constructor is well-specified and flexible enough to model
           complex patterns like cancelable timers, async semaphores, and generic
-          pubsub classes. The Channel class also provides{" "}
-          <Link to={withBaseUrl("docs/combinators")}>
-            static combinator methods
-          </Link>{" "}
-          like <code>Channel.merge</code> which allow you to use async iterators
-          for reactive programming purposes.
+          pubsub classes. The Channel class also provides static combinator
+          methods like <code>Channel.merge</code> which allow you to use async
+          iterators for reactive programming purposes.
         </Feature>
       </div>
     </main>

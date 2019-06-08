@@ -31,6 +31,9 @@ export interface Stop extends Promise<Return | void> {
   (error?: any): void;
 }
 
+/**
+ *
+ */
 export type ChannelExecutor<T> = (
   push: Push<T>,
   stop: Stop,

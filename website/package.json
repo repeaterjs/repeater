@@ -8,7 +8,7 @@
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
-    "lint": "eslint ."
+    "lint": "eslint . --ignore-path .gitignore"
   },
   "dependencies": {
     "@docusaurus/core": "^2.0.0-alpha.19",
