@@ -1,6 +1,8 @@
 # Channel.js
 The missing constructor for creating safe async iterators
 
+For more information, visit [channel.js.org](https://channel.js.org).
+
 ## Quickstart
 
 ### Installation

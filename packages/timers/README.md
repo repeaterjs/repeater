@@ -3,6 +3,8 @@ This package is experimental!
 
 Cancelable timers, implemented with channels
 
+For more information, visit [channel.js.org](https://channel.js.org).
+
 ```ts
 function delay(wait: number): Channel<number>;
 ```

@@ -3,6 +3,8 @@ This package is experimental!
 
 Basic async iterators for limiting concurrency, implemented with channels
 
+For more information, visit [channel.js.org](https://channel.js.org).
+
 ```ts
 interface Token {
   readonly id: number;
