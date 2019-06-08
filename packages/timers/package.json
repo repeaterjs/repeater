@@ -2,7 +2,12 @@
   "name": "@channel/timers",
   "version": "0.1.1",
   "description": "Cancelable timers, implemented with channels",
-  "homepage": "https://github.com/channeljs/channel",
+  "homepage": "https://channel.js.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/channeljs/channel",
+    "directory": "packages/pubsub"
+  },
   "license": "MIT",
   "files": [
     "/lib"
