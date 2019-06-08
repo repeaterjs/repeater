@@ -25,6 +25,11 @@
     "jest",
     "prettier"
   ],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
   "rules": {
     "prettier/prettier": [
       "error",
