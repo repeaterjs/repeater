@@ -4,7 +4,7 @@
     "build": "yarn workspace @channel/channel build && yarn workspace @channel/timers build && yarn workspace @channel/limiters build && yarn workspace @channel/pubsub build",
     "test": "yarn workspaces run test --detectLeaks",
     "lint": "yarn workspaces run lint",
-    "prepublishOnly": "yarn run lint"
+    "prepare": "yarn build && yarn test && yarn lint"
   },
   "devDependencies": {
     "@types/jest": "^24.0.13",
