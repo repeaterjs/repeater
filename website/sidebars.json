@@ -3,10 +3,11 @@
     "Getting Started": [
       "quickstart",
       "overview",
-      "combinators",
-      "utilities"
+      "rationale"
     ],
     "Guides": [
+      "combinators",
+      "utilities",
       "safety",
       "errors",
       "anti-patterns"

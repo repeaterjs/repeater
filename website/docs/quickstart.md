@@ -4,21 +4,30 @@ title: Quickstart
 ---
 
 ## Installation
-Channel.js is available on npm under the scoped package name `@channel/channel`.
+
+Channel.js is distributed on NPM in the CommonJS and ESModule formats.
 
 `$ npm install @channel/channel`
 
 `$ yarn add @channel/channel`
 
+## Requirements
+
+The `@channel/channel` package has no dependencies, but requires the following globals in order to work:
+- `Promise`
+- `Symbol.iterator`
+- `Symbol.asyncIterator`
+
+In addition, channels are most useful when used with `async/await` and `for await… of` statements. You can compile your code with babel or typescript to support enviroments which lack these syntax features.
 
 ## Examples
 
-Logging a timestamp every second and stopping after ten iterations.
+### Logging timestamps with setInterval
 
 ```js
 import { Channel } from "@channel/channel";
 
-const timestamps = new Channel(async (push, _, stop) => {
+const timestamps = new Channel(async (push, stop) => {
   push(Date.now());
   const timer = setInterval(() => push(Date.now()), 1000);
   await stop;
@@ -38,16 +47,16 @@ const timestamps = new Channel(async (push, _, stop) => {
 })();
 ```
 
-Logging messages from a websocket and closing if we receive the message "close".
+### Creating a channel from a websocket
 
 ```js
 import { Channel } from "@channel/channel";
 
-const messages = new Channel(async (push, close, stop) => {
+const messages = new Channel(async (push, stop) => {
   const socket = new WebSocket("ws://localhost:3000");
   socket.onmessage = (ev) => push(ev.data);
-  socket.onerror = () => close(new Error("WebSocket error"));
-  socket.onclose = () => close();
+  socket.onerror = () => stop(new Error("WebSocket error"));
+  socket.onclose = () => stop();
   await stop;
   socket.close();
 });
@@ -56,21 +65,21 @@ const messages = new Channel(async (push, close, stop) => {
   for await (const message of messages) {
     console.log(message);
     if (message === "close") {
-      break;
+      break; // closes the socket
     }
   }
 })();
 ```
 
-Listening for the [Konami Code](https://en.wikipedia.org/wiki/Konami_Code) and canceling if <kbd>Escape</kbd> is pressed.
+### Listening for the [Konami Code](https://en.wikipedia.org/wiki/Konami_Code)
 
 ```js
 import { Channel } from "@channel/channel";
 
-const keys = new Channel(async (push, close, stop) => {
+const keys = new Channel(async (push, stop) => {
   const listener = (ev) => {
     if (ev.key === "Escape") {
-      close();
+      stop();
     } else {
       push(ev.key);
     }
@@ -92,7 +101,7 @@ const konami = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "Ar
     }
     if (i >= konami.length) {
       console.log("KONAMI!!!");
-      break; // closes the channel and removes the keyup listener
+      break; // removes the keyup listener
     }
   }
 })();

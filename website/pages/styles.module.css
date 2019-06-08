@@ -1,36 +1,20 @@
 .hero {
   position: relative;
-  background-color: black !important;
+  z-index: 0;
+  background-color: black;
   color: white;
   text-align: center;
-  z-index: 0;
 }
 
 .background {
   position: absolute;
-  top: 0;
   left: 0;
+  top: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.333;
+  z-index: -1;
+  opacity: 0.4;
   background-size: auto 100%;
   background-position: center;
   background-repeat: repeat no-repeat;
-  z-index: -1;
-}
-
-.buttons {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.buttons iframe {
-  margin-left: 1rem;
-}
-
-@media screen and (min-height: 900px) {
-  .buttons {
-    margin-top: 2rem;
-  }
 }
