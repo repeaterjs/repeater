@@ -1,8 +1,10 @@
 module.exports = {
   title: "Channel.js",
   tagline: "The missing constructor for creating safe async iterators",
-  url: "https://your-docusaurus-test-site.com",
-  baseUrl: "/",
+  organizationName: "channeljs",
+  projectName: "channel",
+  url: "channeljs.github.io",
+  baseUrl: "/channel/",
   favicon: "img/favicon.ico",
   themeConfig: {
     navbar: {
