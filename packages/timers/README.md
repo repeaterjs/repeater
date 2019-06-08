@@ -4,20 +4,41 @@ This package is experimental!
 Cancelable timers, implemented with channels
 
 ```ts
-function delay(wait: number, options?: { reject?: boolean; }): Channel<number>;
+function delay(wait: number): Channel<number>;
 ```
 
-`delay` returns an async iterator which resolves after `wait` with the current timestamp and closes. The timer does not start until you call `next` on the returned iterator. The timer rejects with a `TimeoutError` if `options.reject` is `true`. The timer can be canceled by calling `return`.
+`delay` returns a channel which yields `Date.now()` `wait` milliseconds after `next` is called. Each call to `next` runs an independent timer. All outstanding timers can be canceled by calling `return`.
 
 ```ts
-function timeout(wait: number): Promise<void>;
-function timeout<T>(wait: number, promise: Promise<T>): Promise<T>;
+function timeout(wait: number): Channel<undefined>;
 ```
 
-`timeout` races a delay timer against the passed in promise. The returned promise will resolve to the original promise if the promise settles first and will reject with a `TimeoutError` if the timer wins. Calling `timeout` without a promise will always result in a `TimeoutError` rejection. The timer is automatically canceled if the passed in promise wins.
+`timeout` returns a channel which rejects with a `TimeoutError` if the channel does not receive another call to `next` or `return` after the specified `wait`. This behavior is useful when you want to place a fixed upper bound on how long each iteration of an async iterator can take with `Channel.race`.
+
+```js
+import { Channel } from "@channel/channel";
+import { timeout } from "@channel/timers";
+
+const chan = new Channel(async (push) => {
+  await push(1);
+  await push(2);
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  await push(3);
+});
+
+try {
+  (async () => {
+    for await (const num of Channel.race([chan, timeout(1000)])) {
+      console.log(num); // 1, 2
+    }
+  })();
+} catch (err) {
+  console.log(err); // TimeoutError: 1000 ms elapsed
+}
+```
 
 ```ts
 function interval(wait: number, buffer?: ChannelBuffer<number>): Channel<number>;
 ```
 
-`interval` returns an async iterator which resolves with the current timestamp every `wait` milliseconds. The timer does not start until you call `next` on the returned iterator, and can be canceled by calling `return`.
+`interval` returns a channel which resolves with the current timestamp every `wait` milliseconds. The timer does not start until you call `next` on the returned iterator, and can be canceled by calling `return`.

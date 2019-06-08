@@ -116,7 +116,7 @@ By awaiting `push`, code in the executor can wait for values to be pulled and th
 When using callback-based APIs, it is often inconvenient to await `push` calls because the callbacks run frequently and synchronously. Therefore, channels allow you to call `push` in a fire-and-forget manner with the caveat that `push` will begin throwing synchronous errors when there are too many pending pushes.
 
 ```js
-const ys = new Channel(async (push, _, stop) => {
+const ys = new Channel(async (push, stop) => {
   const listener = () => push(window.scrollY); // ⚠️ Might throw an error!
   window.addEventListener("scroll", listener);
   await stop;
@@ -126,7 +126,7 @@ const ys = new Channel(async (push, _, stop) => {
 ys.next();
 ```
 
-This behavior is desirable because it allows developers to quickly surface bottlenecks and hanging promises when and where they happen, rather than when the process runs out of memory.
+This behavior is desirable because it allows developers to quickly surface bottlenecks and deadlocks when and where they happen, rather than when the process runs out of memory.
 
 ### 3. Buffering and dropping values
 
@@ -135,7 +135,7 @@ If you neither wish to await `push` calls nor want to deal with errors, one last
 ```js
 import { Channel, SlidingBuffer } from "@channel/channel";
 
-const ys = new Channel(async (push, _, stop) => {
+const ys = new Channel(async (push, stop) => {
   const listener = () => push(window.scrollY); // 🙂 will never throw
   window.addEventListener("scroll", listener);
   await stop;
