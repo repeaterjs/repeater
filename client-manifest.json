@@ -75,38 +75,38 @@
       0,
       9
     ],
-    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-f8f.json": [
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/docs-b5f.json": [
       10
     ],
     "main": [
       21,
       11
     ],
-    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-pages/channel-001.json": [
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-pages/index.json": [
       12
     ],
-    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-anti-patterns-6a0.json": [
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/docs-anti-patterns-359.json": [
       13
     ],
-    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-combinators-24c.json": [
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/docs-combinators-dd8.json": [
       14
     ],
-    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-errors-332.json": [
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/docs-errors-eb3.json": [
       15
     ],
-    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-overview-39c.json": [
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/docs-overview-20d.json": [
       16
     ],
-    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-quickstart-c65.json": [
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/docs-quickstart-718.json": [
       17
     ],
-    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-rationale-044.json": [
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/docs-rationale-4e6.json": [
       18
     ],
-    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-safety-3d6.json": [
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/docs-safety-651.json": [
       19
     ],
-    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/channel-docs-utilities-f5d.json": [
+    "/Users/brian/Projects/channel/website/.docusaurus/docusaurus-plugin-content-docs/docs-utilities-00c.json": [
       20
     ],
     "runtime~main": [
@@ -120,14 +120,14 @@
         {
           "file": "vendors.c08a002fc196d402aad1.css",
           "hash": "c08a002fc196d402aad1",
-          "publicPath": "/channel/vendors.c08a002fc196d402aad1.css"
+          "publicPath": "/vendors.c08a002fc196d402aad1.css"
         }
       ],
       "js": [
         {
           "file": "vendors.c08a002fc196d402aad1.js",
           "hash": "c08a002fc196d402aad1",
-          "publicPath": "/channel/vendors.c08a002fc196d402aad1.js"
+          "publicPath": "/vendors.c08a002fc196d402aad1.js"
         }
       ]
     },
@@ -136,201 +136,201 @@
         {
           "file": "component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.css",
           "hash": "d4dbe3b54ef9f218d1c7",
-          "publicPath": "/channel/component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.css"
+          "publicPath": "/component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.css"
         }
       ],
       "js": [
         {
           "file": "component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.js",
           "hash": "d4dbe3b54ef9f218d1c7",
-          "publicPath": "/channel/component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.js"
+          "publicPath": "/component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.js"
         }
       ]
     },
     "2": {
       "js": [
         {
-          "file": "content---channel-docs-anti-patterns-68-d-40f.5d65d3dc9092da1e2f7c.js",
-          "hash": "5d65d3dc9092da1e2f7c",
-          "publicPath": "/channel/content---channel-docs-anti-patterns-68-d-40f.5d65d3dc9092da1e2f7c.js"
+          "file": "content---docs-anti-patterns-68-d-670.237b01e2ccf76f0b8257.js",
+          "hash": "237b01e2ccf76f0b8257",
+          "publicPath": "/content---docs-anti-patterns-68-d-670.237b01e2ccf76f0b8257.js"
         }
       ]
     },
     "3": {
       "js": [
         {
-          "file": "content---channel-docs-combinators-7-e-1-51f.08afd74f746068fa5860.js",
-          "hash": "08afd74f746068fa5860",
-          "publicPath": "/channel/content---channel-docs-combinators-7-e-1-51f.08afd74f746068fa5860.js"
+          "file": "content---docs-combinators-7-e-1-ea3.e7b913e1135ca07e538f.js",
+          "hash": "e7b913e1135ca07e538f",
+          "publicPath": "/content---docs-combinators-7-e-1-ea3.e7b913e1135ca07e538f.js"
         }
       ]
     },
     "4": {
       "js": [
         {
-          "file": "content---channel-docs-errors-670-e53.17e948683b118868e6dc.js",
-          "hash": "17e948683b118868e6dc",
-          "publicPath": "/channel/content---channel-docs-errors-670-e53.17e948683b118868e6dc.js"
+          "file": "content---docs-errors-670-bfe.d35d2faaf97ffcecb2cc.js",
+          "hash": "d35d2faaf97ffcecb2cc",
+          "publicPath": "/content---docs-errors-670-bfe.d35d2faaf97ffcecb2cc.js"
         }
       ]
     },
     "5": {
       "js": [
         {
-          "file": "content---channel-docs-overviewf-1-b-04b.9dfbe6a0d406b1a0f7f6.js",
-          "hash": "9dfbe6a0d406b1a0f7f6",
-          "publicPath": "/channel/content---channel-docs-overviewf-1-b-04b.9dfbe6a0d406b1a0f7f6.js"
+          "file": "content---docs-overviewf-1-b-810.88988ee5e7c471ce092a.js",
+          "hash": "88988ee5e7c471ce092a",
+          "publicPath": "/content---docs-overviewf-1-b-810.88988ee5e7c471ce092a.js"
         }
       ]
     },
     "6": {
       "js": [
         {
-          "file": "content---channel-docs-quickstartfdb-2b0.a3858a121fb14dad4d50.js",
-          "hash": "a3858a121fb14dad4d50",
-          "publicPath": "/channel/content---channel-docs-quickstartfdb-2b0.a3858a121fb14dad4d50.js"
+          "file": "content---docs-quickstartfdb-eee.125d50b698e928d82093.js",
+          "hash": "125d50b698e928d82093",
+          "publicPath": "/content---docs-quickstartfdb-eee.125d50b698e928d82093.js"
         }
       ]
     },
     "7": {
       "js": [
         {
-          "file": "content---channel-docs-rationale-84-f-155.6652e1e659a28a58435c.js",
-          "hash": "6652e1e659a28a58435c",
-          "publicPath": "/channel/content---channel-docs-rationale-84-f-155.6652e1e659a28a58435c.js"
+          "file": "content---docs-rationale-84-f-369.c35763a49455dae18ad5.js",
+          "hash": "c35763a49455dae18ad5",
+          "publicPath": "/content---docs-rationale-84-f-369.c35763a49455dae18ad5.js"
         }
       ]
     },
     "8": {
       "js": [
         {
-          "file": "content---channel-docs-safety-848-31a.fb887fd68bca8ac87646.js",
-          "hash": "fb887fd68bca8ac87646",
-          "publicPath": "/channel/content---channel-docs-safety-848-31a.fb887fd68bca8ac87646.js"
+          "file": "content---docs-safety-848-987.18382b4fc6ac70cea51b.js",
+          "hash": "18382b4fc6ac70cea51b",
+          "publicPath": "/content---docs-safety-848-987.18382b4fc6ac70cea51b.js"
         }
       ]
     },
     "9": {
       "js": [
         {
-          "file": "content---channel-docs-utilities-2-c-6-79d.6c2bc7185ff44378db99.js",
-          "hash": "6c2bc7185ff44378db99",
-          "publicPath": "/channel/content---channel-docs-utilities-2-c-6-79d.6c2bc7185ff44378db99.js"
+          "file": "content---docs-utilities-2-c-6-1f8.249a457eec91094c4cbd.js",
+          "hash": "249a457eec91094c4cbd",
+          "publicPath": "/content---docs-utilities-2-c-6-1f8.249a457eec91094c4cbd.js"
         }
       ]
     },
     "10": {
       "js": [
         {
-          "file": "docsMetadata---channel-docs-39-b-9da.e99da3a93f824126ef9f.js",
-          "hash": "e99da3a93f824126ef9f",
-          "publicPath": "/channel/docsMetadata---channel-docs-39-b-9da.e99da3a93f824126ef9f.js"
+          "file": "docsMetadata---docs-73-c-f00.7417d6a6ba2a4cd30df1.js",
+          "hash": "7417d6a6ba2a4cd30df1",
+          "publicPath": "/docsMetadata---docs-73-c-f00.7417d6a6ba2a4cd30df1.js"
         }
       ]
     },
     "11": {
       "css": [
         {
-          "file": "main.7a917571c628d7fbad8e.css",
-          "hash": "7a917571c628d7fbad8e",
-          "publicPath": "/channel/main.7a917571c628d7fbad8e.css"
+          "file": "main.1721660229d7f9b12576.css",
+          "hash": "1721660229d7f9b12576",
+          "publicPath": "/main.1721660229d7f9b12576.css"
         }
       ],
       "js": [
         {
-          "file": "main.7a917571c628d7fbad8e.js",
-          "hash": "7a917571c628d7fbad8e",
-          "publicPath": "/channel/main.7a917571c628d7fbad8e.js"
+          "file": "main.1721660229d7f9b12576.js",
+          "hash": "1721660229d7f9b12576",
+          "publicPath": "/main.1721660229d7f9b12576.js"
         }
       ]
     },
     "12": {
       "js": [
         {
-          "file": "metadata---channel-738-d7a.0d6e677a6cc5bac8167c.js",
-          "hash": "0d6e677a6cc5bac8167c",
-          "publicPath": "/channel/metadata---channel-738-d7a.0d6e677a6cc5bac8167c.js"
+          "file": "metadata---369-529.3f0be7d063d2abf090d9.js",
+          "hash": "3f0be7d063d2abf090d9",
+          "publicPath": "/metadata---369-529.3f0be7d063d2abf090d9.js"
         }
       ]
     },
     "13": {
       "js": [
         {
-          "file": "metadata---channel-docs-anti-patterns-38-b-013.cd00225634becc17d060.js",
-          "hash": "cd00225634becc17d060",
-          "publicPath": "/channel/metadata---channel-docs-anti-patterns-38-b-013.cd00225634becc17d060.js"
+          "file": "metadata---docs-anti-patterns-24-d-745.3a5d536f17108395feca.js",
+          "hash": "3a5d536f17108395feca",
+          "publicPath": "/metadata---docs-anti-patterns-24-d-745.3a5d536f17108395feca.js"
         }
       ]
     },
     "14": {
       "js": [
         {
-          "file": "metadata---channel-docs-combinators-9-f-3-9ff.d6835ada2264aca7831d.js",
-          "hash": "d6835ada2264aca7831d",
-          "publicPath": "/channel/metadata---channel-docs-combinators-9-f-3-9ff.d6835ada2264aca7831d.js"
+          "file": "metadata---docs-combinators-847-665.591d5b912cd6f98242f1.js",
+          "hash": "591d5b912cd6f98242f1",
+          "publicPath": "/metadata---docs-combinators-847-665.591d5b912cd6f98242f1.js"
         }
       ]
     },
     "15": {
       "js": [
         {
-          "file": "metadata---channel-docs-errors-2-ca-32a.1bcf3b1dae4d91651056.js",
-          "hash": "1bcf3b1dae4d91651056",
-          "publicPath": "/channel/metadata---channel-docs-errors-2-ca-32a.1bcf3b1dae4d91651056.js"
+          "file": "metadata---docs-errorsb-15-cc8.b2d175e8e0a0c25ee6e8.js",
+          "hash": "b2d175e8e0a0c25ee6e8",
+          "publicPath": "/metadata---docs-errorsb-15-cc8.b2d175e8e0a0c25ee6e8.js"
         }
       ]
     },
     "16": {
       "js": [
         {
-          "file": "metadata---channel-docs-overviewec-1-e84.5b4a4b063edbc3b0cd99.js",
-          "hash": "5b4a4b063edbc3b0cd99",
-          "publicPath": "/channel/metadata---channel-docs-overviewec-1-e84.5b4a4b063edbc3b0cd99.js"
+          "file": "metadata---docs-overview-43-e-c3f.26c5b22d43f1288554c6.js",
+          "hash": "26c5b22d43f1288554c6",
+          "publicPath": "/metadata---docs-overview-43-e-c3f.26c5b22d43f1288554c6.js"
         }
       ]
     },
     "17": {
       "js": [
         {
-          "file": "metadata---channel-docs-quickstartab-9-155.5c966023c22fe4f01c32.js",
-          "hash": "5c966023c22fe4f01c32",
-          "publicPath": "/channel/metadata---channel-docs-quickstartab-9-155.5c966023c22fe4f01c32.js"
+          "file": "metadata---docs-quickstart-1-a-6-440.418ebfd43af6dfdf078f.js",
+          "hash": "418ebfd43af6dfdf078f",
+          "publicPath": "/metadata---docs-quickstart-1-a-6-440.418ebfd43af6dfdf078f.js"
         }
       ]
     },
     "18": {
       "js": [
         {
-          "file": "metadata---channel-docs-rationale-97-e-133.aabe04ba984f85255da4.js",
-          "hash": "aabe04ba984f85255da4",
-          "publicPath": "/channel/metadata---channel-docs-rationale-97-e-133.aabe04ba984f85255da4.js"
+          "file": "metadata---docs-rationale-78-e-fa2.b4bd4d1459a3924740bd.js",
+          "hash": "b4bd4d1459a3924740bd",
+          "publicPath": "/metadata---docs-rationale-78-e-fa2.b4bd4d1459a3924740bd.js"
         }
       ]
     },
     "19": {
       "js": [
         {
-          "file": "metadata---channel-docs-safetyaa-5-e5e.d9f58dbbb15c3521f06a.js",
-          "hash": "d9f58dbbb15c3521f06a",
-          "publicPath": "/channel/metadata---channel-docs-safetyaa-5-e5e.d9f58dbbb15c3521f06a.js"
+          "file": "metadata---docs-safety-2-ff-e3e.bcf1f8165b1d099ca136.js",
+          "hash": "bcf1f8165b1d099ca136",
+          "publicPath": "/metadata---docs-safety-2-ff-e3e.bcf1f8165b1d099ca136.js"
         }
       ]
     },
     "20": {
       "js": [
         {
-          "file": "metadata---channel-docs-utilities-3-bf-2f7.a2bc9d67deeb3442b130.js",
-          "hash": "a2bc9d67deeb3442b130",
-          "publicPath": "/channel/metadata---channel-docs-utilities-3-bf-2f7.a2bc9d67deeb3442b130.js"
+          "file": "metadata---docs-utilitiese-37-264.2f47dfc171c12729a7cc.js",
+          "hash": "2f47dfc171c12729a7cc",
+          "publicPath": "/metadata---docs-utilitiese-37-264.2f47dfc171c12729a7cc.js"
         }
       ]
     },
     "21": {
       "js": [
         {
-          "file": "runtime~main.89348b5e53627b0369bc.js",
-          "hash": "89348b5e53627b0369bc",
-          "publicPath": "/channel/runtime~main.89348b5e53627b0369bc.js"
+          "file": "runtime~main.063ae8143f370514f017.js",
+          "hash": "063ae8143f370514f017",
+          "publicPath": "/runtime~main.063ae8143f370514f017.js"
         }
       ]
     }
