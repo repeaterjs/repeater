@@ -1,1 +1,0 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[17],{47:function(t){t.exports={id:"quickstart",title:"Quickstart",description:"## Installation",source:"/Users/brian/Projects/channel/website/docs/quickstart.md",permalink:"/channeljs/docs/quickstart",sidebar:"docs",category:"Getting Started",next:"overview",next_title:"Overview"}}}]);
