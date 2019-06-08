@@ -1,6 +1,8 @@
 # @channel/channel
 The missing constructor for creating safe async iterators
 
+For more information, visit [channel.js.org](https://channel.js.org).
+
 ## API
 
 ```ts

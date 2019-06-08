@@ -3,6 +3,8 @@ This package is experimental!
 
 A generic pubsub class, implemented with channels
 
+For more information, visit [channel.js.org](https://channel.js.org).
+
 ```ts
 interface PubSub<T> {
   publish(topic: string, value: T): Promise<void> | void;
