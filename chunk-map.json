@@ -1,66 +1,66 @@
 {
   "main": [
-    "channelmain.3e13bb1242542f19468c.css",
-    "channelmain.3e13bb1242542f19468c.js"
+    "/main.c6c6275780bc9d7e385e.css",
+    "/main.c6c6275780bc9d7e385e.js"
   ],
   "component---users-brian-projects-channel-website-pages-index-js-67-a-f1b": [
-    "channelcomponent---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.css",
-    "channelcomponent---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.js"
+    "/component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.css",
+    "/component---users-brian-projects-channel-website-pages-index-js-67-a-f1b.d4dbe3b54ef9f218d1c7.js"
   ],
-  "metadata---channele-80-cdc": [
-    "channelmetadata---channele-80-cdc.976471f4be6b7ee37c90.js"
+  "metadata---369-529": [
+    "/metadata---369-529.3f0be7d063d2abf090d9.js"
   ],
   "component---theme-doc-page-1-be-9be": [],
-  "docsMetadata---channel-docs-6-e-9-642": [
-    "channeldocsMetadata---channel-docs-6-e-9-642.8425999e8b05d87deef5.js"
+  "docsMetadata---docs-73-c-f00": [
+    "/docsMetadata---docs-73-c-f00.ebb0bcd5b6fba9b6900a.js"
   ],
   "component---theme-doc-item-178-a40": [],
-  "content---channel-docs-anti-patterns-68-d-c0f": [
-    "channelcontent---channel-docs-anti-patterns-68-d-c0f.ae14ed0595a95a4c5cd8.js"
+  "content---docs-anti-patterns-68-d-670": [
+    "/content---docs-anti-patterns-68-d-670.66dd188a6503cd0a0633.js"
   ],
-  "metadata---channel-docs-anti-patterns-50-b-9a6": [
-    "channelmetadata---channel-docs-anti-patterns-50-b-9a6.ee4f2cfe212d836da9ae.js"
+  "metadata---docs-anti-patterns-24-d-745": [
+    "/metadata---docs-anti-patterns-24-d-745.b6cdcdc957b25fbecb06.js"
   ],
-  "content---channel-docs-combinators-7-e-1-d00": [
-    "channelcontent---channel-docs-combinators-7-e-1-d00.5135b246bbbab8a64073.js"
+  "content---docs-combinators-7-e-1-ea3": [
+    "/content---docs-combinators-7-e-1-ea3.9d534fc614ad7e6fbb14.js"
   ],
-  "metadata---channel-docs-combinators-98-c-504": [
-    "channelmetadata---channel-docs-combinators-98-c-504.bd8c88e65788eeb6eace.js"
+  "metadata---docs-combinators-847-665": [
+    "/metadata---docs-combinators-847-665.fddda7ad5a19b1c05681.js"
   ],
-  "content---channel-docs-errors-670-cc4": [
-    "channelcontent---channel-docs-errors-670-cc4.f31cfe511c047344864c.js"
+  "content---docs-errors-670-bfe": [
+    "/content---docs-errors-670-bfe.5dafe70ddc7d13588369.js"
   ],
-  "metadata---channel-docs-errorsda-6-1a6": [
-    "channelmetadata---channel-docs-errorsda-6-1a6.703affd58863da270f99.js"
+  "metadata---docs-errorsb-15-cc8": [
+    "/metadata---docs-errorsb-15-cc8.7d4127dd1d8ba42ca104.js"
   ],
-  "content---channel-docs-overviewf-1-b-116": [
-    "channelcontent---channel-docs-overviewf-1-b-116.8c3ea308244b53795d24.js"
+  "content---docs-overviewf-1-b-810": [
+    "/content---docs-overviewf-1-b-810.7a50b69ed076bff40b42.js"
   ],
-  "metadata---channel-docs-overview-4-a-2-098": [
-    "channelmetadata---channel-docs-overview-4-a-2-098.e61717bf5505277f19e9.js"
+  "metadata---docs-overview-43-e-c3f": [
+    "/metadata---docs-overview-43-e-c3f.34c893c54e7a9d492b4b.js"
   ],
-  "content---channel-docs-quickstartfdb-c12": [
-    "channelcontent---channel-docs-quickstartfdb-c12.f8c421096a0fb77b6326.js"
+  "content---docs-quickstartfdb-eee": [
+    "/content---docs-quickstartfdb-eee.125d50b698e928d82093.js"
   ],
-  "metadata---channel-docs-quickstartc-4-e-663": [
-    "channelmetadata---channel-docs-quickstartc-4-e-663.4b979b7bfd27fd15f23a.js"
+  "metadata---docs-quickstart-1-a-6-440": [
+    "/metadata---docs-quickstart-1-a-6-440.418ebfd43af6dfdf078f.js"
   ],
-  "content---channel-docs-rationale-84-f-35b": [
-    "channelcontent---channel-docs-rationale-84-f-35b.993a9f80c4ab697d3c05.js"
+  "content---docs-rationale-84-f-369": [
+    "/content---docs-rationale-84-f-369.f42ac4333d4df831f22a.js"
   ],
-  "metadata---channel-docs-rationaled-48-494": [
-    "channelmetadata---channel-docs-rationaled-48-494.784bf292ffed60d3968f.js"
+  "metadata---docs-rationale-78-e-fa2": [
+    "/metadata---docs-rationale-78-e-fa2.f82611dbc731228688ea.js"
   ],
-  "content---channel-docs-safety-848-31f": [
-    "channelcontent---channel-docs-safety-848-31f.35b250b9de83b2436018.js"
+  "content---docs-safety-848-987": [
+    "/content---docs-safety-848-987.a875194546268be7ac5d.js"
   ],
-  "metadata---channel-docs-safety-74-c-c2f": [
-    "channelmetadata---channel-docs-safety-74-c-c2f.63ada78d48ada60ab532.js"
+  "metadata---docs-safety-2-ff-e3e": [
+    "/metadata---docs-safety-2-ff-e3e.6621e17a83c214cb1408.js"
   ],
-  "content---channel-docs-utilities-2-c-6-a3f": [
-    "channelcontent---channel-docs-utilities-2-c-6-a3f.f3ef6cadb4ed502bb040.js"
+  "content---docs-utilities-2-c-6-1f8": [
+    "/content---docs-utilities-2-c-6-1f8.565314ee47213526bee2.js"
   ],
-  "metadata---channel-docs-utilities-0-f-5-ccb": [
-    "channelmetadata---channel-docs-utilities-0-f-5-ccb.08bf16b175ab7308f2ac.js"
+  "metadata---docs-utilitiese-37-264": [
+    "/metadata---docs-utilitiese-37-264.7ccd30d670b42de61799.js"
   ]
 }
