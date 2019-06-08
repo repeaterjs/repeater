@@ -57,27 +57,31 @@ function Body() {
   return (
     <main className="container padding-horiz--md margin-vert--xl">
       <div className="row">
+        <h1>👷‍♀️THESE DOCS ARE  UNDER CONSTRUCTION 👷‍♂️</h1>
+      </div>
+      <div className="row">
         <Feature title="Convenient" color="#00ABAA">
           The Channel class provides a promise-fluent API for creating async
           iterators. The same constructor can be used to convert event emitters,
-          streams, websockets, web workers, mutation observers, observables or
-          any other callback-based source of data into objects which can be
-          consumed using <code>async/await</code> and <code>for await…of</code>
+          streams, websockets, web workers, observers, observables or any other
+          callback-based data source into a format which can be read using{" "}
+          <code>async/await</code> and <code>for await…of</code>
           statements.
         </Feature>
         <Feature title="Safe" color="#BA00AC">
-          Channels prevent common mistakes that are made when rolling async
+          Channels prevent common mistakes developers make when rolling async
           iterators by hand. By initializing lazily, providing strategies for
           dealing with backpressure, and propagating errors in a predictable
           fashion, channels ensure that event handlers are cleaned up and help
-          you quickly identify potential bottlenecks and deadlocks.
+          you quickly locate bottlenecks and deadlocks.
         </Feature>
         <Feature title="Powerful" color="#00B100">
           The Channel constructor is well-specified and flexible enough to model
           complex patterns like cancelable timers, async semaphores, and generic
           pubsub classes. The Channel class also provides static combinator
-          methods like <code>Channel.merge</code> which allow you to use async
-          iterators for reactive programming purposes.
+          methods like <code>Channel.race</code> and <code>Channel.merge</code>{" "}
+          which allow you to use async iterators for reactive programming
+          purposes.
         </Feature>
       </div>
     </main>

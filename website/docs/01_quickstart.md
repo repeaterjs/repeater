@@ -5,7 +5,7 @@ title: Quickstart
 
 ## Installation
 
-Channel.js is distributed on NPM in the CommonJS and ESModule formats.
+Channel.js is available on [npm](https://www.npmjs.com/package/@channel/channel) in the CommonJS and ESModule formats.
 
 `$ npm install @channel/channel`
 
@@ -17,6 +17,7 @@ The `@channel/channel` package has no dependencies, but requires the following g
 - `Promise`
 - `Symbol.iterator`
 - `Symbol.asyncIterator`
+- `WeakMap`
 
 In addition, channels are most useful when used with `async/await` and `for await… of` statements. You can compile your code with babel or typescript to support enviroments which lack these syntax features.
 
