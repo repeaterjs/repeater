@@ -43,6 +43,9 @@ module.exports = {
           path: "./docs",
           sidebarPath: require.resolve("./sidebars.json"),
         },
+        theme: {
+          customCss: require.resolve("./css/custom.css"),
+        },
       },
     ],
   ],
