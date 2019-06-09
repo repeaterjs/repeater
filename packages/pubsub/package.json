@@ -1,6 +1,6 @@
 {
   "name": "@channel/pubsub",
-  "version": "0.1.1",
+  "version": "0.2.0-alpha.1",
   "description": "A generic pubsub class, implemented with channels",
   "homepage": "https://channel.js.org",
   "repository": {

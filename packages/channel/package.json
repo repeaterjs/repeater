@@ -1,6 +1,6 @@
 {
   "name": "@channel/channel",
-  "version": "0.1.1",
+  "version": "1.0.0-alpha.1",
   "description": "The missing constructor function for creating safe async iterators",
   "license": "MIT",
   "homepage": "https://channel.js.org",
@@ -22,7 +22,6 @@
     "test": "jest --config ../../jest.config.js --rootDir --color",
     "lint": "eslint --ext ts src",
     "prepublishOnly": "yarn run test && yarn run build"
-
   },
   "publishConfig": {
     "access": "public"
