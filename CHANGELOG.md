@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED channel@0.2.0] - 2019-08-08
+## [channel@1.0.0] - 2019-08-08
 ### Added
 - The `Channel` class now exposes the static methods `Channel.race`, `Channel.merge`, `Channel.zip` and `Channel.latest` (#4).
 ### Changed
@@ -15,12 +15,12 @@
 - The final iteration result/errors are now consumed by iterator methods.
 - `return`/`throw` behave more like the methods do for `async generators`.
 
-## [UNRELEASED timers@0.2.0] - 2019-08-08
+## [timers@0.2.0] - 2019-08-08
 ### Changed
 - `delay` now returns an channel which can be reused
 - `timeout` returns a channel
 
-## [UNRELEASED limiters@0.2.0] - 2019-08-08
+## [limiters@0.2.0] - 2019-08-08
 ### Added
 - throttler can now be passed a `cooldown` boolean option which forces the channel to wait before yielding the final token.
 ### Changed
@@ -30,7 +30,7 @@
 ### Fixed
 - throttler now uses a sliding window to limit (#1).
 
-## [UNRELEASED pubsub@0.2.0] - 2019-08-08
+## [pubsub@0.2.0] - 2019-08-08
 ### Changed
 - type definitions have changed slightly
 
