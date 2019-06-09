@@ -4,7 +4,10 @@
 ### Fixed
 - Fixed timers using the wrong version of @channel/channel
 
-## [limiters@0.2.1] - 2019-08-09 ### Fixed - Fixed limiters using the wrong version of @channel/channel 
+## [limiters@0.2.1] - 2019-08-09
+### Fixed
+- Fixed limiters using the wrong version of @channel/channel 
+
 ## [pubsub@0.2.1] - 2019-08-09
 ### Fixed
 - Fixed pubsub using the wrong version of @channel/channel
