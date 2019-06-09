@@ -137,7 +137,7 @@ describe("combinators", () => {
     test("return methods called on all iterators when parent return called", async () => {
       const hanging = new Promise(() => {});
       const iter1 = hangingGen();
-      const iter2 = new Channel((_, __, stop) => stop);
+      const iter2 = new Channel(() => {});
       const iter3 = delayChannel(250, []);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
@@ -153,7 +153,7 @@ describe("combinators", () => {
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
       const hanging = new Promise(() => {});
       const iter1 = hangingGen();
-      const iter2 = new Channel((_, __, stop) => stop);
+      const iter2 = new Channel(() => {});
       const iter3 = delayChannel(250, []);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
@@ -170,7 +170,7 @@ describe("combinators", () => {
     test("one iterator errors", async () => {
       const hanging = new Promise(() => {});
       const iter1 = hangingGen<boolean>();
-      const iter2 = new Channel<string>((push, _, stop) => {
+      const iter2 = new Channel<string>((push, stop) => {
         push("a");
         push("b");
         return stop;
@@ -372,7 +372,7 @@ describe("combinators", () => {
     test("return methods called on all iterators when parent return called", async () => {
       const iter1 = delayChannel(100, [1]);
       const iter2 = delayChannel(10000, [2]);
-      const iter3 = new Channel<number>((_, __, stop) => stop);
+      const iter3 = new Channel<number>(() => {});
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
@@ -387,7 +387,7 @@ describe("combinators", () => {
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
       const hanging = new Promise(() => {});
       const iter1 = hangingGen();
-      const iter2 = new Channel<number>((_, __, stop) => stop);
+      const iter2 = new Channel<number>(() => {});
       const iter3 = delayChannel(10000, [1]);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
@@ -403,10 +403,9 @@ describe("combinators", () => {
 
     test("one iterator errors", async () => {
       const iter1 = delayChannel(120, Array<boolean>(10).fill(true), false);
-      const iter2 = new Channel<string>((push, _, stop) => {
+      const iter2 = new Channel<string>((push) => {
         push("a");
         push("b");
-        return stop;
       });
       const error = new Error("Channel.merge error");
       const iter3 = delayChannel<number>(250, [1, 2, 3], undefined, error);
@@ -599,7 +598,7 @@ describe("combinators", () => {
     test("return methods called on all iterators when parent return called", async () => {
       const iter1 = delayChannel(2500, [1]);
       const iter2 = delayChannel(10000, [2]);
-      const iter3 = new Channel<string>((_, __, stop) => stop);
+      const iter3 = new Channel<string>(() => {});
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
@@ -613,7 +612,7 @@ describe("combinators", () => {
 
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
       const iter1 = hangingGen();
-      const iter2 = new Channel<number>((_, __, stop) => stop);
+      const iter2 = new Channel<number>(() => {});
       const iter3 = delayChannel<boolean>(250, []);
       const hanging = new Promise(() => {});
       const spy1 = jest.spyOn(iter1, "return");
@@ -630,12 +629,11 @@ describe("combinators", () => {
 
     test("one iterator errors", async () => {
       const iter1 = delayChannel(100, [false, true, false, true]);
-      const iter2 = new Channel<string>((push, _, stop) => {
+      const iter2 = new Channel<string>((push) => {
         push("a");
         push("b");
         push("c");
         push("d");
-        return stop;
       });
       const error = new Error("Channel.zip error");
       const iter3 = delayChannel<number>(150, [1, 2, 3], undefined, error);
@@ -817,7 +815,7 @@ describe("combinators", () => {
     test("return methods called on all iterators when parent return called", async () => {
       const iter1 = delayChannel(250, [1]);
       const iter2 = delayChannel(10000, [2]);
-      const iter3 = new Channel<string>((_, __, stop) => stop);
+      const iter3 = new Channel<string>(() => {});
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
@@ -831,7 +829,7 @@ describe("combinators", () => {
 
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
       const iter1 = hangingGen();
-      const iter2 = new Channel<number>((_, __, stop) => stop);
+      const iter2 = new Channel<number>(() => {});
       const iter3 = delayChannel(250, []);
       const hanging = new Promise(() => {});
       const spy1 = jest.spyOn(iter1, "return");
@@ -846,12 +844,11 @@ describe("combinators", () => {
 
     test("one iterator errors", async () => {
       const iter1 = delayChannel(80, [false, true, false, true]);
-      const iter2 = new Channel<string>((push, _, stop) => {
+      const iter2 = new Channel<string>((push) => {
         push("a");
         push("b");
         push("c");
         push("d");
-        return stop;
       });
       const error = new Error("Channel.latest error");
       const iter3 = delayChannel<number>(150, [1, 2, 3], undefined, error);
