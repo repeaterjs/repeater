@@ -1,6 +1,6 @@
 {
   "name": "@channel/limiters",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Basic async iterators for limiting concurrency, implemented with channels",
   "license": "MIT",
   "homepage": "https://channel.js.org",
@@ -24,8 +24,8 @@
     "prepublishOnly": "yarn run test && yarn run build"
   },
   "dependencies": {
-    "@channel/channel": "^0.1.1",
-    "@channel/timers": "^0.1.1"
+    "@channel/channel": "^1.0.0",
+    "@channel/timers": "^0.2.1"
   },
   "publishConfig": {
     "access": "public"
