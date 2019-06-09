@@ -1,6 +1,6 @@
 {
   "name": "@channel/timers",
-  "version": "0.2.0-alpha.1",
+  "version": "0.2.0",
   "description": "Cancelable timers, implemented with channels",
   "homepage": "https://channel.js.org",
   "repository": {

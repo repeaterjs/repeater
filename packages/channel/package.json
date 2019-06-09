@@ -1,6 +1,6 @@
 {
   "name": "@channel/channel",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0",
   "description": "The missing constructor function for creating safe async iterators",
   "license": "MIT",
   "homepage": "https://channel.js.org",
