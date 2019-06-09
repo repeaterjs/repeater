@@ -1,0 +1,1 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[13],{37:function(e){e.exports={permalink:"/",source:"/Users/brian/Projects/channel/website/pages/index.js"}}}]);
