@@ -4,7 +4,7 @@
     "build": "yarn workspace @channel/channel build && yarn workspace @channel/timers build && yarn workspace @channel/limiters build && yarn workspace @channel/pubsub build",
     "test": "yarn workspace @channel/channel test && yarn workspace @channel/timers test && yarn workspace @channel/limiters test && yarn workspace @channel/pubsub test",
     "lint": "yarn workspaces run lint",
-    "prepare": "yarn build && yarn test && yarn lint"
+    "prepublishOnly": "yarn build && yarn test && yarn lint"
   },
   "devDependencies": {
     "@types/jest": "^24.0.13",
@@ -16,7 +16,6 @@
     "eslint-plugin-prettier": "^3.1.0",
     "eslint-plugin-react": "^7.13.0",
     "jest": "^24.8.0",
-    "lerna": "^3.14.1",
     "prettier": "^1.18.2",
     "rollup": "^1.14.5",
     "rollup-plugin-typescript2": "^0.21.1",
