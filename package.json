@@ -3,8 +3,7 @@
   "scripts": {
     "build": "yarn workspace @channel/channel build && yarn workspace @channel/timers build && yarn workspace @channel/limiters build && yarn workspace @channel/pubsub build",
     "test": "yarn workspace @channel/channel test && yarn workspace @channel/timers test && yarn workspace @channel/limiters test && yarn workspace @channel/pubsub test",
-    "lint": "yarn workspaces run lint",
-    "prepublishOnly": "yarn build && yarn test && yarn lint"
+    "lint": "yarn workspaces run lint"
   },
   "devDependencies": {
     "@types/jest": "^24.0.13",

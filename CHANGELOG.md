@@ -1,6 +1,18 @@
 # Changelog
 
-## [channel@1.0.0] - 2019-08-08
+## [timers@0.2.1] - 2019-08-09
+### Fixed
+- Fixed timers using the wrong version of @channel/channel
+
+## [limiters@0.2.1] - 2019-08-09
+### Fixed
+- Fixed limiters using the wrong version of @channel/channel
+
+## [pubsub@0.2.1] - 2019-08-09
+### Fixed
+- Fixed pubsub using the wrong version of @channel/channel
+
+## [channel@1.0.0] - 2019-08-09
 ### Added
 - The `Channel` class now exposes the static methods `Channel.race`, `Channel.merge`, `Channel.zip` and `Channel.latest` (#4).
 ### Changed
@@ -15,12 +27,12 @@
 - The final iteration result/errors are now consumed by iterator methods.
 - `return`/`throw` behave more like the methods do for `async generators`.
 
-## [timers@0.2.0] - 2019-08-08
+## [timers@0.2.0] - 2019-08-09
 ### Changed
 - `delay` now returns an channel which can be reused
 - `timeout` returns a channel
 
-## [limiters@0.2.0] - 2019-08-08
+## [limiters@0.2.0] - 2019-08-09
 ### Added
 - throttler can now be passed a `cooldown` boolean option which forces the channel to wait before yielding the final token.
 ### Changed
@@ -30,7 +42,7 @@
 ### Fixed
 - throttler now uses a sliding window to limit (#1).
 
-## [pubsub@0.2.0] - 2019-08-08
+## [pubsub@0.2.0] - 2019-08-09
 ### Changed
 - type definitions have changed slightly
 
@@ -50,6 +62,13 @@
 ## [pubsub@0.1.0] - 2019-04-08
 - Initial release.
 
+[timers@0.2.0]: https://github.com/channeljs/channel/compare/@channel/timers@0.2.0...@channel/timers@0.2.1
+[limiters@0.2.0]: https://github.com/channeljs/channel/compare/@channel/limiters@0.2.0...@channel/limiters@0.2.1
+[pubsub@0.2.0]: https://github.com/channeljs/channel/compare/@channel/pubsub@0.2.0...@channel/pubsub@0.2.1
+[channel@1.0.0]: https://github.com/channeljs/channel/compare/@channel/channel@0.1.0...@channel/channel@1.0.0
+[timers@0.2.0]: https://github.com/channeljs/channel/compare/@channel/timers@0.1.1...@channel/timers@0.2.0
+[limiters@0.2.0]: https://github.com/channeljs/channel/compare/@channel/limiters@0.1.1...@channel/limiters@0.2.0
+[pubsub@0.2.0]: https://github.com/channeljs/channel/compare/@channel/pubsub@0.1.1...@channel/pubsub@0.2.0
 [channel@0.1.1]: https://github.com/channeljs/channel/compare/@channel/channel@0.1.0...@channel/channel@0.1.1
 [timers@0.1.1]: https://github.com/channeljs/channel/compare/@channel/timers@0.1.0...@channel/timers@0.1.1
 [limiters@0.1.1]: https://github.com/channeljs/channel/compare/@channel/limiters@0.1.0...@channel/limiters@0.1.1
