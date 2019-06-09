@@ -3,7 +3,7 @@ id: utilities
 title: Additional Channel-Based Utilities
 ---
 
-In addition to the `@channel/channel` package, the [channel repository](https://github.com/channeljs/channel) and [package scope](https://www.npmjs.com/org/channel)  also contains various async utilities implemented with channels.
+In addition to the `@channel/channel` package, the [channel repository](https://github.com/channeljs/channel) and [package scope](https://www.npmjs.com/org/channel) contain various async utilities implemented with channels.
 
 - [`@channel/timers`](https://github.com/channeljs/channel/tree/master/packages/timers) - Cancelable timers using `setTimeout` and `setInterval`
 - [`@channel/limiters`](https://github.com/channeljs/channel/tree/master/packages/limiters) - Async semaphores and throttlers for limiting concurrency

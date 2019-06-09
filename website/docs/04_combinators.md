@@ -3,11 +3,11 @@ id: combinators
 title: Combining Async Iterators
 ---
 
-Combining async iterators is a [non-trivial task](https://stackoverflow.com/questions/50585456/how-can-i-interleave-merge-async-iterables), and the `Channel` class provide four static methods inspired by `Promise.race` and `Promise.all` which provide different strategies for combining async iterators.
+Combining async iterators is a [non-trivial task](https://stackoverflow.com/questions/50585456/how-can-i-interleave-merge-async-iterables), and the `Channel` class defines four static methods similar to `Promise.race` and `Promise.all` which allow you to combine async iterators in different ways. These methods can be used to write applications in the [reactive programming](https://en.wikipedia.org/wiki/Reactive_programming) paradigm.
 
 ## `Channel.race`
 
-`Channel.race` takes an iterable of async iterators and races iterations from each iterator using `Promise.race` and yielding the value which resolved first. One important use-case is to place a fixed upper bound on how long each iteration of an async iterator can take:
+`Channel.race` takes an iterable of async iterators and races iterations from each iterator using `Promise.race`, yielding the value which resolved first. One important use-case is to place a fixed upper bound on how long each iteration of an async iterator can take:
 
 ```js
 import { Channel } from "@channel/channel";
@@ -20,15 +20,15 @@ const chan = new Channel(async (push) => {
   await push(3);
 });
 
-try {
-  (async () => {
+(async () => {
+  try {
     for await (const num of Channel.race([chan, timeout(1000)])) {
       console.log(num); // 1, 2
     }
-  })();
-} catch (err) {
-  console.log(err); // TimeoutError: 1000 ms elapsed
-}
+  } catch (err) {
+    console.log(err); // TimeoutError: 1000 ms elapsed
+  }
+})();
 ```
 
 The `timeout` function is a useful channel-based utility which errors if `next` is not called within a specified period of time. In the above example, each iteration has one second to resolve or the iterator throws.
@@ -49,20 +49,20 @@ const chan = new Channel(async (push) => {
 });
 const timer = timeout(2000);
 
-try {
-  (async () => {
+(async () => {
+  try {
     for await (const num of Channel.race([chan, timer.next()])) {
       console.log(num); // 1, 2
     }
-  })();
-} catch (err) {
-  console.log(err); // TimeoutError: 2000 ms elapsed
-} finally {
-  await timer.return();
-}
+  } catch (err) {
+    console.log(err); // TimeoutError: 2000 ms elapsed
+  } finally {
+    await timer.return();
+  }
+})();
 ```
 
-Note that it is important to call `timer.return` manually in a `finally` block to ensure there are no unhandled promise rejections.
+Note that it is important to call `timer.return` manually in a `finally` block to close the timer and ensure there are no unhandled promise rejections.
 
 ## `Channel.merge`
 
@@ -71,13 +71,13 @@ Note that it is important to call `timer.return` manually in a `finally` block t
 ```js
 import { Channel } from "@channel/channel";
 const leftClicks = new Channel(async (push, stop) => {
-  const listener = (ev) => push({ type: "left", event: ev });
+  const listener = (ev) => push("left");
   window.addEventListener("click", listener);
   await stop;
   window.removeEventListener("click", listener);
 });
 const rightClicks = new Channel(async (push, stop) => {
-  const listener = (ev) => push({ type: "right", event: ev });
+  const listener = (ev) => push("right");
   window.addEventListener("contextmenu", listener);
   await stop;
   window.removeEventListener("contextmenu", listener);
@@ -85,14 +85,14 @@ const rightClicks = new Channel(async (push, stop) => {
 
 (async () => {
   for await (const click of Channel.merge([leftClicks, rightClicks])) {
-    console.log(click);
+    console.log(click); // left, left, right, left, right
   }
 })();
 ```
 
 ## `Channel.zip`
 
-`Channel.zip` takes an iterable of async iterators and returns a channel which awaits every iteration from every iterator using `Promise.all`, yielding the resulting array.
+`Channel.zip` takes an iterable of async iterators awaits every iteration from every iterator using `Promise.all`, and yields the resulting array.
 
 ** TODO: provide a useful example **
 
