@@ -19,7 +19,7 @@ The `@channel/channel` package has no dependencies, but requires the following g
 - `Symbol.asyncIterator`
 - `WeakMap`
 
-In addition, channels are most useful when used with `async/await` and `for await… of` statements. You can compile your code with babel or typescript to support enviroments which lack these syntax features.
+In addition, channels are most useful when used via `async/await` and `for await…of` statements. You can compile your code with babel or typescript to support enviroments which lack these syntax features.
 
 ## Examples
 

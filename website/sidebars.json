@@ -7,10 +7,10 @@
     ],
     "Guides": [
       "combinators",
-      "utilities",
       "safety",
-      "errors",
-      "anti-patterns"
+      "error-handling",
+      "inverted-channels",
+      "utilities"
     ]
   }
 }
