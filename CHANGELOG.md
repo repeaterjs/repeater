@@ -4,10 +4,7 @@
 ### Fixed
 - Fixed timers using the wrong version of @channel/channel
 
-## [limiters@0.2.1] - 2019-08-09
-### Fixed
-- Fixed limiters using the wrong version of @channel/channel
-
+## [limiters@0.2.1] - 2019-08-09 ### Fixed - Fixed limiters using the wrong version of @channel/channel 
 ## [pubsub@0.2.1] - 2019-08-09
 ### Fixed
 - Fixed pubsub using the wrong version of @channel/channel
@@ -62,9 +59,9 @@
 ## [pubsub@0.1.0] - 2019-04-08
 - Initial release.
 
-[timers@0.2.0]: https://github.com/channeljs/channel/compare/@channel/timers@0.2.0...@channel/timers@0.2.1
-[limiters@0.2.0]: https://github.com/channeljs/channel/compare/@channel/limiters@0.2.0...@channel/limiters@0.2.1
-[pubsub@0.2.0]: https://github.com/channeljs/channel/compare/@channel/pubsub@0.2.0...@channel/pubsub@0.2.1
+[timers@0.2.1]: https://github.com/channeljs/channel/compare/@channel/timers@0.2.0...@channel/timers@0.2.1
+[limiters@0.2.1]: https://github.com/channeljs/channel/compare/@channel/limiters@0.2.0...@channel/limiters@0.2.1
+[pubsub@0.2.1]: https://github.com/channeljs/channel/compare/@channel/pubsub@0.2.0...@channel/pubsub@0.2.1
 [channel@1.0.0]: https://github.com/channeljs/channel/compare/@channel/channel@0.1.0...@channel/channel@1.0.0
 [timers@0.2.0]: https://github.com/channeljs/channel/compare/@channel/timers@0.1.1...@channel/timers@0.2.0
 [limiters@0.2.0]: https://github.com/channeljs/channel/compare/@channel/limiters@0.1.1...@channel/limiters@0.2.0
