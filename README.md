@@ -3,26 +3,25 @@ The missing constructor for creating safe async iterators
 
 For more information, visit [channel.js.org](https://channel.js.org).
 
-## Quickstart
+## Installation
 
-### Installation
-
-Channel.js is distributed on NPM in the CommonJS and ESModule formats.
+Channel.js is available on [npm](https://www.npmjs.com/package/@channel/channel) in the CommonJS and ESModule formats.
 
 `$ npm install @channel/channel`
 
 `$ yarn add @channel/channel`
 
-### Requirements
+## Requirements
 
 The `@channel/channel` package has no dependencies, but requires the following globals in order to work:
 - `Promise`
 - `Symbol.iterator`
 - `Symbol.asyncIterator`
+- `WeakMap`
 
-In addition, channels are most useful when used with `async/await` and `for await… of` statements. You can compile your code with babel or typescript to support enviroments which lack these syntax features.
+In addition, channels are most useful when used via `async/await` and `for await…of` statements. You can compile your code with babel or typescript to support enviroments which lack these syntax features.
 
-### Examples
+## Examples
 
 #### Logging timestamps with setInterval
 
