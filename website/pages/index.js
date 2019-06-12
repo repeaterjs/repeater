@@ -49,8 +49,8 @@ function Body() {
         <Feature title="Convenient" color="#00ABAA">
           The Channel class provides a promise-fluent API for creating async
           iterators. You can reuse the same constructor to convert event
-          emitters, streams, websockets, or other callback-based data sources
-          into objects which can be read using <code>async/await</code> and{" "}
+          emitters, streams, websockets, or any other callback-based data source
+          into a format which can be read using <code>async/await</code> and{" "}
           <code>for await…of</code> statements.
         </Feature>
         <Feature title="Safe" color="#BA00AC">
@@ -63,7 +63,7 @@ function Body() {
         <Feature title="Powerful" color="#00B100">
           You can use channels to implement architectural patterns like
           cancelable timers, semaphores, and generic pubsub classes. The Channel
-          class also provides static methods like <code>Channel.race</code> and{" "}
+          class also defines static methods like <code>Channel.race</code> and{" "}
           <code>Channel.merge</code> which allow you to use async iterators for
           reactive programming purposes.
         </Feature>

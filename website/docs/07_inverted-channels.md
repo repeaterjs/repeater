@@ -18,14 +18,11 @@ const timer = new Channel(async (push, stop) => {
       resolve = resolve1;
       reject = reject1;
     });
-    timeouts.push({
-      resolve,
-      reject,
-      timeout: setTimeout(() => {
-        resolve(Date.now());
-        timeouts.unshift();
-      }, 1000),
-    });
+    const timeout = setTimeout(() => {
+      resolve(Date.now());
+      timeouts.unshift();
+    }, 1000),
+    timeouts.push({ resolve, reject, timeout });
   }
   for (const timeout of timeouts) {
     reject(new Error("This error is never seen"));
@@ -36,6 +33,6 @@ const timer = new Channel(async (push, stop) => {
 
 In the example, we push a newly constructed promise and retain the `resolve` and `reject` functions so that we can settle the promise later. For unbuffered channels, `push` calls resolve when `next` is called, so the `setTimeout` call does not start until a value is pulled from the channel.
 
-Finally, to cleanup the channel, we break out of the while loop when `stop` resolves, reject any pending promises which were released, and call `clearTimeout` on all timeout ids. Because pushed promises which reject after a channel is stopped are dropped, the channel will finish instead of emitting new values.
+Finally, to cleanup the channel we reject any pending promises and call `clearTimeout` on all timeout ids. Because pushed promises which reject after stop are dropped, the channel finishes instead of emitting new values.
 
-The [`@channel/timer` package](https://github.com/channeljs/channel/blob/master/packages/pubsub/src/index.ts) exports the `delay` and `timeout` utility functions which use this inverted channel algorithm described above.
+The [`@channel/timer` package](https://github.com/channeljs/channel/blob/master/packages/pubsub/src/index.ts) exports the `delay` and `timeout` utility functions, which use this inverted channel algorithm described above.

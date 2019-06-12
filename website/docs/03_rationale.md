@@ -18,13 +18,13 @@ async function* messages(url) {
 }
 ```
 
-The solution using async generators is often some ad-hoc `while (true)` loop which awaits a promise which adds and removes event handlers for each iteration. The resulting code is often prone to race-conditions, dropped messages, and memory leaks unless done with an expert understanding of generators and promises. Channels behave identically to async generators, except they provide the `yield`, `return` and `throw` statements as the functions `push` and `stop`. These functions give imperative control over channels in child closures, making channels ideal for use with callbacks.
+The solution using async generators is often some ad-hoc `while (true)` loop which awaits a newly constructed promise which adds and removes event handlers for each iteration. The resulting code is often prone to race-conditions, dropped messages and memory leaks unless done with an expert understanding of both promises and generators. Channels behave identically to async generators, except they provide the `yield`, `return` and `throw` statements as the functions `push` and `stop`. These functions give imperative control over channels in child closures, making channels ideal for use with callback-based APIs.
 
-Once you have converted callback-based APIs to channel-returning functions, channels can be used seamlessly with async generators to write rich, easy-to-understand async code.
+Once you have converted callback-based APIs to channel-returning functions, channels can be used seamlessly with async generators to write easy-to-understand async code.
 
 ## Why not observables?
 
-Observables are often thought of as competing with async iterators and therefore channels, and it’s true that most channel code can be rewritten with observables. Here, for instance, is the [Konami code example](quickstart#listening-for-the-konami-code), rewritten using `rxjs`:
+Observables are often thought of as competing with async iterators and therefore channels, and it’s true that most channel code can be rewritten with observables. Here, for instance, is the [Konami example from the quickstart](quickstart#listening-for-the-konami-code), rewritten using `rxjs`:
 
 ```js
 import { Observable } from "rxjs";
@@ -46,7 +46,7 @@ const konami = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "Ar
 let i = 0;
 let subscription = keys
   .pipe(
-    rxjs.operators.takeWhile(key => {
+    takeWhile(key => {
       if (key === konami[i]) {
         i++;
       } else {
@@ -62,6 +62,8 @@ let subscription = keys
   .subscribe();
 ```
 
-While you can often create an equivalent observable for any channel, there are several differences that make channels much nicer to use. Firstly, channels support `async/await` and `for await…of` syntax, so we don’t need a library of “operators” like `takeWhile` to consume channels. Rather than using `map` operator, we can assign a variable, rather than using the `filter` operator, we can use an `if` statement, and rather than using the `takeWhile` or `takeUntil` operators, we can use a `break` statement. Using `for await…of` loops allows us to leverage what we already know about synchronous loops and control-flow statements to write cleaner, more intuitive code. I suspect that if observables ever [decided to support the async iterator protocol](https://github.com/ReactiveX/rxjs/issues/4002), the market for higher-order observable functions would collapse overnight.
+While you can often create an equivalent observable for any channel, there are several differences that make channels much nicer to use.
 
-Secondly, despite all the claims observable advocates make about how observables are “monadic” or that they are the “mathematical dual” of synchronous iterables, observables are ultimately callback-based APIs. This means that it’s difficult to use observables with promises and they suffer from the same issue of “callback hell” which promises were designed to solve. Observable libraries are aware of this and provide “higher-order observable operators” which work on observables of observables, but these solutions are seldom used and virtually incomprehensible to human beings, who don’t normally think in terms of extradimensional spaces.
+Firstly, channels support `async`/`await` and `for await…of` syntax, so we don’t need a library of “operators” like `takeWhile` to consume channels. To someone unfamiliar with `rxjs`, it might not be immediately obvious in the example what `takeWhile` does, whereas the same programmer would probably recognize what the equivalent `break` statement does in a `for await…of` loop. Using `for await…of` loops means we get to leverage what we already know about synchronous loops and control-flow statements to write cleaner, more intuitive code. Rather than using the `map` operator, we can assign a variable, rather than using the `filter` operator, we can use `if`/`else` statements, and rather than using the `reduce` operator, we can reassign or mutate a variable in the outer scope. I suspect that if observables ever [decided to support the async iterator protocol](https://github.com/ReactiveX/rxjs/issues/4002), the market for higher-order observable functions would collapse overnight.
+
+Secondly, despite the claims observable advocates make about how observables are “monadic” or that they are the “mathematical dual” of synchronous iterables, observables are ultimately callback-based APIs. The above example hides this detail by calling the `subscribe` method without arguments, but if we wanted to compose this observable with other code, we would have to call other observable methods and pass additional callbacks. Being a callback-based API makes using observables with `async`/`await` and promises awkward; in fact, observables suffer from the same issue of “callback hell” which promises were designed to solve. Observable libraries are aware of this and provide “higher-order observable operators,” which work on observables of observables, but these solutions are seldom used and virtually incomprehensible to human beings, who are not extadimensional beings.

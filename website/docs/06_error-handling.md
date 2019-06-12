@@ -38,7 +38,7 @@ const chan = new Channel((push, stop) => {
 
 When `stop` is called with an error, values which were previously pushed can continue to be pulled. When there are no more values, the final call to `next` rejects with the error. If the channel is ended prematurely with the `return` method, the channel drops any remaining values and rejects with the error.
 
-As you can see in the example above, channels error only once before entering a finished state where all calls to `next` resolve to `{ done: true }`. This mirrors the behavior of async generator objects. Because channels can only be stopped once, only the first call to `stop` has an effect on the channel, and any errors passed in subsequent calls are dropped.
+As you can see in the example above, channels error only once before entering a finished state where all calls to `next` resolve to `{ done: true }`. This mirrors the behavior of async generator objects. Because channels can only be stopped once, only the first call to `stop` has an effect on the channel, and any errors passed in subsequent calls to `stop` are dropped.
 
 ### 2. Calling the `throw` method
 
@@ -66,7 +66,7 @@ const chan = Channel((push, stop) => {
 })();
 ```
 
-The `throw` method is equivalent to calling the `stop` function and `return` method in sequence, so `throw` blows away any pending values and finish the channel. Because `throw` rethrows errors if there are no pending pulls, this method is of limited utility and mainly provided for compatability purposes.
+The `throw` method is equivalent to calling the `stop` function and `return` method in sequence, so `throw` blows away any pending values and finishes the channel. Because `throw` rethrows errors if there are no pending calls to `next`, this method is of limited utility and mainly provided for compatability purposes.
 
 ### 3. The executor throws an error
 
@@ -96,7 +96,7 @@ const chan = new Channel((push, stop) => {
 })();
 ```
 
-When an error occurs in the executor, the channel automatically stops. Because errors which occur in the executor are usually indicative of a programming mistake, the error thrown by the executor takes precedence over errors passed via `stop` or `throw`, regardless of when they were passed to the channel.
+When an error occurs in the executor, the channel is automatically stopped. Because errors which occur in the executor are usually indicative of a programming mistake, the error thrown by the executor takes precedence over errors passed via `stop` or `throw`, regardless of when they were passed to the channel.
 
 ### 4. A promise passed to the `push` function rejects
 
@@ -131,4 +131,4 @@ const chan = new Channel(async (push, stop) => {
 })();
 ```
 
-Channels unwrap promises and promise-like objects which are passed to `push`. If a promise passed to `push` rejects, the channel finishes and any further pending values are dropped. The pushed rejection is like a time-bomb which blows up the channel and prevents any more values from being pulled, regardless of when those values settled. A rejection which resolves before the channel is stopped takes precedence over all other errors passed to channels. However, if a pushed rejection settles *after* the channel has already stopped, the rejection is dropped and the channel emits `{ done: true }` instead. This behavior is useful when creating [inverted channels](inverted-channels).
+Channels unwrap promises and promise-like objects which are passed to `push`. If a promise passed to `push` rejects, the channel finishes and any further pending values are dropped. The pushed rejection is like a time-bomb which blows up the channel and prevents any more values from being pulled, regardless of when those values settled. A rejection which resolves before the channel is stopped takes precedence over all other errors passed to channels. However, if a pushed rejection settles *after* the channel has already stopped, the rejection is dropped and the channel yields `{ done: true }` instead. This behavior is useful when creating [inverted channels](inverted-channels).

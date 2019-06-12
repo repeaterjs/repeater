@@ -53,8 +53,8 @@ const timestamps = new Channel(async (push, stop) => {
 ```js
 import { Channel } from "@channel/channel";
 
+const socket = new WebSocket("ws://echo.websocket.org");
 const messages = new Channel(async (push, stop) => {
-  const socket = new WebSocket("ws://localhost:3000");
   socket.onmessage = (ev) => push(ev.data);
   socket.onerror = () => stop(new Error("WebSocket error"));
   socket.onclose = () => stop();
@@ -66,13 +66,20 @@ const messages = new Channel(async (push, stop) => {
   for await (const message of messages) {
     console.log(message);
     if (message === "close") {
+      console.log("Closing!");
       break; // closes the socket
     }
   }
 })();
+
+socket.onopen = () => {
+  socket.send("hello"); // "hello"
+  socket.send("world"); // "world"
+  socket.send("close"); // "close", "Closing!"
+};
 ```
 
-#### Listening for the [Konami Code](https://en.wikipedia.org/wiki/Konami_Code)
+#### Listening for the [Konami Code](https://en.wikipedia.org/wiki/Konami_Code) and canceling if <kbd>Escape</kbd> is pressed
 
 ```js
 import { Channel } from "@channel/channel";
