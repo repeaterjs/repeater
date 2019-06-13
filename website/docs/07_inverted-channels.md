@@ -21,7 +21,7 @@ const timer = new Channel(async (push, stop) => {
     const timeout = setTimeout(() => {
       resolve(Date.now());
       timeouts.unshift();
-    }, 1000),
+    }, 1000);
     timeouts.push({ resolve, reject, timeout });
   }
   for (const timeout of timeouts) {
