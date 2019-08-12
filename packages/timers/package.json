@@ -24,7 +24,8 @@
     "prepublishOnly": "yarn run test && yarn run build"
   },
   "dependencies": {
-    "@channel/channel": "^1.0.0"
+    "@channel/channel": "^1.0.0",
+    "ts-custom-error": "^3.1.1"
   },
   "publishConfig": {
     "access": "public"

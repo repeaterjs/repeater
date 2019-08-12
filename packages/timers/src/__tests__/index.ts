@@ -173,4 +173,15 @@ describe("timers", () => {
       jest.useRealTimers();
     }
   });
+
+  test("TimeoutError", () => {
+    const err = new TimeoutError(123);
+
+    expect(err).toBeInstanceOf(Error);
+
+    expect(err.message).toBe("123 milliseconds elapsed");
+
+    expect(err.ms).toBe(123);
+    expect(err.name).toBe("TimeoutError");
+  });
 });

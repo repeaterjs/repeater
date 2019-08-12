@@ -1,23 +1,15 @@
 import {
+  CannotWriteToFullBufferError,
   Channel,
   ChannelBuffer,
-  ChannelOverflowError,
   MAX_QUEUE_LENGTH,
-  SlidingBuffer,
+  SlidingBuffer
 } from "@channel/channel";
+import { CustomError } from "ts-custom-error";
 
-export class TimeoutError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "TimeoutError";
-    if (typeof Object.setPrototypeOf === "function") {
-      Object.setPrototypeOf(this, new.target.prototype);
-    } else {
-      (this as any).__proto__ = new.target.prototype;
-    }
-    if (typeof (Error as any).captureStackTrace === "function") {
-      (Error as any).captureStackTrace(this, TimeoutError);
-    }
+export class TimeoutError extends CustomError {
+  constructor(public readonly ms: number) {
+    super(`${ms} milliseconds elapsed`);
   }
 }
 
@@ -54,7 +46,7 @@ class DeferredTimer<T> {
     // stopped. Because channels swallow rejections which settle after stop, we
     // use this mechanism to make any pending call which has received the
     // deferred promise resolve to `{ done: true }`.
-    this.reject(new TimeoutError("THIS ERROR SHOULD NEVER BE SEEN"));
+    this.reject(new Error("THIS ERROR SHOULD NEVER BE SEEN"));
   }
 }
 
@@ -69,9 +61,7 @@ export function delay(wait: number): Channel<number> {
         await push(timer.promise);
         timers.add(timer);
         if (timers.size > MAX_QUEUE_LENGTH) {
-          throw new ChannelOverflowError(
-            `No more than ${MAX_QUEUE_LENGTH} calls to next are allowed on a single delay channel.`,
-          );
+          throw new CannotWriteToFullBufferError(MAX_QUEUE_LENGTH);
         }
         timer.run(() => {
           timers.delete(timer);
@@ -98,7 +88,7 @@ export function timeout(wait: number): Channel<undefined> {
         timer.resolve(undefined);
       }
       timer1.run(() => {
-        throw new TimeoutError(`${wait}ms elapsed without next being called`);
+        throw new TimeoutError(wait);
       });
       timer = timer1;
     } while (!stopped);
@@ -110,7 +100,7 @@ export function timeout(wait: number): Channel<undefined> {
 
 export function interval(
   wait: number,
-  buffer: ChannelBuffer<number> = new SlidingBuffer(1),
+  buffer: ChannelBuffer<number> = new SlidingBuffer(1)
 ): Channel<number> {
   return new Channel<number>(async (push, stop) => {
     push(Date.now());
