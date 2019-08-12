@@ -3,7 +3,7 @@ import {
   Channel,
   ChannelBuffer,
   MAX_QUEUE_LENGTH,
-  SlidingBuffer
+  SlidingBuffer,
 } from "@channel/channel";
 import { CustomError } from "ts-custom-error";
 
@@ -100,7 +100,7 @@ export function timeout(wait: number): Channel<undefined> {
 
 export function interval(
   wait: number,
-  buffer: ChannelBuffer<number> = new SlidingBuffer(1)
+  buffer: ChannelBuffer<number> = new SlidingBuffer(1),
 ): Channel<number> {
   return new Channel<number>(async (push, stop) => {
     push(Date.now());

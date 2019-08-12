@@ -15,8 +15,8 @@ describe("ChannelBuffer", () => {
     expect(buffer.remove()).toEqual(2);
     expect([buffer.empty, buffer.full]).toEqual([true, false]);
     expect(() => buffer.remove()).toThrow();
-    expect(() => new FixedBuffer<number>(-1)).toThrowError(
-      InvalidBufferCapacityError
+    expect(() => new FixedBuffer<number>(-1)).toThrow(
+      InvalidBufferCapacityError,
     );
   });
 
@@ -33,8 +33,8 @@ describe("ChannelBuffer", () => {
     expect(buffer.remove()).toEqual(5);
     expect([buffer.empty, buffer.full]).toEqual([true, false]);
     expect(() => buffer.remove()).toThrow();
-    expect(() => new SlidingBuffer<number>(-1)).toThrowError(
-      InvalidBufferCapacityError
+    expect(() => new SlidingBuffer<number>(-1)).toThrow(
+      InvalidBufferCapacityError,
     );
   });
 
@@ -51,8 +51,8 @@ describe("ChannelBuffer", () => {
     expect(buffer.remove()).toEqual(2);
     expect([buffer.empty, buffer.full]).toEqual([true, false]);
     expect(() => buffer.remove()).toThrow();
-    expect(() => new DroppingBuffer<number>(-1)).toThrowError(
-      InvalidBufferCapacityError
+    expect(() => new DroppingBuffer<number>(-1)).toThrow(
+      InvalidBufferCapacityError,
     );
   });
 });

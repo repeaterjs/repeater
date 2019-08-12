@@ -1,6 +1,5 @@
 import {
   Channel,
-  ChannelOverflowError,
   DroppingBuffer,
   FixedBuffer,
   MAX_QUEUE_LENGTH,
@@ -8,6 +7,7 @@ import {
 } from "../index";
 
 import { delayPromise } from "../_testutils";
+import { CannotWriteToFullBufferError } from "../errors";
 
 // TODO: create a jest matcher to help us test AsyncIterators
 describe("Channel", () => {
@@ -611,15 +611,15 @@ describe("Channel", () => {
     const push4 = push!(4);
     const push5 = push!(5);
     await expect(next1).resolves.toEqual({ value: 1, done: false });
-    expect(push1).resolves.toBe(-1);
+    await expect(push1).resolves.toBe(-1);
     await expect(chan.next(-2)).resolves.toEqual({ value: 2, done: false });
     await expect(chan.next(-3)).resolves.toEqual({ value: 3, done: false });
     await expect(chan.next(-4)).resolves.toEqual({ value: 4, done: false });
     await expect(chan.next(-5)).resolves.toEqual({ value: 5, done: false });
-    expect(push2).resolves.toBeUndefined();
-    expect(push3).resolves.toBeUndefined();
-    expect(push4).resolves.toBeUndefined();
-    expect(push5).resolves.toBe(-2);
+    await expect(push2).resolves.toBeUndefined();
+    await expect(push3).resolves.toBeUndefined();
+    await expect(push4).resolves.toBeUndefined();
+    await expect(push5).resolves.toBe(-2);
     const push6 = push!(6);
     const push7 = push!(7);
     const push8 = push!(8);
@@ -739,8 +739,8 @@ describe("Channel", () => {
     for (let i = 0; i < MAX_QUEUE_LENGTH; i++) {
       push!(i);
     }
-    expect(() => push(-1)).toThrow(ChannelOverflowError);
-    expect(() => push(-2)).toThrow(ChannelOverflowError);
+    expect(() => push(-1)).toThrow(CannotWriteToFullBufferError);
+    expect(() => push(-2)).toThrow(CannotWriteToFullBufferError);
   });
 
   test("next throws when pull queue is full", async () => {
@@ -748,8 +748,8 @@ describe("Channel", () => {
     for (let i = 0; i < MAX_QUEUE_LENGTH; i++) {
       chan.next();
     }
-    expect(() => chan.next()).toThrow(ChannelOverflowError);
-    expect(() => chan.next()).toThrow(ChannelOverflowError);
+    expect(() => chan.next()).toThrow(CannotWriteToFullBufferError);
+    expect(() => chan.next()).toThrow(CannotWriteToFullBufferError);
   });
 
   test("dropping buffer", async () => {
