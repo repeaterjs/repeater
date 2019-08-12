@@ -1,95 +1,102 @@
-export interface ChannelBuffer<T> {
-  full: boolean;
-  empty: boolean;
-  add(value: T): void;
-  remove(): T;
+import {
+  CannotReadFromEmptyBufferError,
+  CannotWriteToFullBufferError,
+  InvalidBufferCapacityError
+} from "./errors";
+
+export abstract class ChannelBuffer<T> {
+  public abstract get full(): boolean;
+  public abstract get empty(): boolean;
+
+  public abstract add(value: T): void;
+  public abstract remove(): T;
+
+  constructor(protected capacity: number) {
+    if (capacity < 0) {
+      throw new InvalidBufferCapacityError(capacity);
+    }
+  }
 }
 
-export class FixedBuffer<T> implements ChannelBuffer<T> {
+export class FixedBuffer<T> extends ChannelBuffer<T> {
   private arr: T[] = [];
-  get empty(): boolean {
+
+  public get empty(): boolean {
     return this.arr.length === 0;
   }
-  get full(): boolean {
+
+  public get full(): boolean {
     return this.arr.length >= this.capacity;
   }
 
-  constructor(private capacity: number) {
-    if (capacity < 0) {
-      throw new RangeError("FixedBuffer capacity cannot be less than zero");
-    }
-  }
-
-  add(value: T): void {
+  public add(value: T): void {
     if (this.full) {
-      throw new Error("Buffer full");
+      throw new CannotWriteToFullBufferError(this.capacity);
     } else {
       this.arr.push(value);
     }
   }
 
-  remove(): T {
+  public remove(): T {
     if (this.empty) {
-      throw new Error("Buffer empty");
+      throw new CannotReadFromEmptyBufferError();
     }
+
     return this.arr.shift()!;
   }
 }
 
 // TODO: use a circular buffer here
-export class SlidingBuffer<T> implements ChannelBuffer<T> {
+export class SlidingBuffer<T> extends ChannelBuffer<T> {
   private arr: T[] = [];
-  get empty(): boolean {
+
+  public get empty(): boolean {
     return this.arr.length === 0;
   }
-  readonly full = false;
-  constructor(private capacity: number) {
-    if (capacity <= 0) {
-      throw new RangeError(
-        "SlidingBuffer capacity cannot be less than or equal to zero",
-      );
-    }
+
+  public get full(): boolean {
+    return false;
   }
 
-  add(value: T): void {
+  public add(value: T): void {
     while (this.arr.length >= this.capacity) {
       this.arr.shift();
     }
+
     this.arr.push(value);
   }
 
-  remove(): T {
+  public remove(): T {
     if (this.empty) {
-      throw new Error("Buffer empty");
+      throw new CannotReadFromEmptyBufferError();
     }
+
     return this.arr.shift()!;
   }
 }
 
-export class DroppingBuffer<T> implements ChannelBuffer<T> {
+export class DroppingBuffer<T> extends ChannelBuffer<T> {
   private arr: T[] = [];
-  get empty(): boolean {
+
+  public get empty(): boolean {
     return this.arr.length === 0;
   }
-  readonly full = false;
-  constructor(private capacity: number) {
-    if (capacity <= 0) {
-      throw new RangeError(
-        "DroppingBuffer capacity cannot be less than or equal to zero",
-      );
-    }
+
+  public get full(): boolean {
+    return false;
   }
 
-  add(value: T): void {
+  public add(value: T): void {
     if (this.arr.length < this.capacity) {
       this.arr.push(value);
     }
   }
 
-  remove(): T {
+  public remove(): T {
     if (this.empty) {
-      throw new Error("Buffer empty");
+      throw new CannotReadFromEmptyBufferError();
     }
+
     return this.arr.shift()!;
   }
 }
