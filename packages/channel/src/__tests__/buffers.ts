@@ -1,4 +1,9 @@
-import { DroppingBuffer, FixedBuffer, SlidingBuffer } from "../index";
+import {
+  DroppingBuffer,
+  FixedBuffer,
+  SlidingBuffer,
+  InfiniteCapacityBuffer
+} from "../index";
 
 describe("ChannelBuffer", () => {
   test("FixedBuffer", () => {
@@ -42,6 +47,24 @@ describe("ChannelBuffer", () => {
     expect([buffer.empty, buffer.full]).toEqual([false, false]);
     expect(buffer.remove()).toEqual(1);
     expect(buffer.remove()).toEqual(2);
+    expect([buffer.empty, buffer.full]).toEqual([true, false]);
+    expect(() => buffer.remove()).toThrow();
+  });
+
+  test("InfiniteCapacityBuffer", () => {
+    const buffer = new InfiniteCapacityBuffer<number>();
+    expect([buffer.empty, buffer.full]).toEqual([true, false]);
+
+    for (let i = 0; i < 100; i++) {
+      buffer.add(i + 1);
+    }
+
+    expect([buffer.empty, buffer.full]).toEqual([false, false]);
+
+    for (let i = 0; i < 100; i++) {
+      expect(buffer.remove()).toEqual(i + 1);
+    }
+
     expect([buffer.empty, buffer.full]).toEqual([true, false]);
     expect(() => buffer.remove()).toThrow();
   });
