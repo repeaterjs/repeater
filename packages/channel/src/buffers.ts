@@ -1,7 +1,7 @@
 import {
   CannotReadFromEmptyBufferError,
   CannotWriteToFullBufferError,
-  InvalidBufferCapacityError
+  InvalidBufferCapacityError,
 } from "./errors";
 
 export abstract class ChannelBuffer<T> {

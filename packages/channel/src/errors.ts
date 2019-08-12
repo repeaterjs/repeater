@@ -15,7 +15,7 @@ export class CannotReadFromEmptyBufferError extends CustomError {
 export class CouldntGetChannelControllerInstanceError extends CustomError {
   constructor() {
     super(
-      "This channel does not seem to have assosiated ChannelController with it!"
+      "This channel does not seem to have assosiated ChannelController with it!",
     );
   }
 }
@@ -23,7 +23,7 @@ export class CouldntGetChannelControllerInstanceError extends CustomError {
 export class InvalidBufferCapacityError extends CustomError {
   constructor(public readonly providedCapacity: number) {
     super(
-      `Buffers capacity cannot be lesser than 0. Received: ${providedCapacity}!`
+      `Buffers capacity cannot be lesser than 0. Received: ${providedCapacity}!`,
     );
   }
 }

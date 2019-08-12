@@ -2,7 +2,7 @@ import {
   CannotReadFromEmptyBufferError,
   CannotWriteToFullBufferError,
   CouldntGetChannelControllerInstanceError,
-  InvalidBufferCapacityError
+  InvalidBufferCapacityError,
 } from "../index";
 
 describe("errors", () => {
@@ -33,7 +33,7 @@ describe("errors", () => {
     expect(err).toBeInstanceOf(Error);
 
     expect(err.message).toBe(
-      "This channel does not seem to have assosiated ChannelController with it!"
+      "This channel does not seem to have assosiated ChannelController with it!",
     );
 
     expect(err.name).toBe("CouldntGetChannelControllerInstanceError");
@@ -45,7 +45,7 @@ describe("errors", () => {
     expect(err).toBeInstanceOf(Error);
 
     expect(err.message).toBe(
-      "Buffers capacity cannot be lesser than 0. Received: 12345!"
+      "Buffers capacity cannot be lesser than 0. Received: 12345!",
     );
 
     expect(err.providedCapacity).toBe(12345);

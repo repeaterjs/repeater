@@ -2,17 +2,12 @@ export {
   ChannelBuffer,
   DroppingBuffer,
   FixedBuffer,
-  SlidingBuffer
+  SlidingBuffer,
 } from "./buffers";
-export {
-  Channel,
-  ChannelExecutor,
-  ChannelOverflowError,
-  MAX_QUEUE_LENGTH
-} from "./channel";
+export { Channel, ChannelExecutor, MAX_QUEUE_LENGTH } from "./channel";
 export {
   CannotReadFromEmptyBufferError,
   CannotWriteToFullBufferError,
   CouldntGetChannelControllerInstanceError,
-  InvalidBufferCapacityError
+  InvalidBufferCapacityError,
 } from "./errors";
