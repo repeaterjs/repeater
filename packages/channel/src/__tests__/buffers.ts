@@ -1,4 +1,5 @@
 import { DroppingBuffer, FixedBuffer, SlidingBuffer } from "../index";
+import { InvalidBufferCapacityError } from "../errors";
 
 describe("ChannelBuffer", () => {
   test("FixedBuffer", () => {
@@ -14,6 +15,9 @@ describe("ChannelBuffer", () => {
     expect(buffer.remove()).toEqual(2);
     expect([buffer.empty, buffer.full]).toEqual([true, false]);
     expect(() => buffer.remove()).toThrow();
+    expect(() => new FixedBuffer<number>(-1)).toThrowError(
+      InvalidBufferCapacityError
+    );
   });
 
   test("SlidingBuffer", () => {
@@ -29,6 +33,9 @@ describe("ChannelBuffer", () => {
     expect(buffer.remove()).toEqual(5);
     expect([buffer.empty, buffer.full]).toEqual([true, false]);
     expect(() => buffer.remove()).toThrow();
+    expect(() => new SlidingBuffer<number>(-1)).toThrowError(
+      InvalidBufferCapacityError
+    );
   });
 
   test("DroppingBuffer", () => {
@@ -44,5 +51,8 @@ describe("ChannelBuffer", () => {
     expect(buffer.remove()).toEqual(2);
     expect([buffer.empty, buffer.full]).toEqual([true, false]);
     expect(() => buffer.remove()).toThrow();
+    expect(() => new DroppingBuffer<number>(-1)).toThrowError(
+      InvalidBufferCapacityError
+    );
   });
 });
