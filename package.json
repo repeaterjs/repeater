@@ -1,8 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "build": "yarn workspace @channel/channel build && yarn workspace @channel/timers build && yarn workspace @channel/limiters build && yarn workspace @channel/pubsub build",
-    "test": "yarn workspace @channel/channel test && yarn workspace @channel/timers test && yarn workspace @channel/limiters test && yarn workspace @channel/pubsub test",
+    "build": "yarn workspaces run build",
+    "test": "yarn workspaces run test",
     "lint": "yarn workspaces run lint"
   },
   "devDependencies": {
@@ -24,7 +24,10 @@
     "weak": "^1.0.1"
   },
   "workspaces": [
-    "packages/*",
+    "packages/channel",
+    "packages/timers",
+    "packages/limiters",
+    "packages/pubsub",
     "website"
   ]
 }
