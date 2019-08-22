@@ -24,10 +24,9 @@
     "weak": "^1.0.1"
   },
   "workspaces": [
-    "packages/channel",
+    "packages/repeater",
     "packages/timers",
     "packages/limiters",
-    "packages/pubsub",
-    "website"
+    "packages/pubsub"
   ]
 }
