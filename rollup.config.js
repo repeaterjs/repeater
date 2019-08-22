@@ -20,9 +20,9 @@ export default {
   ],
   plugins: [typescript()],
   external: [
-    "@channel/channel",
-    "@channel/timers",
-    "@channel/pubsub",
-    "@channel/limiters",
+    "@repeaterjs/repeater",
+    "@repeaterjs/timers",
+    "@repeaterjs/pubsub",
+    "@repeaterjs/limiters",
   ],
 };

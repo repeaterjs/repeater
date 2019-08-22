@@ -1,11 +1,11 @@
 {
-  "name": "@channel/timers",
+  "name": "@repeaterjs/timers",
   "version": "0.2.1",
   "description": "Cancelable timers, implemented with channels",
   "homepage": "https://channel.js.org",
   "repository": {
     "type": "git",
-    "url": "https://github.com/channeljs/channel",
+    "url": "https://github.com/repeaterjs/repeater",
     "directory": "packages/pubsub"
   },
   "license": "MIT",
@@ -24,7 +24,7 @@
     "prepublishOnly": "yarn run test && yarn run build"
   },
   "dependencies": {
-    "@channel/channel": "^1.0.0"
+    "@repeaterjs/repeater": "^1.0.0"
   },
   "publishConfig": {
     "access": "public"

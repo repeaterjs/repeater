@@ -1,4 +1,4 @@
-import { Channel, ChannelBuffer } from "@channel/channel";
+import { Channel, ChannelBuffer } from "@repeaterjs/repeater";
 
 export interface PubSub<T> {
   publish(topic: string, value: T): Promise<void> | void;
