@@ -9,10 +9,10 @@ import {
 export class TimeoutError extends Error {
   constructor(message: string) {
     super(message);
-		Object.defineProperty(this, "name", {
-			value: "TimeoutError",
-			enumerable: false,
-		});
+    Object.defineProperty(this, "name", {
+      value: "TimeoutError",
+      enumerable: false,
+    });
     if (typeof Object.setPrototypeOf === "function") {
       Object.setPrototypeOf(this, new.target.prototype);
     } else {
@@ -77,6 +77,7 @@ export function delay(wait: number): Repeater<number> {
             `No more than ${MAX_QUEUE_LENGTH} calls to next are allowed on a single delay repeater.`,
           );
         }
+
         timer.run(() => {
           timers.delete(timer);
           return Date.now();
@@ -101,11 +102,13 @@ export function timeout(wait: number): Repeater<undefined> {
       if (timer != null) {
         timer.resolve(undefined);
       }
+
       timer1.run(() => {
         throw new TimeoutError(`${wait}ms elapsed without next being called`);
       });
       timer = timer1;
     } while (!stopped);
+
     if (timer != null) {
       timer.clear();
     }

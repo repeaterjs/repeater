@@ -1,9 +1,9 @@
-import { RepeaterBuffer, FixedBuffer } from "./buffers";
+import { FixedBuffer, RepeaterBuffer } from "./buffers";
 
 export {
-  RepeaterBuffer,
   DroppingBuffer,
   FixedBuffer,
+  RepeaterBuffer,
   SlidingBuffer,
 } from "./buffers";
 
@@ -31,20 +31,19 @@ export class RepeaterOverflowError extends Error {
 // The current definition of AsyncIterator allows "any" to be passed to
 // next/return, so we use these type aliases to keep track of the arguments as
 // they flow through repeaters.
-// TODO: parameterize these types when this PR lands (https://github.com/microsoft/TypeScript/pull/30790)
-// Next is the argument passed to AsyncIterator.next
-// Return is the argument passed to AsyncIterator.return
+// TODO: parameterize these types when this PR lands
+// (https://github.com/microsoft/TypeScript/pull/30790) Next is the argument
+// passed to AsyncIterator.next Return is the argument passed to
+// AsyncIterator.return
 type Next = any;
 type Return = any;
 
 export type Push<T> = (value: PromiseLike<T> | T) => Promise<Next | void>;
+
 export interface Stop extends Promise<Return | void> {
   (error?: any): void;
 }
 
-/**
- *
- */
 export type RepeaterExecutor<T> = (
   push: Push<T>,
   stop: Stop,
@@ -61,7 +60,7 @@ interface PullOperation<T> {
   value?: Next;
 }
 
-enum RepeaterState {
+const enum RepeaterState {
   Initial,
   Started,
   Stopped,
@@ -74,16 +73,13 @@ enum RepeaterState {
  * maximally compatible with async generators.
  */
 class RepeaterController<T> implements AsyncIterator<T> {
+  private state: RepeaterState = RepeaterState.Initial;
   // pushQueue and pullQueue will never both contain operations at the same time
   private pushQueue: PushOperation<T>[] = [];
   private pullQueue: PullOperation<T>[] = [];
-
   private onstop?: (value?: Return) => void;
-  private state: RepeaterState = RepeaterState.Initial;
-
-  // pending is a promise which is continuously reassigned as the repeater is
-  // iterated. We use this mechanism to make sure all iterations settle in
-  // order.
+  // pending is continuously reassigned as the repeater is iterated. We use
+  // this mechanism to make sure all iterations settle in order.
   private pending?: Promise<IteratorResult<T>>;
   private execution?: Promise<T | void> | T | void;
   private error?: any;
@@ -102,6 +98,7 @@ class RepeaterController<T> implements AsyncIterator<T> {
     if (this.state >= RepeaterState.Started) {
       return;
     }
+
     this.state = RepeaterState.Started;
     const push: Push<T> = this.push.bind(this);
     const stop: Stop = this.stop.bind(this) as Stop;
@@ -112,13 +109,12 @@ class RepeaterController<T> implements AsyncIterator<T> {
     // Errors which occur in the executor take precedence over those passed to
     // this.stop, so calling this.stop with the caught error would be redundant.
     try {
-      const value = this.executor(push, stop);
-      Promise.resolve(value).catch(() => this.stop());
-      this.execution = value;
+      this.execution = this.executor(push, stop);
     } catch (err) {
       this.execution = Promise.reject(err);
-      this.execution.catch(() => this.stop());
     }
+
+    Promise.resolve(this.execution).catch(() => this.stop());
   }
 
   /**
@@ -126,16 +122,14 @@ class RepeaterController<T> implements AsyncIterator<T> {
    * Rejections which settle after stop are ignored. This behavior is useful
    * when you have yielded a pending promise but want to finish instead.
    */
-  private reject(err: any): Promise<IteratorResult<T>> {
+  private async reject(err: any): Promise<IteratorResult<T>> {
     if (this.state >= RepeaterState.Stopped) {
-      const execution = this.execution;
-      return Promise.resolve(execution).then((value) => ({
-        value: value as T,
-        done: true,
-      }));
+      const value = await this.execution;
+      return { value: value as T, done: true };
     }
+
     this.finish().catch(() => {});
-    return Promise.reject(err);
+    throw err;
   }
 
   /**
@@ -157,6 +151,7 @@ class RepeaterController<T> implements AsyncIterator<T> {
           if (prev.done) {
             return { done: true } as IteratorResult<T>;
           }
+
           return Promise.resolve(value).then(
             (value) => ({ value, done: false }),
             (err) => this.reject(err),
@@ -165,6 +160,7 @@ class RepeaterController<T> implements AsyncIterator<T> {
         () => ({ done: true } as IteratorResult<T>),
       );
     }
+
     return this.pending;
   }
 
@@ -174,8 +170,8 @@ class RepeaterController<T> implements AsyncIterator<T> {
    *
    * The difference between stopping a repeater vs finishing a repeater is that
    * stopping a repeater allows next to continue draining values from the
-   * pushQueue/buffer, while finishing a repeater will clear the buffer and end
-   * all iteration.
+   * pushQueue/buffer, while finishing a repeater will clear all queues/buffers
+   * and end all iteration.
    *
    * Advances state to RepeaterState.Finished.
    */
@@ -186,17 +182,20 @@ class RepeaterController<T> implements AsyncIterator<T> {
       if (this.state < RepeaterState.Stopped) {
         this.stop();
       }
+
       this.state = RepeaterState.Finished;
       this.pushQueue = [];
       this.buffer = new FixedBuffer(0);
       delete this.error;
       delete this.execution;
     }
+
     if (this.pending == null) {
       this.pending = Promise.resolve(execution).then((value) => {
         if (error == null) {
           return { value: value as T, done: true };
         }
+
         throw error;
       });
     } else {
@@ -205,16 +204,19 @@ class RepeaterController<T> implements AsyncIterator<T> {
           if (prev.done) {
             return { done: true } as IteratorResult<T>;
           }
+
           return Promise.resolve(execution).then((value) => {
             if (error == null) {
               return { value: value as T, done: true };
             }
+
             throw error;
           });
         },
         () => ({ done: true } as IteratorResult<T>),
       );
     }
+
     return this.pending;
   }
 
@@ -237,6 +239,7 @@ class RepeaterController<T> implements AsyncIterator<T> {
         `No more than ${MAX_QUEUE_LENGTH} pending calls to push are allowed on a single repeater.`,
       );
     }
+
     return new Promise((resolve) => this.pushQueue.push({ resolve, value }));
   }
 
@@ -251,17 +254,20 @@ class RepeaterController<T> implements AsyncIterator<T> {
     } else if (this.onstop != null) {
       this.onstop();
     }
+
     this.state = RepeaterState.Stopped;
     this.error = error;
     for (const push of this.pushQueue) {
       push.resolve();
     }
+
     // If the pullQueue contains operations, the pushQueue and buffer is
     // necessarily empty, so we don‘t have to worry about this.finish clearing
     // the pushQueue or buffer.
     for (const pull of this.pullQueue) {
       pull.resolve(this.finish());
     }
+
     this.pullQueue = [];
   }
 
@@ -277,6 +283,7 @@ class RepeaterController<T> implements AsyncIterator<T> {
         this.buffer.add(push.value);
         push.resolve(value);
       }
+
       return result;
     } else if (this.pushQueue.length) {
       const push = this.pushQueue.shift()!;
@@ -289,6 +296,7 @@ class RepeaterController<T> implements AsyncIterator<T> {
         `No more than ${MAX_QUEUE_LENGTH} pending calls to Repeater.prototype.next are allowed on a single repeater.`,
       );
     }
+
     return new Promise((resolve, reject) => {
       this.pullQueue.push({ resolve, reject, value });
     });
@@ -304,10 +312,12 @@ class RepeaterController<T> implements AsyncIterator<T> {
           () => ({ value, done: true }),
         );
       }
+
       return this.pending;
     } else if (this.onstop != null) {
       this.onstop(value);
     }
+
     this.stop();
     return this.finish();
   }
@@ -322,8 +332,10 @@ class RepeaterController<T> implements AsyncIterator<T> {
           () => Promise.reject(error),
         );
       }
+
       return this.pending;
     }
+
     this.stop(error);
     return this.finish();
   }
@@ -333,7 +345,7 @@ export type Contender<T> = AsyncIterable<T> | Iterable<T> | PromiseLike<T> | T;
 
 function iterators<T>(
   contenders: Iterable<Contender<T>>,
-): (Iterator<T> | AsyncIterator<T>)[] {
+): (AsyncIterator<T> | Iterator<T>)[] {
   const iters: (Iterator<T> | AsyncIterator<T>)[] = [];
   for (const contender of contenders) {
     if (
@@ -348,18 +360,16 @@ function iterators<T>(
       iters.push((contender as Iterable<T>)[Symbol.iterator]());
     } else {
       iters.push(
-        /* eslint-disable-next-line @typescript-eslint/no-use-before-define */
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
         new Repeater<T>((_, stop) => (stop(), contender as PromiseLike<T> | T)),
       );
     }
   }
+
   return iters;
 }
 
-type RepeaterControllerMap<T = any> = WeakMap<
-  Repeater<T>,
-  RepeaterController<T>
->;
+type RepeaterControllerMap = WeakMap<Repeater<any>, RepeaterController<any>>;
 
 const controllers: RepeaterControllerMap = new WeakMap();
 
@@ -376,6 +386,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
     if (controller == null) {
       throw new Error("RepeaterController missing from controllers WeakMap");
     }
+
     return controller.next(value);
   }
 
@@ -384,6 +395,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
     if (controller == null) {
       throw new Error("RepeaterController missing from controllers WeakMap");
     }
+
     return controller.return(value);
   }
 
@@ -392,6 +404,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
     if (controller == null) {
       throw new Error("RepeaterController missing from controllers WeakMap");
     }
+
     return controller.throw(error);
   }
 
@@ -399,13 +412,13 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
     return this;
   }
 
+  // TODO: rethink the done value for each of the combinators
   // TODO: remove eslint-disable comments once no-dupe-class-members is fixed
   // https://github.com/typescript-eslint/typescript-eslint/issues/291
   // TODO: use prettier-ignore-start/prettier-ignore-end once it’s implemented
   // https://github.com/prettier/prettier/issues/5287
   // TODO: stop using overloads once we have variadic kinds
   // https://github.com/Microsoft/TypeScript/issues/5453
-
   /* eslint-disable no-dupe-class-members */
   // prettier-ignore
   static race<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10>;
@@ -434,6 +447,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
         stop();
         return;
       }
+
       let stopped = false;
       let returned: Return;
       const finish: Promise<IteratorResult<T>> = stop.then((value) => {
@@ -448,21 +462,24 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
           for (const result1 of results) {
             Promise.resolve(result1)
               .then((result1) => {
-                if (result1.done) {
+                if (result1.done && result == null) {
                   stop();
-                  result = result || result1;
+                  result = result1;
                 }
               })
               .catch(stop);
           }
+
           results.unshift(finish);
           const result1 = await Promise.race(results);
-          if (result1.done) {
-            result = result || result1;
+          if (result1.done && result == null) {
+            result = result1;
             break;
           }
+
           await push(result1.value);
         }
+
         return result && result.value;
       } catch (err) {
         stop(err);
@@ -474,9 +491,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
       }
     });
   }
-  /* eslint-enable no-dupe-class-members */
 
-  /* eslint-disable no-dupe-class-members */
   // prettier-ignore
   static merge<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10>;
   // prettier-ignore
@@ -504,6 +519,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
         stop();
         return;
       }
+
       let stopped = false;
       let returned: Return;
       const finish: Promise<IteratorResult<T>> = stop.then((value) => {
@@ -521,6 +537,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
                 value = result.value;
                 return;
               }
+
               await push(result.value);
             }
           } catch (err) {
@@ -536,9 +553,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
       return value;
     });
   }
-  /* eslint-enable no-dupe-class-members */
 
-  /* eslint-disable no-dupe-class-members */
   // prettier-ignore
   static zip<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]>;
   // prettier-ignore
@@ -566,6 +581,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
         stop();
         return [];
       }
+
       let stopped = false;
       let returned: Return;
       stop.then((value) => {
@@ -586,11 +602,13 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
               }),
             );
           }
+
           const results = await resultsP;
           const values = results.map((result) => result.value);
           if (results.some((result) => result.done)) {
             return values;
           }
+
           await push(values);
         }
       } catch (err) {
@@ -605,9 +623,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
       }
     });
   }
-  /* eslint-enable no-dupe-class-members */
 
-  /* eslint-disable no-dupe-class-members */
   // prettier-ignore
   static latest<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]>;
   // prettier-ignore
@@ -635,6 +651,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
         stop();
         return [];
       }
+
       let stopped = false;
       let returned: Return;
       const finish = stop.then((value) => {
@@ -654,11 +671,13 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
           }),
         );
       }
+
       const results = await resultsP;
       const values = results.map((result) => result.value);
       if (results.every((result) => result.done)) {
         return values;
       }
+
       await push(values.slice());
       const result = await Promise.all(
         iters.map(async (iter, i) => {
@@ -671,6 +690,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
               if (result.done) {
                 return result.value;
               }
+
               values[i] = result.value;
               await push(values.slice());
             }
