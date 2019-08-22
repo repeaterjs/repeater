@@ -1,6 +1,6 @@
 import { DroppingBuffer, FixedBuffer, SlidingBuffer } from "../index";
 
-describe("ChannelBuffer", () => {
+describe("RepeaterBuffer", () => {
   test("FixedBuffer", () => {
     const buffer = new FixedBuffer<number>(2);
     expect([buffer.empty, buffer.full]).toEqual([true, false]);

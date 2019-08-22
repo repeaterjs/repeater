@@ -1,11 +1,11 @@
-export interface ChannelBuffer<T> {
+export interface RepeaterBuffer<T> {
   full: boolean;
   empty: boolean;
   add(value: T): void;
   remove(): T;
 }
 
-export class FixedBuffer<T> implements ChannelBuffer<T> {
+export class FixedBuffer<T> implements RepeaterBuffer<T> {
   private arr: T[] = [];
   get empty(): boolean {
     return this.arr.length === 0;
@@ -37,7 +37,7 @@ export class FixedBuffer<T> implements ChannelBuffer<T> {
 }
 
 // TODO: use a circular buffer here
-export class SlidingBuffer<T> implements ChannelBuffer<T> {
+export class SlidingBuffer<T> implements RepeaterBuffer<T> {
   private arr: T[] = [];
   get empty(): boolean {
     return this.arr.length === 0;
@@ -66,7 +66,7 @@ export class SlidingBuffer<T> implements ChannelBuffer<T> {
   }
 }
 
-export class DroppingBuffer<T> implements ChannelBuffer<T> {
+export class DroppingBuffer<T> implements RepeaterBuffer<T> {
   private arr: T[] = [];
   get empty(): boolean {
     return this.arr.length === 0;

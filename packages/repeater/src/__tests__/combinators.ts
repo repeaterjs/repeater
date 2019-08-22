@@ -1,7 +1,7 @@
-import { Channel } from "../index";
+import { Repeater } from "../index";
 import {
   deferredGen,
-  delayChannel,
+  delayRepeater,
   delayPromise,
   gen,
   hangingGen,
@@ -9,14 +9,14 @@ import {
 
 // TODO: maybe use timer mocks to make this test suite execute faster
 describe("combinators", () => {
-  describe("Channel.race", () => {
+  describe("Repeater.race", () => {
     test("empty", async () => {
-      const iter = Channel.race([]);
+      const iter = Repeater.race([]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
     test("single iterator", async () => {
-      const iter = Channel.race([delayChannel(10, [1, 2, 3], 4)]);
+      const iter = Repeater.race([delayRepeater(10, [1, 2, 3], 4)]);
       await expect(iter.next()).resolves.toEqual({ value: 1, done: false });
       await expect(iter.next()).resolves.toEqual({ value: 2, done: false });
       await expect(iter.next()).resolves.toEqual({ value: 3, done: false });
@@ -25,7 +25,7 @@ describe("combinators", () => {
     });
 
     test("Promise.resolve vs generator", async () => {
-      const iter = Channel.race([
+      const iter = Repeater.race([
         Promise.resolve("z"),
         gen([1, 2, 3, 4, 5], 6),
       ]);
@@ -34,7 +34,7 @@ describe("combinators", () => {
     });
 
     test("generator vs Promise.resolve", async () => {
-      const iter = Channel.race([
+      const iter = Repeater.race([
         gen([1, 2, 3, 4, 5], 6),
         Promise.resolve("z"),
       ]);
@@ -43,7 +43,7 @@ describe("combinators", () => {
     });
 
     test("Promise.resolve vs deferred generator", async () => {
-      const iter = Channel.race([
+      const iter = Repeater.race([
         Promise.resolve("z"),
         deferredGen([1, 2, 3, 4, 5], 6),
       ]);
@@ -52,7 +52,7 @@ describe("combinators", () => {
     });
 
     test("deferred generator vs Promise.resolve", async () => {
-      const iter = Channel.race([
+      const iter = Repeater.race([
         deferredGen([1, 2, 3, 4, 5], 6),
         Promise.resolve("z"),
       ]);
@@ -61,32 +61,32 @@ describe("combinators", () => {
     });
 
     test("Promise.resolve vs hanging generator", async () => {
-      const iter = Channel.race([Promise.resolve(-1), hangingGen()]);
+      const iter = Repeater.race([Promise.resolve(-1), hangingGen()]);
       await expect(iter.next()).resolves.toEqual({ value: -1, done: true });
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
     test("hanging generator vs Promise.resolve", async () => {
-      const iter = Channel.race([hangingGen(), Promise.resolve(-1)]);
+      const iter = Repeater.race([hangingGen(), Promise.resolve(-1)]);
       await expect(iter.next()).resolves.toEqual({ value: -1, done: true });
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
     test("promise vs hanging generator", async () => {
-      const iter = Channel.race([delayPromise(10, -1), hangingGen()]);
+      const iter = Repeater.race([delayPromise(10, -1), hangingGen()]);
       await expect(iter.next()).resolves.toEqual({ value: -1, done: true });
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
     test("hanging generator vs promise", async () => {
-      const iter = Channel.race([hangingGen(), delayPromise(200, -1)]);
+      const iter = Repeater.race([hangingGen(), delayPromise(200, -1)]);
       await expect(iter.next()).resolves.toEqual({ value: -1, done: true });
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
-    test("channel vs promise", async () => {
-      const iter = Channel.race([
-        delayChannel(40, [1, 2, 3, 4, 5], 6),
+    test("repeater vs promise", async () => {
+      const iter = Repeater.race([
+        delayRepeater(40, [1, 2, 3, 4, 5], 6),
         delayPromise(100, "z"),
       ]);
       await expect(iter.next()).resolves.toEqual({ value: 1, done: false });
@@ -95,10 +95,10 @@ describe("combinators", () => {
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
-    test("slow channel vs fast channel", async () => {
-      const slow = delayChannel(120, [0, 1, 2], -1);
-      const fast = delayChannel(100, [100, 101, 102, 103, 104, 105, 106], -2);
-      const iter = Channel.race([slow, fast]);
+    test("slow repeater vs fast repeater", async () => {
+      const slow = delayRepeater(120, [0, 1, 2], -1);
+      const fast = delayRepeater(100, [100, 101, 102, 103, 104, 105, 106], -2);
+      const iter = Repeater.race([slow, fast]);
       await expect(iter.next()).resolves.toEqual({ value: 100, done: false });
       await expect(iter.next()).resolves.toEqual({ value: 101, done: false });
       await expect(iter.next()).resolves.toEqual({ value: 102, done: false });
@@ -107,12 +107,12 @@ describe("combinators", () => {
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
-    test("hanging promise vs delayed promise vs slow channel vs fast channel", async () => {
+    test("hanging promise vs delayed promise vs slow repeater vs fast repeater", async () => {
       const hanging = new Promise(() => {});
       const delayed = delayPromise<string>(250, "z");
-      const slow = delayChannel(160, [0, 1, 2, 3, 4], -1);
-      const fast = delayChannel(100, [100, 101, 102, 103, 104, 105], -2);
-      const iter = Channel.race([hanging, delayed, slow, fast]);
+      const slow = delayRepeater(160, [0, 1, 2, 3, 4], -1);
+      const fast = delayRepeater(100, [100, 101, 102, 103, 104, 105], -2);
+      const iter = Repeater.race([hanging, delayed, slow, fast]);
       await expect(iter.next()).resolves.toEqual({ value: 100, done: false });
       await expect(iter.next()).resolves.toEqual({ value: 101, done: false });
       await expect(iter.next()).resolves.toEqual({ value: "z", done: true });
@@ -122,12 +122,12 @@ describe("combinators", () => {
     test("return methods called on all iterators when any finish", async () => {
       const hanging = new Promise(() => {});
       const iter1 = hangingGen();
-      const iter2 = delayChannel<number>(1000, [1, 2, 3], -1);
-      const iter3 = delayChannel<number>(250, [], -2);
+      const iter2 = delayRepeater<number>(1000, [1, 2, 3], -1);
+      const iter3 = delayRepeater<number>(250, [], -2);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.race([hanging, iter1, iter2, iter3]);
+      const iter = Repeater.race([hanging, iter1, iter2, iter3]);
       await expect(iter.next()).resolves.toEqual({ done: true, value: -2 });
       expect(spy1).toHaveBeenCalledTimes(1);
       expect(spy2).toHaveBeenCalledTimes(1);
@@ -137,12 +137,12 @@ describe("combinators", () => {
     test("return methods called on all iterators when parent return called", async () => {
       const hanging = new Promise(() => {});
       const iter1 = hangingGen();
-      const iter2 = new Channel(() => {});
-      const iter3 = delayChannel(250, []);
+      const iter2 = new Repeater(() => {});
+      const iter3 = delayRepeater(250, []);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.race([hanging, iter1, iter2, iter3]);
+      const iter = Repeater.race([hanging, iter1, iter2, iter3]);
       iter.next();
       await expect(iter.return()).resolves.toEqual({ done: true });
       expect(spy1).toHaveBeenCalledTimes(1);
@@ -153,12 +153,12 @@ describe("combinators", () => {
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
       const hanging = new Promise(() => {});
       const iter1 = hangingGen();
-      const iter2 = new Channel(() => {});
-      const iter3 = delayChannel(250, []);
+      const iter2 = new Repeater(() => {});
+      const iter3 = delayRepeater(250, []);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.race([hanging, iter1, iter2, iter3]);
+      const iter = Repeater.race([hanging, iter1, iter2, iter3]);
       await expect(iter.return()).resolves.toEqual({
         done: true,
       });
@@ -170,17 +170,17 @@ describe("combinators", () => {
     test("one iterator errors", async () => {
       const hanging = new Promise(() => {});
       const iter1 = hangingGen<boolean>();
-      const iter2 = new Channel<string>((push, stop) => {
+      const iter2 = new Repeater<string>((push, stop) => {
         push("a");
         push("b");
         return stop;
       });
-      const error = new Error("Channel.race error");
-      const iter3 = delayChannel<number>(100, [1, 2, 3], undefined, error);
+      const error = new Error("Repeater.race error");
+      const iter3 = delayRepeater<number>(100, [1, 2, 3], undefined, error);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.race([hanging, iter1, iter2, iter3]);
+      const iter = Repeater.race([hanging, iter1, iter2, iter3]);
 
       await expect(iter.next()).resolves.toEqual({ value: "a", done: false });
       await expect(iter.next()).resolves.toEqual({ value: "b", done: false });
@@ -193,14 +193,14 @@ describe("combinators", () => {
     });
   });
 
-  describe("Channel.merge", () => {
+  describe("Repeater.merge", () => {
     test("empty", async () => {
-      const iter = Channel.merge([]);
+      const iter = Repeater.merge([]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
     test("single iterator", async () => {
-      const iter = Channel.merge([delayChannel(100, [1, 2, 3], 4)]);
+      const iter = Repeater.merge([delayRepeater(100, [1, 2, 3], 4)]);
       let result: IteratorResult<number>;
       const values: number[] = [];
       do {
@@ -216,7 +216,7 @@ describe("combinators", () => {
     });
 
     test("Promise.resolve vs generator", async () => {
-      const iter = Channel.merge([
+      const iter = Repeater.merge([
         Promise.resolve(-1),
         gen([1, 2, 3, 4, 5], 6),
       ]);
@@ -235,7 +235,7 @@ describe("combinators", () => {
     });
 
     test("generator vs Promise.resolve", async () => {
-      const iter = Channel.merge([
+      const iter = Repeater.merge([
         gen([1, 2, 3, 4, 5], 6),
         Promise.resolve(-1),
       ]);
@@ -254,7 +254,7 @@ describe("combinators", () => {
     });
 
     test("Promise.resolve vs deferred generator", async () => {
-      const iter = Channel.merge([
+      const iter = Repeater.merge([
         Promise.resolve(-1),
         deferredGen([1, 2, 3, 4, 5], 6),
       ]);
@@ -273,7 +273,7 @@ describe("combinators", () => {
     });
 
     test("deferred generator vs Promise.resolve", async () => {
-      const iter = Channel.merge([
+      const iter = Repeater.merge([
         deferredGen([1, 2, 3, 4, 5], 6),
         Promise.resolve(-1),
       ]);
@@ -292,7 +292,7 @@ describe("combinators", () => {
     });
 
     test("generator vs deferred generator", async () => {
-      const iter = Channel.merge([
+      const iter = Repeater.merge([
         gen([1, 2, 3, 4, 5], 6),
         deferredGen([10, 20, 30, 40, 50], 60),
       ]);
@@ -311,7 +311,7 @@ describe("combinators", () => {
     });
 
     test("deferred generator vs generator", async () => {
-      const iter = Channel.merge([
+      const iter = Repeater.merge([
         deferredGen([10, 20, 30, 40, 50], 60),
         gen([1, 2, 3, 4, 5], 6),
       ]);
@@ -329,9 +329,9 @@ describe("combinators", () => {
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
-    test("channel vs promise", async () => {
-      const iter = Channel.merge([
-        delayChannel(100, [1, 2, 3, 4, 5], -2),
+    test("repeater vs promise", async () => {
+      const iter = Repeater.merge([
+        delayRepeater(100, [1, 2, 3, 4, 5], -2),
         delayPromise(250, -1),
       ]);
       let result: IteratorResult<number>;
@@ -348,11 +348,11 @@ describe("combinators", () => {
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
-    test("promise vs slow channel vs fast channel", async () => {
-      const iter = Channel.merge([
+    test("promise vs slow repeater vs fast repeater", async () => {
+      const iter = Repeater.merge([
         delayPromise(500, -1),
-        delayChannel(160, [0, 1, 2, 3, 4], -2),
-        delayChannel(100, [100, 101, 102, 103, 104, 105], -3),
+        delayRepeater(160, [0, 1, 2, 3, 4], -2),
+        delayRepeater(100, [100, 101, 102, 103, 104, 105], -3),
       ]);
 
       let result: IteratorResult<number>;
@@ -370,13 +370,13 @@ describe("combinators", () => {
     });
 
     test("return methods called on all iterators when parent return called", async () => {
-      const iter1 = delayChannel(100, [1]);
-      const iter2 = delayChannel(10000, [2]);
-      const iter3 = new Channel<number>(() => {});
+      const iter1 = delayRepeater(100, [1]);
+      const iter2 = delayRepeater(10000, [2]);
+      const iter3 = new Repeater<number>(() => {});
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.merge([iter1, iter2, iter3]);
+      const iter = Repeater.merge([iter1, iter2, iter3]);
       iter.next();
       await expect(iter.return()).resolves.toEqual({ done: true });
       expect(spy1).toHaveBeenCalledTimes(1);
@@ -387,12 +387,12 @@ describe("combinators", () => {
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
       const hanging = new Promise(() => {});
       const iter1 = hangingGen();
-      const iter2 = new Channel<number>(() => {});
-      const iter3 = delayChannel(10000, [1]);
+      const iter2 = new Repeater<number>(() => {});
+      const iter3 = delayRepeater(10000, [1]);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.merge([hanging, iter1, iter2, iter3]);
+      const iter = Repeater.merge([hanging, iter1, iter2, iter3]);
       await expect(iter.return()).resolves.toEqual({
         done: true,
       });
@@ -402,17 +402,17 @@ describe("combinators", () => {
     });
 
     test("one iterator errors", async () => {
-      const iter1 = delayChannel(120, Array<boolean>(10).fill(true), false);
-      const iter2 = new Channel<string>((push) => {
+      const iter1 = delayRepeater(120, Array<boolean>(10).fill(true), false);
+      const iter2 = new Repeater<string>((push) => {
         push("a");
         push("b");
       });
-      const error = new Error("Channel.merge error");
-      const iter3 = delayChannel<number>(250, [1, 2, 3], undefined, error);
+      const error = new Error("Repeater.merge error");
+      const iter3 = delayRepeater<number>(250, [1, 2, 3], undefined, error);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.merge([iter1, iter2, iter3]);
+      const iter = Repeater.merge([iter1, iter2, iter3]);
 
       let result: IteratorResult<number | string | boolean>;
       const values: (number | string | boolean)[] = [];
@@ -447,14 +447,14 @@ describe("combinators", () => {
     });
   });
 
-  describe("Channel.zip", () => {
+  describe("Repeater.zip", () => {
     test("empty", async () => {
-      const iter = Channel.zip([]);
+      const iter = Repeater.zip([]);
       await expect(iter.next()).resolves.toEqual({ value: [], done: true });
     });
 
     test("single iterator", async () => {
-      const iter = Channel.zip([delayChannel(100, [1, 2, 3], 4)]);
+      const iter = Repeater.zip([delayRepeater(100, [1, 2, 3], 4)]);
       let result: IteratorResult<number[]>;
       const values: number[][] = [];
       do {
@@ -470,7 +470,7 @@ describe("combinators", () => {
     });
 
     test("Promise.resolve vs generator", async () => {
-      const iter = Channel.zip([Promise.resolve(-1), gen([1, 2, 3, 4, 5], 6)]);
+      const iter = Repeater.zip([Promise.resolve(-1), gen([1, 2, 3, 4, 5], 6)]);
       let result: IteratorResult<number[]>;
       const nums: number[][] = [];
       do {
@@ -486,7 +486,7 @@ describe("combinators", () => {
     });
 
     test("generator vs Promise.resolve", async () => {
-      const iter = Channel.zip([gen([1, 2, 3, 4, 5], 6), Promise.resolve(-1)]);
+      const iter = Repeater.zip([gen([1, 2, 3, 4, 5], 6), Promise.resolve(-1)]);
       let result: IteratorResult<number[]>;
       const nums: number[][] = [];
       do {
@@ -502,7 +502,7 @@ describe("combinators", () => {
     });
 
     test("Promise.resolve vs deferred generator", async () => {
-      const iter = Channel.zip([
+      const iter = Repeater.zip([
         Promise.resolve(-1),
         deferredGen([10, 20, 30, 40, 50], 60),
       ]);
@@ -521,7 +521,7 @@ describe("combinators", () => {
     });
 
     test("deferred generator vs Promise.resolve", async () => {
-      const iter = Channel.zip([
+      const iter = Repeater.zip([
         deferredGen([10, 20, 30, 40, 50], 60),
         Promise.resolve(-1),
       ]);
@@ -539,10 +539,10 @@ describe("combinators", () => {
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
-    test("promise vs channel", async () => {
-      const iter = Channel.zip([
+    test("promise vs repeater", async () => {
+      const iter = Repeater.zip([
         delayPromise(250, -1),
-        delayChannel(100, [1, 2, 3, 4, 5], 6),
+        delayRepeater(100, [1, 2, 3, 4, 5], 6),
       ]);
       let result: IteratorResult<number[]>;
       const nums: number[][] = [];
@@ -558,11 +558,11 @@ describe("combinators", () => {
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
-    test("slow channel vs fast channel", async () => {
-      const slow = delayChannel(160, [0, 1, 2, 3, 4], -1);
-      const fast = delayChannel(100, [100, 101, 102, 103, 104, 105], -2);
+    test("slow repeater vs fast repeater", async () => {
+      const slow = delayRepeater(160, [0, 1, 2, 3, 4], -1);
+      const fast = delayRepeater(100, [100, 101, 102, 103, 104, 105], -2);
 
-      const iter = Channel.zip([slow, fast]);
+      const iter = Repeater.zip([slow, fast]);
       let result: IteratorResult<number[]>;
       const nums: number[][] = [];
       do {
@@ -579,12 +579,12 @@ describe("combinators", () => {
 
     test("return methods called on all iterators when any finish", async () => {
       const iter1 = gen(["a", "b", "c", "d", "e"], "f");
-      const iter2 = delayChannel(100, [false], true);
-      const iter3 = delayChannel<number>(250, [], -3000);
+      const iter2 = delayRepeater(100, [false], true);
+      const iter3 = delayRepeater<number>(250, [], -3000);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.zip([iter1, iter2, iter3]);
+      const iter = Repeater.zip([iter1, iter2, iter3]);
       await expect(iter.next()).resolves.toEqual({
         value: ["a", false, -3000],
         done: true,
@@ -596,13 +596,13 @@ describe("combinators", () => {
     });
 
     test("return methods called on all iterators when parent return called", async () => {
-      const iter1 = delayChannel(2500, [1]);
-      const iter2 = delayChannel(10000, [2]);
-      const iter3 = new Channel<string>(() => {});
+      const iter1 = delayRepeater(2500, [1]);
+      const iter2 = delayRepeater(10000, [2]);
+      const iter3 = new Repeater<string>(() => {});
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.zip([iter1, iter2, iter3]);
+      const iter = Repeater.zip([iter1, iter2, iter3]);
       iter.next();
       await expect(iter.return()).resolves.toEqual({ done: true });
       expect(spy1).toHaveBeenCalledTimes(1);
@@ -612,13 +612,13 @@ describe("combinators", () => {
 
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
       const iter1 = hangingGen();
-      const iter2 = new Channel<number>(() => {});
-      const iter3 = delayChannel<boolean>(250, []);
+      const iter2 = new Repeater<number>(() => {});
+      const iter3 = delayRepeater<boolean>(250, []);
       const hanging = new Promise(() => {});
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.zip([hanging, iter1, iter2, iter3]);
+      const iter = Repeater.zip([hanging, iter1, iter2, iter3]);
       await expect(iter.return()).resolves.toEqual({
         done: true,
       });
@@ -628,19 +628,19 @@ describe("combinators", () => {
     });
 
     test("one iterator errors", async () => {
-      const iter1 = delayChannel(100, [false, true, false, true]);
-      const iter2 = new Channel<string>((push) => {
+      const iter1 = delayRepeater(100, [false, true, false, true]);
+      const iter2 = new Repeater<string>((push) => {
         push("a");
         push("b");
         push("c");
         push("d");
       });
-      const error = new Error("Channel.zip error");
-      const iter3 = delayChannel<number>(150, [1, 2, 3], undefined, error);
+      const error = new Error("Repeater.zip error");
+      const iter3 = delayRepeater<number>(150, [1, 2, 3], undefined, error);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.zip([iter1, iter2, iter3]);
+      const iter = Repeater.zip([iter1, iter2, iter3]);
 
       let result: IteratorResult<[boolean, string, number]>;
       const values: [boolean, string, number][] = [];
@@ -665,14 +665,14 @@ describe("combinators", () => {
     });
   });
 
-  describe("Channel.latest", () => {
+  describe("Repeater.latest", () => {
     test("empty", async () => {
-      const iter = Channel.latest([]);
+      const iter = Repeater.latest([]);
       await expect(iter.next()).resolves.toEqual({ value: [], done: true });
     });
 
     test("single iterator", async () => {
-      const iter = Channel.latest<number>([delayChannel(100, [1, 2, 3], 4)]);
+      const iter = Repeater.latest<number>([delayRepeater(100, [1, 2, 3], 4)]);
       let result: IteratorResult<number[]>;
       const values: number[][] = [];
       do {
@@ -688,7 +688,7 @@ describe("combinators", () => {
     });
 
     test("Promise.resolve vs generator", async () => {
-      const iter = Channel.latest([
+      const iter = Repeater.latest([
         Promise.resolve(-1),
         gen([1, 2, 3, 4, 5], 6),
       ]);
@@ -707,7 +707,7 @@ describe("combinators", () => {
     });
 
     test("generator vs Promise.resolve", async () => {
-      const iter = Channel.latest([
+      const iter = Repeater.latest([
         gen([1, 2, 3, 4, 5], 6),
         Promise.resolve(-1),
       ]);
@@ -726,7 +726,7 @@ describe("combinators", () => {
     });
 
     test("Promise.resolve vs deferred generator", async () => {
-      const iter = Channel.latest([
+      const iter = Repeater.latest([
         Promise.resolve(-1),
         deferredGen([10, 20, 30, 40, 50], 60),
       ]);
@@ -745,7 +745,7 @@ describe("combinators", () => {
     });
 
     test("deferred generator vs Promise.resolve", async () => {
-      const iter = Channel.latest([
+      const iter = Repeater.latest([
         deferredGen([10, 20, 30, 40, 50], 60),
         Promise.resolve(-1),
       ]);
@@ -763,10 +763,10 @@ describe("combinators", () => {
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
-    test("promise vs channel", async () => {
-      const iter = Channel.latest([
+    test("promise vs repeater", async () => {
+      const iter = Repeater.latest([
         delayPromise(250, -1),
-        delayChannel(100, [1, 2, 3, 4, 5], -2),
+        delayRepeater(100, [1, 2, 3, 4, 5], -2),
       ]);
       let result: IteratorResult<number[]>;
       const nums: number[][] = [];
@@ -782,11 +782,11 @@ describe("combinators", () => {
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
-    test("slow channel vs fast channel", async () => {
-      const slow = delayChannel(160, [0, 1, 2, 3, 4], -1);
-      const fast = delayChannel(100, [100, 101, 102, 103, 104, 105], -2);
+    test("slow repeater vs fast repeater", async () => {
+      const slow = delayRepeater(160, [0, 1, 2, 3, 4], -1);
+      const fast = delayRepeater(100, [100, 101, 102, 103, 104, 105], -2);
 
-      const iter = Channel.latest([slow, fast]);
+      const iter = Repeater.latest([slow, fast]);
       let result: IteratorResult<number[]>;
       const nums: number[][] = [];
       do {
@@ -813,13 +813,13 @@ describe("combinators", () => {
     });
 
     test("return methods called on all iterators when parent return called", async () => {
-      const iter1 = delayChannel(250, [1]);
-      const iter2 = delayChannel(10000, [2]);
-      const iter3 = new Channel<string>(() => {});
+      const iter1 = delayRepeater(250, [1]);
+      const iter2 = delayRepeater(10000, [2]);
+      const iter3 = new Repeater<string>(() => {});
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.latest([iter1, iter2, iter3]);
+      const iter = Repeater.latest([iter1, iter2, iter3]);
       iter.next();
       await expect(iter.return()).resolves.toEqual({ done: true });
       expect(spy1).toHaveBeenCalledTimes(1);
@@ -829,13 +829,13 @@ describe("combinators", () => {
 
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
       const iter1 = hangingGen();
-      const iter2 = new Channel<number>(() => {});
-      const iter3 = delayChannel(250, []);
+      const iter2 = new Repeater<number>(() => {});
+      const iter3 = delayRepeater(250, []);
       const hanging = new Promise(() => {});
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.latest([hanging, iter1, iter2, iter3]);
+      const iter = Repeater.latest([hanging, iter1, iter2, iter3]);
       await expect(iter.return()).resolves.toEqual({ done: true });
       expect(spy1).toHaveBeenCalledTimes(0);
       expect(spy2).toHaveBeenCalledTimes(0);
@@ -843,19 +843,19 @@ describe("combinators", () => {
     });
 
     test("one iterator errors", async () => {
-      const iter1 = delayChannel(80, [false, true, false, true]);
-      const iter2 = new Channel<string>((push) => {
+      const iter1 = delayRepeater(80, [false, true, false, true]);
+      const iter2 = new Repeater<string>((push) => {
         push("a");
         push("b");
         push("c");
         push("d");
       });
-      const error = new Error("Channel.latest error");
-      const iter3 = delayChannel<number>(150, [1, 2, 3], undefined, error);
+      const error = new Error("Repeater.latest error");
+      const iter3 = delayRepeater<number>(150, [1, 2, 3], undefined, error);
       const spy1 = jest.spyOn(iter1, "return");
       const spy2 = jest.spyOn(iter2, "return");
       const spy3 = jest.spyOn(iter3, "return");
-      const iter = Channel.latest([iter1, iter2, iter3]);
+      const iter = Repeater.latest([iter1, iter2, iter3]);
 
       let result: IteratorResult<[boolean, string, number]>;
       const values: [boolean, string, number][] = [];

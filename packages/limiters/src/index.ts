@@ -1,4 +1,4 @@
-import { Channel, FixedBuffer } from "@repeaterjs/repeater";
+import { Repeater, FixedBuffer } from "@repeaterjs/repeater";
 import { delay } from "@repeaterjs/timers";
 
 export interface Token {
@@ -8,13 +8,13 @@ export interface Token {
   release(): void;
 }
 
-export function semaphore(limit: number): Channel<Token> {
+export function semaphore(limit: number): Repeater<Token> {
   if (limit < 1) {
     throw new RangeError("limit cannot be less than 1");
   }
   let remaining = limit;
   const tokens: Record<number, Token> = {};
-  const bucket = new Channel<Token>((push) => {
+  const bucket = new Repeater<Token>((push) => {
     let nextId = 0;
     function release(this: null, id: number): void {
       if (tokens[id] != null) {
@@ -40,10 +40,10 @@ export function semaphore(limit: number): Channel<Token> {
       push(token);
     }
   }, new FixedBuffer(limit));
-  return new Channel<Token>(async (push, stop) => {
+  return new Repeater<Token>(async (push, stop) => {
     let stopped = false;
     stop.then(() => (stopped = true));
-    for await (let token of Channel.race([bucket, stop])) {
+    for await (let token of Repeater.race([bucket, stop])) {
       if (stopped) {
         break;
       }
@@ -64,12 +64,12 @@ export interface ThrottleToken extends Token {
 export function throttler(
   wait: number,
   options: { limit?: number; cooldown?: boolean } = {},
-): Channel<ThrottleToken> {
+): Repeater<ThrottleToken> {
   const { limit = 1, cooldown = false } = options;
   if (limit < 1) {
     throw new RangeError("options.limit cannot be less than 1");
   }
-  return new Channel<ThrottleToken>(async (push, stop) => {
+  return new Repeater<ThrottleToken>(async (push, stop) => {
     const timer = delay(wait);
     const tokens = new Set<Token>();
     let start = Date.now();
@@ -90,7 +90,7 @@ export function throttler(
 
     let stopped = false;
     stop.then(() => (stopped = true));
-    for await (let token of Channel.race([semaphore(limit), stop])) {
+    for await (let token of Repeater.race([semaphore(limit), stop])) {
       if (stopped) {
         break;
       }
