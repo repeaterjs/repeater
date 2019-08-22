@@ -5,7 +5,7 @@ import {
   FixedBuffer,
   MAX_QUEUE_LENGTH,
   SlidingBuffer,
-} from "../index";
+} from "../repeater";
 
 import { delayPromise } from "../_testutils";
 

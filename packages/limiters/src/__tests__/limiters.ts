@@ -1,4 +1,4 @@
-import { semaphore, throttler } from "../index";
+import { semaphore, throttler } from "../limiters";
 
 describe("limiters", () => {
   test("semaphore", async () => {

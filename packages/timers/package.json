@@ -11,9 +11,9 @@
   "files": [
     "/lib"
   ],
-  "main": "lib/index.cjs.js",
-  "module": "lib/index.esm.js",
-  "types": "lib/index.d.ts",
+  "main": "lib/timers.cjs.js",
+  "module": "lib/timers.esm.js",
+  "types": "lib/timers.d.ts",
   "scripts": {
     "prebuild": "yarn run clean",
     "build": "rollup -c ../../rollup.config.js",

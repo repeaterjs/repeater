@@ -1,4 +1,4 @@
-import { DroppingBuffer, FixedBuffer, SlidingBuffer } from "../index";
+import { DroppingBuffer, FixedBuffer, SlidingBuffer } from "../repeater";
 
 describe("RepeaterBuffer", () => {
   test("FixedBuffer", () => {
