@@ -1,5 +1,5 @@
 import { Channel } from "@repeaterjs/repeater";
-import { delay, interval, timeout, TimeoutError } from "../index";
+import { delay, interval, timeout, TimeoutError } from "../timers";
 
 describe("timers", () => {
   test("delay sequential", async () => {

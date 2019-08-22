@@ -1,4 +1,4 @@
-import { Repeater } from "../index";
+import { Repeater } from "../repeater";
 import {
   deferredGen,
   delayRepeater,

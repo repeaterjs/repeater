@@ -1,5 +1,12 @@
 import { RepeaterBuffer, FixedBuffer } from "./buffers";
 
+export {
+  RepeaterBuffer,
+  DroppingBuffer,
+  FixedBuffer,
+  SlidingBuffer,
+} from "./buffers";
+
 export const MAX_QUEUE_LENGTH = 1024;
 
 export class RepeaterOverflowError extends Error {

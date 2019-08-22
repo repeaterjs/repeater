@@ -1,4 +1,4 @@
-import { InMemoryPubSub } from "../index";
+import { InMemoryPubSub } from "../pubsub";
 
 describe("InMemoryPubSub", () => {
   test("subscribe", async () => {
