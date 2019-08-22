@@ -1,7 +1,7 @@
 import {
-  Channel,
-  ChannelBuffer,
-  ChannelOverflowError,
+  Repeater,
+  RepeaterBuffer,
+  RepeaterOverflowError,
   MAX_QUEUE_LENGTH,
   SlidingBuffer,
 } from "@repeaterjs/repeater";
@@ -50,16 +50,16 @@ class DeferredTimer<T> {
 
   clear(): void {
     clearTimeout(this.timeout);
-    // In the code below, this method is only called after the channel is
-    // stopped. Because channels swallow rejections which settle after stop, we
+    // In the code below, this method is only called after the repeater is
+    // stopped. Because repeaters swallow rejections which settle after stop, we
     // use this mechanism to make any pending call which has received the
     // deferred promise resolve to `{ done: true }`.
     this.reject(new TimeoutError("THIS ERROR SHOULD NEVER BE SEEN"));
   }
 }
 
-export function delay(wait: number): Channel<number> {
-  return new Channel(async (push, stop) => {
+export function delay(wait: number): Repeater<number> {
+  return new Repeater(async (push, stop) => {
     const timers: Set<DeferredTimer<number>> = new Set();
     try {
       let stopped = false;
@@ -69,8 +69,8 @@ export function delay(wait: number): Channel<number> {
         await push(timer.promise);
         timers.add(timer);
         if (timers.size > MAX_QUEUE_LENGTH) {
-          throw new ChannelOverflowError(
-            `No more than ${MAX_QUEUE_LENGTH} calls to next are allowed on a single delay channel.`,
+          throw new RepeaterOverflowError(
+            `No more than ${MAX_QUEUE_LENGTH} calls to next are allowed on a single delay repeater.`,
           );
         }
         timer.run(() => {
@@ -86,8 +86,8 @@ export function delay(wait: number): Channel<number> {
   });
 }
 
-export function timeout(wait: number): Channel<undefined> {
-  return new Channel(async (push, stop) => {
+export function timeout(wait: number): Repeater<undefined> {
+  return new Repeater(async (push, stop) => {
     let timer: DeferredTimer<undefined> | undefined;
     let stopped = false;
     stop.then(() => (stopped = true));
@@ -110,9 +110,9 @@ export function timeout(wait: number): Channel<undefined> {
 
 export function interval(
   wait: number,
-  buffer: ChannelBuffer<number> = new SlidingBuffer(1),
-): Channel<number> {
-  return new Channel<number>(async (push, stop) => {
+  buffer: RepeaterBuffer<number> = new SlidingBuffer(1),
+): Repeater<number> {
+  return new Repeater<number>(async (push, stop) => {
     push(Date.now());
     const timer = setInterval(() => push(Date.now()), wait);
     await stop;

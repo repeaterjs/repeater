@@ -1,4 +1,4 @@
-import { Channel, FixedBuffer } from "./index";
+import { Repeater, FixedBuffer } from "./index";
 
 export async function* gen<T>(
   values: T[],
@@ -50,13 +50,13 @@ export function delayPromise<T>(
   });
 }
 
-export function delayChannel<T>(
+export function delayRepeater<T>(
   wait: number,
   values: T[],
   returned?: T,
   error?: Error,
-): Channel<T> {
-  return new Channel<T>(async (push, stop) => {
+): Repeater<T> {
+  return new Repeater<T>(async (push, stop) => {
     let i = 0;
     const timer = setInterval(() => {
       if (i >= values.length) {

@@ -1,13 +1,13 @@
 export {
-  ChannelBuffer,
+  RepeaterBuffer,
   DroppingBuffer,
   FixedBuffer,
   SlidingBuffer,
 } from "./buffers";
 
 export {
-  Channel,
-  ChannelExecutor,
-  ChannelOverflowError,
+  Repeater,
+  RepeaterExecutor,
+  RepeaterOverflowError,
   MAX_QUEUE_LENGTH,
 } from "./repeater";

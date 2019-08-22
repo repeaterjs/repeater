@@ -1,9 +1,12 @@
-import { Channel, ChannelBuffer } from "@repeaterjs/repeater";
+import { Repeater, RepeaterBuffer } from "@repeaterjs/repeater";
 
 export interface PubSub<T> {
   publish(topic: string, value: T): Promise<void> | void;
   unpublish(topic: string, reason?: any): Promise<void> | void;
-  subscribe(topic: string, buffer?: ChannelBuffer<T>): AsyncIterableIterator<T>;
+  subscribe(
+    topic: string,
+    buffer?: RepeaterBuffer<T>,
+  ): AsyncIterableIterator<T>;
   close(reason?: any): Promise<void> | void;
 }
 
@@ -40,11 +43,11 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     publishers.clear();
   }
 
-  subscribe(topic: string, buffer?: ChannelBuffer<T>): Channel<T> {
+  subscribe(topic: string, buffer?: RepeaterBuffer<T>): Repeater<T> {
     if (this.publishers[topic] == null) {
       this.publishers[topic] = new Set();
     }
-    return new Channel<T>(async (push, stop) => {
+    return new Repeater<T>(async (push, stop) => {
       const publisher = { push, stop };
       this.publishers[topic].add(publisher);
       await stop;
