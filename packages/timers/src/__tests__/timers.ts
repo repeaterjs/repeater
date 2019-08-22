@@ -1,4 +1,4 @@
-import { Channel } from "@repeaterjs/repeater";
+import { Repeater } from "@repeaterjs/repeater";
 import { delay, interval, timeout, TimeoutError } from "../timers";
 
 describe("timers", () => {
@@ -107,7 +107,7 @@ describe("timers", () => {
     let i = 0;
     const slow = timeout(100);
     const fast = delay(50);
-    for await (const t of Channel.race([slow, fast])) {
+    for await (const t of Repeater.race([slow, fast])) {
       expect(t).toBeCloseTo(Date.now(), -1.5);
       i++;
       if (i > 20) {
@@ -123,7 +123,7 @@ describe("timers", () => {
   test("racing slow delay with fast timeout", async () => {
     const slow = delay(100);
     const fast = timeout(50);
-    const race = Channel.race([slow, fast]);
+    const race = Repeater.race([slow, fast]);
     await expect(race.next()).rejects.toBeInstanceOf(TimeoutError);
     await expect(slow.next()).resolves.toEqual({ done: true });
     await expect(fast.next()).resolves.toEqual({ done: true });
