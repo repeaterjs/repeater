@@ -64,12 +64,15 @@ describe("limiters", () => {
       if (i % 8 === 0) {
         await new Promise((resolve) => setTimeout(resolve, wait * 2));
       }
+
       if (i >= 40) {
         break;
       }
+
       i++;
       prev = Date.now();
     }
+
     // called 7 times by delay timer
     // called 6 times by the promise
     expect(spy).toHaveBeenCalledTimes(13);
@@ -83,6 +86,7 @@ describe("limiters", () => {
       if (i >= 40) {
         break;
       }
+
       i++;
     }
   });
@@ -97,6 +101,7 @@ describe("limiters", () => {
       if (token.remaining === 0) {
         remaining = 8;
       }
+
       i++;
       if (i >= 40) {
         break;
@@ -114,6 +119,7 @@ describe("limiters", () => {
       if (i >= 4) {
         break;
       }
+
       i++;
       prev = next;
     }

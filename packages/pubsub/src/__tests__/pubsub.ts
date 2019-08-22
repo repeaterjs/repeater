@@ -11,6 +11,7 @@ describe("InMemoryPubSub", () => {
           break;
         }
       }
+
       return messages;
     })();
 
@@ -27,6 +28,7 @@ describe("InMemoryPubSub", () => {
       for await (const message of pubsub.subscribe("topic")) {
         messages.push(message);
       }
+
       return messages;
     })();
 

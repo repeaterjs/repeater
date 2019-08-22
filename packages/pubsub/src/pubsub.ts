@@ -37,9 +37,11 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     if (publishers == null) {
       return;
     }
+
     for (const { stop } of publishers) {
       stop(reason);
     }
+
     publishers.clear();
   }
 
@@ -47,6 +49,7 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     if (this.publishers[topic] == null) {
       this.publishers[topic] = new Set();
     }
+
     return new Repeater<T>(async (push, stop) => {
       const publisher = { push, stop };
       this.publishers[topic].add(publisher);

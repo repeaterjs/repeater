@@ -7,9 +7,11 @@ export interface RepeaterBuffer<T> {
 
 export class FixedBuffer<T> implements RepeaterBuffer<T> {
   private arr: T[] = [];
+
   get empty(): boolean {
     return this.arr.length === 0;
   }
+
   get full(): boolean {
     return this.arr.length >= this.capacity;
   }
@@ -32,6 +34,7 @@ export class FixedBuffer<T> implements RepeaterBuffer<T> {
     if (this.empty) {
       throw new Error("Buffer empty");
     }
+
     return this.arr.shift()!;
   }
 }
@@ -39,10 +42,13 @@ export class FixedBuffer<T> implements RepeaterBuffer<T> {
 // TODO: use a circular buffer here
 export class SlidingBuffer<T> implements RepeaterBuffer<T> {
   private arr: T[] = [];
+
   get empty(): boolean {
     return this.arr.length === 0;
   }
+
   readonly full = false;
+
   constructor(private capacity: number) {
     if (capacity <= 0) {
       throw new RangeError(
@@ -55,6 +61,7 @@ export class SlidingBuffer<T> implements RepeaterBuffer<T> {
     while (this.arr.length >= this.capacity) {
       this.arr.shift();
     }
+
     this.arr.push(value);
   }
 
@@ -62,16 +69,20 @@ export class SlidingBuffer<T> implements RepeaterBuffer<T> {
     if (this.empty) {
       throw new Error("Buffer empty");
     }
+
     return this.arr.shift()!;
   }
 }
 
 export class DroppingBuffer<T> implements RepeaterBuffer<T> {
   private arr: T[] = [];
+
   get empty(): boolean {
     return this.arr.length === 0;
   }
+
   readonly full = false;
+
   constructor(private capacity: number) {
     if (capacity <= 0) {
       throw new RangeError(
@@ -90,6 +101,7 @@ export class DroppingBuffer<T> implements RepeaterBuffer<T> {
     if (this.empty) {
       throw new Error("Buffer empty");
     }
+
     return this.arr.shift()!;
   }
 }

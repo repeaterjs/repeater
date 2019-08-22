@@ -114,6 +114,7 @@ describe("timers", () => {
         break;
       }
     }
+
     expect(i).toBe(21);
     await expect(slow.next()).resolves.toEqual({ done: true });
     await expect(fast.next()).resolves.toEqual({ done: true });

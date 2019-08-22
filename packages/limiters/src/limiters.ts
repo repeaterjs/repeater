@@ -12,6 +12,7 @@ export function semaphore(limit: number): Repeater<Token> {
   if (limit < 1) {
     throw new RangeError("limit cannot be less than 1");
   }
+
   let remaining = limit;
   const tokens: Record<number, Token> = {};
   const bucket = new Repeater<Token>((push) => {
@@ -29,6 +30,7 @@ export function semaphore(limit: number): Repeater<Token> {
         remaining++;
       }
     }
+
     for (let i = 0; i < limit; i++) {
       const id = nextId++;
       const token: Token = {
@@ -47,6 +49,7 @@ export function semaphore(limit: number): Repeater<Token> {
       if (stopped) {
         break;
       }
+
       remaining--;
       token = { ...token, remaining };
       tokens[token.id] = token;
@@ -69,6 +72,7 @@ export function throttler(
   if (limit < 1) {
     throw new RangeError("options.limit cannot be less than 1");
   }
+
   return new Repeater<ThrottleToken>(async (push, stop) => {
     const timer = delay(wait);
     const tokens = new Set<Token>();
@@ -78,6 +82,7 @@ export function throttler(
       if (leaking != null) {
         return leaking;
       }
+
       start = Date.now();
       await timer.next();
       for (const token of tokens) {
@@ -94,6 +99,7 @@ export function throttler(
       if (stopped) {
         break;
       }
+
       leaking = leak();
       token = { ...token, reset: start + wait };
       tokens.add(token);
@@ -101,8 +107,10 @@ export function throttler(
         await Promise.race([stop, leaking]);
         token = { ...token, remaining: limit };
       }
+
       await push(token);
     }
+
     tokens.clear();
     await timer.return();
   });
