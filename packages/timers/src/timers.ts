@@ -9,14 +9,18 @@ import {
 export class TimeoutError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "TimeoutError";
+		Object.defineProperty(this, "name", {
+			value: "TimeoutError",
+			enumerable: false,
+		});
     if (typeof Object.setPrototypeOf === "function") {
       Object.setPrototypeOf(this, new.target.prototype);
     } else {
       (this as any).__proto__ = new.target.prototype;
     }
+
     if (typeof (Error as any).captureStackTrace === "function") {
-      (Error as any).captureStackTrace(this, TimeoutError);
+      (Error as any).captureStackTrace(this, this.constructor);
     }
   }
 }
