@@ -12,14 +12,18 @@ export const MAX_QUEUE_LENGTH = 1024;
 export class RepeaterOverflowError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "RepeaterOverflowError";
+    Object.defineProperty(this, "name", {
+      value: "RepeaterOverflowError",
+      enumerable: false,
+    });
     if (typeof Object.setPrototypeOf === "function") {
       Object.setPrototypeOf(this, new.target.prototype);
     } else {
       (this as any).__proto__ = new.target.prototype;
     }
+
     if (typeof (Error as any).captureStackTrace === "function") {
-      (Error as any).captureStackTrace(this, RepeaterOverflowError);
+      (Error as any).captureStackTrace(this, this.constructor);
     }
   }
 }
