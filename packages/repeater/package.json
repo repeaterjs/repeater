@@ -2,13 +2,12 @@
   "name": "@repeaterjs/repeater",
   "version": "1.0.0",
   "description": "The missing constructor function for creating safe async iterators",
-  "license": "MIT",
-  "homepage": "https://channel.js.org",
   "repository": {
     "type": "git",
     "url": "https://github.com/repeaterjs/repeater",
-    "directory": "packages/channel"
+    "directory": "packages/repeater"
   },
+  "license": "MIT",
   "files": [
     "/lib"
   ],
@@ -19,9 +18,26 @@
     "prebuild": "yarn run clean",
     "build": "rollup -c ../../rollup.config.js",
     "clean": "shx rm -rf ./lib",
-    "test": "jest --config ../../jest.config.js --rootDir --color",
     "lint": "eslint --ext ts src",
-    "prepublishOnly": "yarn run test && yarn run build"
+    "prepublishOnly": "yarn run test && yarn run build",
+    "test": "jest --config ../../jest.config.js --rootDir --color"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.18",
+    "@typescript-eslint/eslint-plugin": "^2.0.0",
+    "@typescript-eslint/parser": "^2.0.0",
+    "eslint": "^6.2.1",
+    "eslint-config-prettier": "^6.1.0",
+    "eslint-plugin-jest": "^22.15.2",
+    "eslint-plugin-prettier": "^3.1.0",
+    "jest": "^24.9.0",
+    "prettier": "^1.18.2",
+    "rollup": "^1.20.0",
+    "rollup-plugin-typescript2": "^0.22.1",
+    "shx": "^0.3.2",
+    "ts-jest": "^24.0.0",
+    "typescript": "^3.5.3",
+    "weak": "^1.0.1"
   },
   "publishConfig": {
     "access": "public"

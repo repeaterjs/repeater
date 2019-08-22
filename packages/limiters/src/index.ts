@@ -84,6 +84,7 @@ export function throttler(
         token.release();
       }
       tokens.clear();
+      // eslint-disable-next-line require-atomic-updates
       leaking = undefined;
     }
 

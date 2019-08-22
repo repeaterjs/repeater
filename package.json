@@ -1,32 +1,14 @@
 {
   "private": true,
-  "scripts": {
-    "build": "yarn workspaces run build",
-    "test": "yarn workspaces run test",
-    "lint": "yarn workspaces run lint"
-  },
-  "devDependencies": {
-    "@types/jest": "^24.0.13",
-    "@typescript-eslint/eslint-plugin": "^1.10.1",
-    "@typescript-eslint/parser": "^1.10.1",
-    "eslint": "^5.15.3",
-    "eslint-config-prettier": "^4.3.0",
-    "eslint-plugin-jest": "^22.6.4",
-    "eslint-plugin-prettier": "^3.1.0",
-    "eslint-plugin-react": "^7.13.0",
-    "jest": "^24.8.0",
-    "prettier": "^1.18.2",
-    "rollup": "^1.14.5",
-    "rollup-plugin-typescript2": "^0.21.1",
-    "shx": "^0.3.2",
-    "ts-jest": "^24.0.0",
-    "typescript": "^3.5.1",
-    "weak": "^1.0.1"
-  },
   "workspaces": [
     "packages/repeater",
     "packages/timers",
     "packages/limiters",
     "packages/pubsub"
-  ]
+  ],
+  "scripts": {
+    "build": "yarn workspaces run build",
+    "lint": "yarn workspaces run lint",
+    "test": "yarn workspaces run test"
+  }
 }

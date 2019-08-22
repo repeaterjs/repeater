@@ -60,7 +60,7 @@ class DeferredTimer<T> {
 
 export function delay(wait: number): Channel<number> {
   return new Channel(async (push, stop) => {
-    let timers: Set<DeferredTimer<number>> = new Set();
+    const timers: Set<DeferredTimer<number>> = new Set();
     try {
       let stopped = false;
       stop.then(() => (stopped = true));
