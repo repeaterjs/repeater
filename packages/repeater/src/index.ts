@@ -10,4 +10,4 @@ export {
   ChannelExecutor,
   ChannelOverflowError,
   MAX_QUEUE_LENGTH,
-} from "./channel";
+} from "./repeater";
