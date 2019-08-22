@@ -17,19 +17,13 @@
     "plugin:prettier/recommended",
     "plugin:@typescript-eslint/recommended",
     "prettier/@typescript-eslint",
-    "plugin:jest/recommended",
-    "plugin:react/recommended"
+    "plugin:jest/recommended"
   ],
   "plugins": [
     "@typescript-eslint",
     "jest",
     "prettier"
   ],
-  "settings": {
-    "react": {
-      "version": "detect"
-    }
-  },
   "rules": {
     "prettier/prettier": [
       "error",
@@ -51,7 +45,6 @@
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^_"
       }
-    ],
-    "react/prop-types": 0
+    ]
   }
 }

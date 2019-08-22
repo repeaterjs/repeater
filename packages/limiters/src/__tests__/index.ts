@@ -90,7 +90,7 @@ describe("limiters", () => {
   test("throttler token remaining", async () => {
     let remaining = 8;
     let i = 0;
-    let wait = 200;
+    const wait = 200;
     for await (const token of throttler(wait, { limit: 8 })) {
       remaining--;
       expect(token.remaining).toEqual(remaining);

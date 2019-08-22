@@ -151,7 +151,7 @@ describe("timers", () => {
     try {
       jest.useFakeTimers();
       const timer = interval(10);
-      let result = await timer.next();
+      const result = await timer.next();
       expect(result.value).toBeLessThanOrEqual(Date.now());
       expect(result.done).toBe(false);
       await timer.return();
