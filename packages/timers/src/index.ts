@@ -4,7 +4,7 @@ import {
   ChannelOverflowError,
   MAX_QUEUE_LENGTH,
   SlidingBuffer,
-} from "@channel/channel";
+} from "@repeaterjs/repeater";
 
 export class TimeoutError extends Error {
   constructor(message: string) {

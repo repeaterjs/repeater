@@ -1,12 +1,12 @@
 {
-  "name": "@channel/channel",
+  "name": "@repeaterjs/repeater",
   "version": "1.0.0",
   "description": "The missing constructor function for creating safe async iterators",
   "license": "MIT",
   "homepage": "https://channel.js.org",
   "repository": {
     "type": "git",
-    "url": "https://github.com/channeljs/channel",
+    "url": "https://github.com/repeaterjs/repeater",
     "directory": "packages/channel"
   },
   "files": [

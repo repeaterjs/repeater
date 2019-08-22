@@ -1,5 +1,5 @@
-import { Channel, FixedBuffer } from "@channel/channel";
-import { delay } from "@channel/timers";
+import { Channel, FixedBuffer } from "@repeaterjs/repeater";
+import { delay } from "@repeaterjs/timers";
 
 export interface Token {
   readonly id: number;
