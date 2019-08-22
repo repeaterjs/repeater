@@ -1,4 +1,4 @@
-import { Channel } from "@channel/channel";
+import { Channel } from "@repeaterjs/repeater";
 import { delay, interval, timeout, TimeoutError } from "../index";
 
 describe("timers", () => {
