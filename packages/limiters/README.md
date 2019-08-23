@@ -1,9 +1,7 @@
-# @channel/limiters
-This package is experimental!
+# @repeaterjs/limiters
+Basic async iterators for limiting concurrency, implemented with repeaters.
 
-Basic async iterators for limiting concurrency, implemented with channels
-
-For more information, visit [channel.js.org](https://channel.js.org).
+For more information, visit [repeater.js.org](https://repeater.js.org).
 
 ```ts
 interface Token {
