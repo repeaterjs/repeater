@@ -3,21 +3,14 @@ import classnames from "classnames";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import withBaseUrl from "@docusaurus/withBaseUrl";
 import Link from "@docusaurus/Link";
-
 import Layout from "@theme/Layout";
-import styles from "./styles.module.css";
 
 function Hero() {
   const context = useDocusaurusContext();
   const { siteConfig = {} } = context;
   return (
-    <header className={classnames("hero", styles.hero)}>
-      <div
-        className={styles.background}
-        style={{ backgroundImage: `url(${withBaseUrl("img/smpte.svg")})` }}
-      />
+    <header className={classnames("hero")}>
       <div className="container">
-        <img src={withBaseUrl("img/logo.svg")} alt="logo" />
         <h1 className="hero__title">{siteConfig.title}</h1>
         <p className="hero__subtitle">{siteConfig.tagline}</p>
         <Link
@@ -47,24 +40,24 @@ function Body() {
     <main className="container padding-horiz--md margin-vert--xl">
       <div className="row">
         <Feature title="Convenient" color="#00ABAA">
-          The Channel class provides a promise-fluent API for creating async
+          The Repeater class provides a promise-fluent API for creating async
           iterators. You can reuse the same constructor to convert event
           emitters, streams, websockets, or any other callback-based data source
           into a format which can be read using <code>async/await</code> and{" "}
           <code>for await…of</code> statements.
         </Feature>
         <Feature title="Safe" color="#BA00AC">
-          Channels prevent common mistakes people make when rolling async
+          Repeaters prevent common mistakes people make when rolling async
           iterators by hand. By executing lazily, dealing with backpressure, and
-          propagating errors in a predictable manner, channels ensure that event
+          propagating errors in a predictable manner, repeaters ensure that event
           listeners are cleaned up and that bottlenecks and deadlocks are
           discovered quickly.
         </Feature>
         <Feature title="Powerful" color="#00B100">
-          You can use channels to implement architectural patterns like
-          cancelable timers, semaphores, and generic pubsub classes. The Channel
-          class also defines static methods like <code>Channel.race</code> and{" "}
-          <code>Channel.merge</code> which allow you to use async iterators for
+          You can use repeaters to implement architectural patterns like
+          cancelable timers, semaphores, and generic pubsub classes. The Repeater
+          class also defines static methods like <code>Repeater.race</code> and{" "}
+          <code>Repeater.merge</code> which allow you to use async iterators for
           reactive programming purposes.
         </Feature>
       </div>
