@@ -1,6 +1,6 @@
 {
   "name": "@repeaterjs/limiters",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Basic async iterators functions for limiting concurrency",
   "repository": {
     "type": "git",
