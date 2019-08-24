@@ -5,30 +5,30 @@ title: Quickstart
 
 ## Installation
 
-Channel.js is available on [npm](https://www.npmjs.com/package/@channel/channel) in the CommonJS and ESModule formats.
+Repeater.js is available on [npm](https://www.npmjs.com/package/@repeaterjs/repeater) in the CommonJS and ESModule formats.
 
-`$ npm install @channel/channel`
+`$ npm install @repeaterjs/repeater`
 
-`$ yarn add @channel/channel`
+`$ yarn add @repeaterjs/repeater`
 
 ## Requirements
 
-The `@channel/channel` package has no dependencies, but requires the following globals in order to work:
+The `@repeaterjs/repeater` package has no dependencies, but requires the following globals in order to work:
 - `Promise`
 - `Symbol.iterator`
 - `Symbol.asyncIterator`
 - `WeakMap`
 
-In addition, channels are most useful when used via `async/await` and `for await…of` statements. You can compile your code with babel or typescript to support enviroments which lack these syntax features.
+In addition, repeaters are most useful when used via `async/await` and `for await…of` statements. You can compile your code with babel or typescript to support enviroments which lack these syntax features.
 
 ## Examples
 
 #### Logging timestamps with setInterval
 
 ```js
-import { Channel } from "@channel/channel";
+import { Repeater } from "@repeaterjs/repeater";
 
-const timestamps = new Channel(async (push, stop) => {
+const timestamps = new Repeater(async (push, stop) => {
   push(Date.now());
   const timer = setInterval(() => push(Date.now()), 1000);
   await stop;
@@ -48,13 +48,13 @@ const timestamps = new Channel(async (push, stop) => {
 })();
 ```
 
-#### Creating a channel from a websocket
+#### Creating a repeater from a websocket
 
 ```js
-import { Channel } from "@channel/channel";
+import { Repeater } from "@repeaterjs/repeater";
 
 const socket = new WebSocket("ws://echo.websocket.org");
-const messages = new Channel(async (push, stop) => {
+const messages = new Repeater(async (push, stop) => {
   socket.onmessage = (ev) => push(ev.data);
   socket.onerror = () => stop(new Error("WebSocket error"));
   socket.onclose = () => stop();
@@ -82,9 +82,9 @@ socket.onopen = () => {
 #### Listening for the [Konami Code](https://en.wikipedia.org/wiki/Konami_Code) and canceling if <kbd>Escape</kbd> is pressed
 
 ```js
-import { Channel } from "@channel/channel";
+import { Repeater } from "@repeaterjs/repeater";
 
-const keys = new Channel(async (push, stop) => {
+const keys = new Repeater(async (push, stop) => {
   const listener = (ev) => {
     if (ev.key === "Escape") {
       stop();

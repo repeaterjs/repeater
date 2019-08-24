@@ -1,15 +1,15 @@
 module.exports = {
-  title: "Channel.js",
+  title: "Repeater.js",
   tagline: "The missing constructor for creating safe async iterators",
-  organizationName: "channeljs",
-  projectName: "channel",
-  url: "channel.js.org",
+  organizationName: "repeaterjs",
+  projectName: "repeater",
+  url: "repeater.js.org",
   baseUrl: "/",
   favicon: "img/favicon.ico",
   themeConfig: {
     navbar: {
-      title: "Channel.js",
-      logo: { alt: "Channel.js logo", src: "img/logo.svg" },
+      title: "Repeater.js",
+      // logo: { alt: "Repeater.js logo", src: "img/logo.svg" },
       links: [
         {
           to: "docs/quickstart",
@@ -17,12 +17,12 @@ module.exports = {
           position: "left",
         },
         {
-          href: "https://github.com/channeljs/channel",
+          href: "https://github.com/repeaterjs/repeater",
           label: "GitHub",
           position: "right",
         },
         {
-          href: "https://www.npmjs.com/package/@channel/channel",
+          href: "https://www.npmjs.com/package/@repeaterjs/repeater",
           label: "NPM",
           position: "right",
         },
@@ -44,7 +44,7 @@ module.exports = {
           sidebarPath: require.resolve("./sidebars.json"),
         },
         theme: {
-          customCss: require.resolve("./css/custom.css"),
+          customCss: require.resolve("./src/css/custom.css"),
         },
       },
     ],

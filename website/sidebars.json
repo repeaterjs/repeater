@@ -8,8 +8,8 @@
     "Guides": [
       "combinators",
       "safety",
-      "error-handling",
-      "inverted-channels",
+      "error_handling",
+      "inverted_repeaters",
       "utilities"
     ]
   }
