@@ -3,7 +3,7 @@ module.exports = {
   tagline: "The missing constructor for creating safe async iterators",
   organizationName: "repeaterjs",
   projectName: "repeater",
-  url: "repeater.js.org",
+  url: "https://repeater.js.org",
   baseUrl: "/",
   favicon: "img/favicon.ico",
   themeConfig: {
