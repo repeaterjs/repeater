@@ -1,18 +1,24 @@
 # Changelog
+## [timers@0.3.0] - 2019-08-24
+## [limiters@0.3.0] - 2019-08-24
+## [pubsub@0.3.0] - 2019-08-24
+## [repeater@2.0.0] - 2019-08-24
+### Changed
+- Renamed all instances of `Channel` to `Repeater` e.g. `Channel` to `Repeater, `ChannelBuffer` to `RepeaterBuffer`
 
-## [timers@0.2.1] - 2019-08-09
+## [timers@0.2.1] - 2019-06-09
 ### Fixed
 - Fixed timers using the wrong version of @channel/channel
 
-## [limiters@0.2.1] - 2019-08-09
+## [limiters@0.2.1] - 2019-06-09
 ### Fixed
 - Fixed limiters using the wrong version of @channel/channel 
 
-## [pubsub@0.2.1] - 2019-08-09
+## [pubsub@0.2.1] - 2019-06-09
 ### Fixed
 - Fixed pubsub using the wrong version of @channel/channel
 
-## [channel@1.0.0] - 2019-08-09
+## [channel@1.0.0] - 2019-06-09
 ### Added
 - The `Channel` class now exposes the static methods `Channel.race`, `Channel.merge`, `Channel.zip` and `Channel.latest` (#4).
 ### Changed
@@ -27,12 +33,12 @@
 - The final iteration result/errors are now consumed by iterator methods.
 - `return`/`throw` behave more like the methods do for `async generators`.
 
-## [timers@0.2.0] - 2019-08-09
+## [timers@0.2.0] - 2019-06-09
 ### Changed
 - `delay` now returns an channel which can be reused
 - `timeout` returns a channel
 
-## [limiters@0.2.0] - 2019-08-09
+## [limiters@0.2.0] - 2019-06-09
 ### Added
 - throttler can now be passed a `cooldown` boolean option which forces the channel to wait before yielding the final token.
 ### Changed
@@ -42,7 +48,7 @@
 ### Fixed
 - throttler now uses a sliding window to limit (#1).
 
-## [pubsub@0.2.0] - 2019-08-09
+## [pubsub@0.2.0] - 2019-06-09
 ### Changed
 - type definitions have changed slightly
 
