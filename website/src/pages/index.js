@@ -49,16 +49,16 @@ function Body() {
         <Feature title="Safe" color="#BA00AC">
           Repeaters prevent common mistakes people make when rolling async
           iterators by hand. By executing lazily, dealing with backpressure, and
-          propagating errors in a predictable manner, repeaters ensure that event
-          listeners are cleaned up and that bottlenecks and deadlocks are
+          propagating errors in a predictable manner, repeaters ensure that
+          event listeners are cleaned up and that bottlenecks and deadlocks are
           discovered quickly.
         </Feature>
         <Feature title="Powerful" color="#00B100">
           You can use repeaters to implement architectural patterns like
-          cancelable timers, semaphores, and generic pubsub classes. The Repeater
-          class also defines static methods like <code>Repeater.race</code> and{" "}
-          <code>Repeater.merge</code> which allow you to use async iterators for
-          reactive programming purposes.
+          cancelable timers, semaphores, and generic pubsub classes. The
+          Repeater class also defines static methods like{" "}
+          <code>Repeater.race</code> and <code>Repeater.merge</code> which allow
+          you to use async iterators for reactive programming purposes.
         </Feature>
       </div>
     </main>
