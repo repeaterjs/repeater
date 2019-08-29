@@ -1,4 +1,12 @@
 # Changelog
+## [timers@0.3.1] - 2019-06-29
+## [limiters@0.3.1] - 2019-06-29
+## [pubsub@0.3.1] - 2019-06-29
+### Fixed
+- Fixed timers using the wrong version of @repeaterjs/repeater
+- Fixed limiters using the wrong version of @repeaterjs/repeater
+- Fixed pubsub using the wrong version of @repeaterjs/repeater
+
 ## [timers@0.3.0] - 2019-08-24
 ## [limiters@0.3.0] - 2019-08-24
 ## [pubsub@0.3.0] - 2019-08-24
@@ -7,15 +15,11 @@
 - Renamed all instances of `Channel` to `Repeater` e.g. `Channel` to `Repeater, `ChannelBuffer` to `RepeaterBuffer`
 
 ## [timers@0.2.1] - 2019-06-09
-### Fixed
-- Fixed timers using the wrong version of @channel/channel
-
 ## [limiters@0.2.1] - 2019-06-09
-### Fixed
-- Fixed limiters using the wrong version of @channel/channel 
-
 ## [pubsub@0.2.1] - 2019-06-09
 ### Fixed
+- Fixed timers using the wrong version of @channel/channel
+- Fixed limiters using the wrong version of @channel/channel 
 - Fixed pubsub using the wrong version of @channel/channel
 
 ## [channel@1.0.0] - 2019-06-09
