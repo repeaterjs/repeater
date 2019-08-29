@@ -21,7 +21,7 @@ function timeout(wait: number): Repeater<undefined>;
 import { Repeater } from "@repeaterjs/repeater";
 import { timeout } from "@repeaterjs/timers";
 
-const chan = new Repeater(async (push) => {
+const repeater = new Repeater(async (push) => {
   await push(1);
   await push(2);
   await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -30,7 +30,7 @@ const chan = new Repeater(async (push) => {
 
 try {
   (async () => {
-    for await (const num of Repeater.race([chan, timeout(1000)])) {
+    for await (const num of Repeater.race([repeater, timeout(1000)])) {
       console.log(num); // 1, 2
     }
   })();

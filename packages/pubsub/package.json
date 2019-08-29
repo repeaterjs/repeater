@@ -1,6 +1,6 @@
 {
   "name": "@repeaterjs/pubsub",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A generic pubsub class, implemented with repeaters",
   "repository": {
     "type": "git",
@@ -23,7 +23,7 @@
     "test": "jest --config ../../jest.config.js --rootDir --color"
   },
   "dependencies": {
-    "@repeaterjs/repeater": "^1.0.0"
+    "@repeaterjs/repeater": "^2.0.0"
   },
   "devDependencies": {
     "@types/jest": "^24.0.18",
