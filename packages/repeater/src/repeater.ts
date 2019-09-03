@@ -102,15 +102,15 @@ class RepeaterController<T, TReturn = any, TNext = any> {
     const push: Push<T> = this.push.bind(this);
     const stop: Stop = this.stop.bind(this) as Stop<TReturn>;
     const stopP = new Promise<TReturn>((onstop) => (this.onstop = onstop));
-    stop.then = stopP.then.bind(stopP);
-    stop.catch = stopP.catch.bind(stopP);
-    stop.finally = stopP.finally.bind(stopP);
     if (typeof Object.setPrototypeOf === "function") {
       Object.setPrototypeOf(stop, Promise.prototype);
     } else {
       (this as any).__proto__ = Promise.prototype;
     }
 
+    stop.then = stopP.then.bind(stopP);
+    stop.catch = stopP.catch.bind(stopP);
+    stop.finally = stopP.finally.bind(stopP);
     // Errors which occur in the executor take precedence over those passed to
     // this.stop, so calling this.stop with the caught error would be redundant.
     try {
