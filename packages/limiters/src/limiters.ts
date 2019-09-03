@@ -95,20 +95,20 @@ export function throttler(
 
     let stopped = false;
     stop.then(() => (stopped = true));
-    for await (let token of Repeater.race([semaphore(limit), stop])) {
+    for await (const token of Repeater.race([semaphore(limit), stop])) {
       if (stopped) {
         break;
       }
 
       leaking = leak();
-      token = { ...token, reset: start + wait };
-      tokens.add(token);
+      let token1: ThrottleToken = { ...token, reset: start + wait };
+      tokens.add(token1);
       if (cooldown && token.remaining === 0) {
         await Promise.race([stop, leaking]);
-        token = { ...token, remaining: limit };
+        token1 = { ...token1, remaining: limit };
       }
 
-      await push(token);
+      await push(token1);
     }
 
     tokens.clear();
