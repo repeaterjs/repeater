@@ -19,7 +19,7 @@ The `@repeaterjs/repeater` package has no dependencies, but requires the followi
 - `Symbol.asyncIterator`
 - `WeakMap`
 
-In addition, channels are most useful when used via `async/await` and `for await…of` statements. You can compile your code with babel or typescript to support enviroments which lack these syntax features.
+In addition, repeaters are most useful when used via `async/await` and `for await…of` statements. You can compile your code with babel or typescript to support enviroments which lack these syntax features.
 
 ## Examples
 
@@ -48,7 +48,7 @@ const timestamps = new Repeater(async (push, stop) => {
 })();
 ```
 
-#### Creating a channel from a websocket
+#### Creating a repeater from a websocket
 
 ```js
 import { Repeater } from "@repeaterjs/repeater";
@@ -117,6 +117,6 @@ const konami = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "Ar
 
 ## Acknowledgments
 
-Thanks to Clojure’s `core.async` for inspiration. Specifically, the implementation of channels is more or less based on [this video](https://vimeo.com/100518968) explaining `core.async` internals.
+Thanks to Clojure’s `core.async` for inspiration. Specifically, the implementation of repeaters is more or less based on [this video](https://vimeo.com/100518968) explaining `core.async` internals.
 
 Thanks to [this StackOverflow answer](https://stackoverflow.com/a/47214496/1825413) for providing a helpful overview of the different types of async APIs available in javascript.
