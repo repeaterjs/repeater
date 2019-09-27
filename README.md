@@ -19,7 +19,7 @@ The `@repeaterjs/repeater` package has no dependencies, but requires the followi
 - `Symbol.asyncIterator`
 - `WeakMap`
 
-In addition, repeaters are most useful when used via `async/await` and `for await…of` statements. You can compile your code with babel or typescript to support enviroments which lack these syntax features.
+In addition, repeaters are most useful when used via `async/await` and `for await…of` statements. You can compile your code with babel or typescript to support environments which lack these syntax features.
 
 ## Examples
 
