@@ -66,7 +66,7 @@ const chan = Repeater((push, stop) => {
 })();
 ```
 
-The `throw` method is equivalent to calling the `stop` function and `return` method in sequence, so `throw` blows away any pending values and finishes the repeater. Because `throw` rethrows errors if there are no pending calls to `next`, this method is of limited utility and mainly provided for compatability purposes.
+The `throw` method is equivalent to calling the `stop` function and `return` method in sequence, so `throw` blows away any pending values and finishes the repeater. Because `throw` rethrows errors if there are no pending calls to `next`, this method is of limited utility and mainly provided for compatibility purposes.
 
 ### 3. The executor throws an error
 
