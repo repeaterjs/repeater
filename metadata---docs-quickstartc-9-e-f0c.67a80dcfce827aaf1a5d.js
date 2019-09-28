@@ -1,1 +1,0 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[20],{39:function(t){t.exports=JSON.parse('{"id":"quickstart","title":"Quickstart","description":"## Installation","source":"@site/docs/01_quickstart.md","permalink":"/docs/quickstart","sidebar":"docs","category":"Getting Started","next":"overview","next_title":"Overview"}')}}]);
