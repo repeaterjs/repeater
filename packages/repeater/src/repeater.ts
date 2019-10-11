@@ -302,15 +302,14 @@ class RepeaterController<T> implements AsyncIterator<T> {
     });
   }
 
-  return(value?: Return): Promise<IteratorResult<T>> {
+  return(value?: PromiseLike<Return> | Return): Promise<IteratorResult<T>> {
     if (this.state >= RepeaterState.Finished) {
       if (this.pending == null) {
         this.pending = Promise.resolve({ value, done: true });
       } else {
-        this.pending = this.pending.then(
-          () => ({ value, done: true }),
-          () => ({ value, done: true }),
-        );
+        this.pending = this.pending
+          .then(() => value)
+          .then((value) => ({ value, done: true }));
       }
 
       return this.pending;
@@ -390,7 +389,7 @@ export class Repeater<T> implements AsyncIterableIterator<T> {
     return controller.next(value);
   }
 
-  return(value?: Return): Promise<IteratorResult<T>> {
+  return(value?: PromiseLike<Return> | Return): Promise<IteratorResult<T>> {
     const controller = controllers.get(this);
     if (controller == null) {
       throw new Error("RepeaterController missing from controllers WeakMap");
