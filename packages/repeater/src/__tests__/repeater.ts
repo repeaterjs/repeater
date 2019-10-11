@@ -6,7 +6,6 @@ import {
   MAX_QUEUE_LENGTH,
   SlidingBuffer,
 } from "../repeater";
-
 import { delayPromise } from "../_testutils";
 
 // TODO: create a jest matcher to help us test AsyncIterators
@@ -930,6 +929,31 @@ describe("Repeater", () => {
     await expect(repeater.return()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.return(-3)).resolves.toEqual({
+      value: -3,
+      done: true,
+    });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+  });
+
+  test("return method with promise", async () => {
+    const repeater = new Repeater(async (push, stop) => {
+      await push(1);
+      await push(2);
+      await push(3);
+      await expect(stop).resolves.toEqual(-2);
+      return -1;
+    });
+
+    await expect(repeater.next()).resolves.toEqual({ value: 1, done: false });
+    await expect(repeater.return(Promise.resolve(-2))).resolves.toEqual({
+      value: -1,
+      done: true,
+    });
+    await expect(repeater.return()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.return(Promise.resolve(-3))).resolves.toEqual({
       value: -3,
       done: true,
     });
