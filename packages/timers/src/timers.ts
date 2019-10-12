@@ -86,7 +86,7 @@ export function delay(wait: number): Repeater<number> {
         await yielded;
       }
 
-      return await stop;
+      return stop;
     } finally {
       for (const timer of timers) {
         timer.clear();
@@ -118,7 +118,7 @@ export function timeout(wait: number): Repeater<void> {
       timer.clear();
     }
 
-    return await stop;
+    return stop;
   });
 }
 
