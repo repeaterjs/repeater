@@ -77,6 +77,8 @@ class RepeaterController<T> implements AsyncIterator<T> {
   // pushQueue and pullQueue will never both contain operations at the same time
   private pushQueue: PushOperation<T>[] = [];
   private pullQueue: PullOperation<T>[] = [];
+  private onnext?: (value?: Next) => void;
+  // TODO: maybe rename to onreturn
   private onstop?: (value?: Return) => void;
   // pending is continuously reassigned as the repeater is iterated. We use
   // this mechanism to make sure all iterations settle in order.
@@ -230,7 +232,11 @@ class RepeaterController<T> implements AsyncIterator<T> {
     } else if (this.pullQueue.length) {
       const pull = this.pullQueue.shift()!;
       pull.resolve(this.unwrap(value));
-      return Promise.resolve(pull.value);
+      if (this.pullQueue.length) {
+        return Promise.resolve(this.pullQueue[0].value);
+      }
+
+      return new Promise((resolve) => (this.onnext = resolve));
     } else if (!this.buffer.full) {
       this.buffer.add(value);
       return Promise.resolve();
@@ -251,7 +257,13 @@ class RepeaterController<T> implements AsyncIterator<T> {
   private stop(error?: any): void {
     if (this.state >= RepeaterState.Stopped) {
       return;
-    } else if (this.onstop != null) {
+    }
+
+    if (this.onnext !== undefined) {
+      this.onnext();
+    }
+
+    if (this.onstop !== undefined) {
       this.onstop();
     }
 
@@ -276,18 +288,23 @@ class RepeaterController<T> implements AsyncIterator<T> {
       this.execute();
     }
 
+    if (this.onnext !== undefined) {
+      this.onnext(value);
+      delete this.onnext;
+    }
+
     if (!this.buffer.empty) {
       const result = this.unwrap(this.buffer.remove());
       if (this.pushQueue.length) {
         const push = this.pushQueue.shift()!;
         this.buffer.add(push.value);
-        push.resolve(value);
+        this.onnext = push.resolve;
       }
 
       return result;
     } else if (this.pushQueue.length) {
       const push = this.pushQueue.shift()!;
-      push.resolve(value);
+      this.onnext = push.resolve;
       return this.unwrap(push.value);
     } else if (this.state >= RepeaterState.Stopped) {
       return this.finish();
