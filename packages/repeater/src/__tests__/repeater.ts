@@ -550,31 +550,34 @@ describe("Repeater", () => {
         await push(i);
         mock();
       }
+
       return -1;
     });
-    for (let i = 0; i < 50; i++) {
-      await expect(repeater.next()).resolves.toEqual({
-        value: mock.mock.calls.length,
-        done: false,
-      });
+    await expect(repeater.next()).resolves.toEqual({ value: 0, done: false });
+    expect(mock).toHaveBeenCalledTimes(0);
+    for (let i = 1; i < 50; i++) {
+      expect(mock).toHaveBeenCalledTimes(i - 1);
+      await expect(repeater.next()).resolves.toEqual({ value: i, done: false });
+      expect(mock).toHaveBeenCalledTimes(i);
     }
+
     await expect(repeater.next()).resolves.toEqual({ value: 50, done: false });
-    expect(mock).toHaveBeenCalledTimes(51);
-    await delayPromise(100);
-    expect(mock).toHaveBeenCalledTimes(51);
+    expect(mock).toHaveBeenCalledTimes(50);
+    await delayPromise(1);
+    expect(mock).toHaveBeenCalledTimes(50);
   });
 
   test("next then push avoids buffer", async () => {
     const buffer: FixedBuffer<number> = new FixedBuffer(100);
     const add = jest.spyOn(buffer, "add");
-    let push: (value: number) => Promise<any>;
+    let push: (value: number) => Promise<void>;
     const repeater = new Repeater(async (push1) => {
       push = push1;
     }, buffer);
     const next1 = repeater.next();
     const next2 = repeater.next();
     await push!(1);
-    await push!(2);
+    push!(2);
     await expect(next1).resolves.toEqual({ value: 1, done: false });
     await expect(next2).resolves.toEqual({ value: 2, done: false });
     expect(buffer.empty).toBe(true);
@@ -585,17 +588,79 @@ describe("Repeater", () => {
   });
 
   test("pushes resolve to value passed to next", async () => {
-    let push: (value: number) => Promise<number | void>;
-    const repeater = new Repeater(async (push1) => {
-      push = push1;
-    });
-    const next1 = repeater.next(-1);
+    let push: (value: number) => Promise<number>;
+    const repeater = new Repeater((push1) => (push = push1));
+    repeater.next(-1);
+    repeater.next(-2);
+    repeater.next(-3);
+    repeater.next(-4);
     const push1 = push!(1);
-    await expect(push1).resolves.toEqual(-1);
-    await expect(next1).resolves.toEqual({ value: 1, done: false });
     const push2 = push!(2);
-    await expect(repeater.next(-2)).resolves.toEqual({ value: 2, done: false });
-    await expect(push2).resolves.toEqual(-2);
+    const push3 = push!(3);
+    const push4 = push!(4);
+    await expect(push1).resolves.toEqual(-2);
+    await expect(push2).resolves.toEqual(-3);
+    await expect(push3).resolves.toEqual(-4);
+    await expect(
+      Promise.race([push4, delayPromise(1, -1000)]),
+    ).resolves.toEqual(-1000);
+  });
+
+  test("pushes resolve to value passed to next when alternating", async () => {
+    let push: (value: number) => Promise<number>;
+    const repeater = new Repeater((push1) => (push = push1));
+    repeater.next(-1);
+    const push1 = push!(1);
+    repeater.next(-2);
+    const push2 = push!(2);
+    repeater.next(-3);
+    const push3 = push!(3);
+    repeater.next(-4);
+    const push4 = push!(4);
+    await expect(push1).resolves.toEqual(-2);
+    await expect(push2).resolves.toEqual(-3);
+    await expect(push3).resolves.toEqual(-4);
+    await expect(
+      Promise.race([push4, delayPromise(1, -1000)]),
+    ).resolves.toEqual(-1000);
+  });
+
+  test("pushes resolve to value passed to next when irregular", async () => {
+    let push: (value: number) => Promise<number>;
+    const repeater = new Repeater((push1) => (push = push1));
+    repeater.next(-1);
+    const push1 = push!(1);
+    const push2 = push!(2);
+    repeater.next(-2);
+    repeater.next(-3);
+    const push3 = push!(3);
+    repeater.next(-4);
+    const push4 = push!(4);
+    await expect(push1).resolves.toEqual(-2);
+    await expect(push2).resolves.toEqual(-3);
+    await expect(push3).resolves.toEqual(-4);
+    await expect(
+      Promise.race([push4, delayPromise(1, -1000)]),
+    ).resolves.toEqual(-1000);
+  });
+
+  test("pushes resolve to value passed to next with pushes first", async () => {
+    let push: (value: number) => Promise<number>;
+    const repeater = new Repeater((push1) => (push = push1));
+    repeater.next(-1);
+    const push1 = push!(1);
+    const push2 = push!(2);
+    const push3 = push!(3);
+    const push4 = push!(4);
+    repeater.next(-2);
+    repeater.next(-3);
+    repeater.next(-4);
+    await expect(push1).resolves.toEqual(-2);
+    await expect(push2).resolves.toEqual(-3);
+    await expect(push3).resolves.toEqual(-4);
+    await expect(
+      Promise.race([push4, delayPromise(1, -1000)]),
+    ).resolves.toEqual(-1000);
   });
 
   test("pushes resolve to undefined when using a buffer", async () => {
@@ -610,15 +675,15 @@ describe("Repeater", () => {
     const push4 = push!(4);
     const push5 = push!(5);
     await expect(next1).resolves.toEqual({ value: 1, done: false });
-    await expect(push1).resolves.toBe(-1);
     await expect(repeater.next(-2)).resolves.toEqual({ value: 2, done: false });
+    await expect(push1).resolves.toEqual(-2);
     await expect(repeater.next(-3)).resolves.toEqual({ value: 3, done: false });
     await expect(repeater.next(-4)).resolves.toEqual({ value: 4, done: false });
     await expect(repeater.next(-5)).resolves.toEqual({ value: 5, done: false });
     await expect(push2).resolves.toBeUndefined();
     await expect(push3).resolves.toBeUndefined();
     await expect(push4).resolves.toBeUndefined();
-    await expect(push5).resolves.toBe(-2);
+    await expect(push5).resolves.toBe(-3);
     const push6 = push!(6);
     const push7 = push!(7);
     const push8 = push!(8);
@@ -630,7 +695,7 @@ describe("Repeater", () => {
     await expect(push6).resolves.toBeUndefined();
     await expect(push7).resolves.toBeUndefined();
     await expect(push8).resolves.toBeUndefined();
-    await expect(push9).resolves.toBe(-6);
+    await expect(push9).resolves.toBe(-7);
   });
 
   test("results settle in order", async () => {
