@@ -73,9 +73,9 @@ describe("limiters", () => {
       prev = Date.now();
     }
 
-    // called 7 times by delay timer
+    // called 6 times by delay timer
     // called 6 times by the promise
-    expect(spy).toHaveBeenCalledTimes(13);
+    expect(spy).toHaveBeenCalledTimes(12);
   });
 
   test("throttler token reset", async () => {
@@ -132,7 +132,7 @@ describe("limiters", () => {
       await throttle.next();
       expect(setTimeout).toHaveBeenCalledTimes(1);
       await expect(throttle.return()).resolves.toEqual({ done: true });
-      expect(clearTimeout).toHaveBeenCalledTimes(2);
+      expect(clearTimeout).toHaveBeenCalledTimes(1);
       await expect(throttle.next()).resolves.toEqual({ done: true });
     } finally {
       jest.useRealTimers();
