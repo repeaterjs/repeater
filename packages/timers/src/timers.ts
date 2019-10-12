@@ -25,7 +25,7 @@ export class TimeoutError extends Error {
   }
 }
 
-class DeferredTimer<T> {
+class Timer<T> {
   resolve!: (value: T) => void;
   promise: Promise<T>;
   private reject!: (err: any) => void;
@@ -64,13 +64,12 @@ class DeferredTimer<T> {
 
 export function delay(wait: number): Repeater<number> {
   return new Repeater(async (push, stop) => {
-    const timers: Set<DeferredTimer<number>> = new Set();
+    const timers: Set<Timer<number>> = new Set();
     try {
       let stopped = false;
       stop.then(() => (stopped = true));
       while (!stopped) {
-        const timer: DeferredTimer<number> = new DeferredTimer(wait);
-        const yielded = push(timer.promise);
+        const timer = new Timer<number>(wait);
         timers.add(timer);
         if (timers.size > MAX_QUEUE_LENGTH) {
           throw new RepeaterOverflowError(
@@ -83,7 +82,7 @@ export function delay(wait: number): Repeater<number> {
           return Date.now();
         });
 
-        await yielded;
+        await push(timer.promise);
       }
 
       return stop;
@@ -97,21 +96,20 @@ export function delay(wait: number): Repeater<number> {
 
 export function timeout(wait: number): Repeater<void> {
   return new Repeater(async (push, stop) => {
-    let timer: DeferredTimer<void> | undefined;
+    let timer: Timer<void> | undefined;
     let stopped = false;
     stop.then(() => (stopped = true));
     while (!stopped) {
-      const timer1: DeferredTimer<void> = new DeferredTimer(wait);
-      const yielded = push(timer1.promise);
-      if (timer != null) {
+      if (timer !== undefined) {
         timer.resolve();
       }
 
-      timer1.run(() => {
+      timer = new Timer(wait);
+      timer.run(() => {
         throw new TimeoutError(`${wait}ms elapsed without next being called`);
       });
-      timer = timer1;
-      await yielded;
+
+      await push(timer.promise);
     }
 
     if (timer != null) {
