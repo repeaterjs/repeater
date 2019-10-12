@@ -68,9 +68,9 @@ export function delay(wait: number): Repeater<number> {
     try {
       let stopped = false;
       stop.then(() => (stopped = true));
-      do {
+      while (!stopped) {
         const timer: DeferredTimer<number> = new DeferredTimer(wait);
-        await push(timer.promise);
+        const yielded = push(timer.promise);
         timers.add(timer);
         if (timers.size > MAX_QUEUE_LENGTH) {
           throw new RepeaterOverflowError(
@@ -82,7 +82,11 @@ export function delay(wait: number): Repeater<number> {
           timers.delete(timer);
           return Date.now();
         });
-      } while (!stopped);
+
+        await yielded;
+      }
+
+      return await stop;
     } finally {
       for (const timer of timers) {
         timer.clear();
@@ -91,27 +95,30 @@ export function delay(wait: number): Repeater<number> {
   });
 }
 
-export function timeout(wait: number): Repeater<undefined> {
+export function timeout(wait: number): Repeater<void> {
   return new Repeater(async (push, stop) => {
-    let timer: DeferredTimer<undefined> | undefined;
+    let timer: DeferredTimer<void> | undefined;
     let stopped = false;
     stop.then(() => (stopped = true));
-    do {
-      const timer1: DeferredTimer<undefined> = new DeferredTimer(wait);
-      await push(timer1.promise);
+    while (!stopped) {
+      const timer1: DeferredTimer<void> = new DeferredTimer(wait);
+      const yielded = push(timer1.promise);
       if (timer != null) {
-        timer.resolve(undefined);
+        timer.resolve();
       }
 
       timer1.run(() => {
         throw new TimeoutError(`${wait}ms elapsed without next being called`);
       });
       timer = timer1;
-    } while (!stopped);
+      await yielded;
+    }
 
     if (timer != null) {
       timer.clear();
     }
+
+    return await stop;
   });
 }
 
