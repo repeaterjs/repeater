@@ -10,8 +10,5 @@
     "build": "yarn workspaces run build",
     "lint": "yarn workspaces run lint",
     "test": "yarn workspaces run test"
-  },
-  "devDependencies": {
-    "typescript": "^3.6.2"
   }
 }
