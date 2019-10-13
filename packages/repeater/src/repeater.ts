@@ -41,14 +41,14 @@ export type RepeaterExecutor<T, TReturn = any, TNext = any> = (
 ) => PromiseLike<TReturn> | TReturn;
 
 interface PushOperation<T, TNext> {
-  resolve(next?: TNext): void;
+  resolve(next?: PromiseLike<TNext> | TNext): void;
   value: PromiseLike<T> | T;
 }
 
-interface PullOperation<T, TNext> {
-  resolve(result: Promise<IteratorResult<T>>): void;
+interface PullOperation<T, TReturn, TNext> {
+  resolve(result: Promise<IteratorResult<T, TReturn>>): void;
   reject(err?: any): void;
-  value?: TNext;
+  value?: PromiseLike<TNext> | TNext;
 }
 
 const enum RepeaterState {
@@ -63,23 +63,24 @@ const enum RepeaterState {
  * hidden using a private WeakMap to make repeaters themselves opaque and
  * maximally compatible with async generators.
  */
-class RepeaterController<T, TReturn = any, TNext = any> {
+class RepeaterController<T, TReturn = any, TNext = any>
+  implements AsyncGenerator<T, TReturn, TNext> {
   private state: RepeaterState = RepeaterState.Initial;
   // pushQueue and pullQueue will never both contain operations at the same time
   private pushQueue: PushOperation<T, TNext>[] = [];
-  private pullQueue: PullOperation<T, TNext>[] = [];
-  private onnext?: (value?: TNext) => void;
+  private pullQueue: PullOperation<T, TReturn, TNext>[] = [];
+  private onnext?: (value?: PromiseLike<TNext> | TNext) => void;
   // TODO: maybe rename to onreturn
   private onstop?: (value?: PromiseLike<TReturn> | TReturn) => void;
   // pending is continuously reassigned as the repeater is iterated. We use
   // this mechanism to make sure all iterations settle in order.
-  private pending?: Promise<IteratorResult<T>>;
+  private pending?: Promise<IteratorResult<T, TReturn>>;
   private execution?: Promise<TReturn>;
   private error?: any;
 
   constructor(
     private executor: RepeaterExecutor<T, TReturn, TNext>,
-    private buffer: RepeaterBuffer<PromiseLike<T> | T>,
+    private buffer: RepeaterBuffer<T>,
   ) {}
 
   /**
@@ -115,9 +116,9 @@ class RepeaterController<T, TReturn = any, TNext = any> {
    * Rejections which settle after stop are ignored. This behavior is useful
    * when you have yielded a pending promise but want to finish instead.
    */
-  private async reject(err: any): Promise<IteratorResult<T>> {
+  private async reject(err: any): Promise<IteratorResult<T, TReturn>> {
     if (this.state >= RepeaterState.Stopped) {
-      const value = await this.execution;
+      const value = await this.execution!;
       return { value, done: true };
     }
 
@@ -130,7 +131,9 @@ class RepeaterController<T, TReturn = any, TNext = any> {
    * prevents types of Repeater<Promise<any>> and mimics the awaiting/unwrapping
    * behavior of async generators where `yield` is equivalent to `yield await`.
    */
-  private unwrap(value: PromiseLike<T> | T): Promise<IteratorResult<T>> {
+  private unwrap(
+    value: PromiseLike<T> | T,
+  ): Promise<IteratorResult<T, TReturn>> {
     if (this.pending == null) {
       this.pending = Promise.resolve(value).then(
         (value) => {
@@ -142,7 +145,7 @@ class RepeaterController<T, TReturn = any, TNext = any> {
       this.pending = this.pending.then(
         (prev) => {
           if (prev.done) {
-            return { value: undefined, done: true };
+            return { value: undefined, done: true } as any;
           }
 
           return Promise.resolve(value).then(
@@ -150,7 +153,7 @@ class RepeaterController<T, TReturn = any, TNext = any> {
             (err) => this.reject(err),
           );
         },
-        () => ({ value: undefined, done: true }),
+        () => ({ value: undefined, done: true } as any),
       );
     }
 
@@ -168,8 +171,8 @@ class RepeaterController<T, TReturn = any, TNext = any> {
    *
    * Advances state to RepeaterState.Finished.
    */
-  private finish(): Promise<IteratorResult<T>> {
-    const execution = Promise.resolve(this.execution);
+  private finish(): Promise<IteratorResult<T, TReturn>> {
+    const execution = Promise.resolve(this.execution!);
     const error = this.error;
     if (this.state < RepeaterState.Finished) {
       if (this.state < RepeaterState.Stopped) {
@@ -195,7 +198,7 @@ class RepeaterController<T, TReturn = any, TNext = any> {
       this.pending = this.pending.then(
         (prev) => {
           if (prev.done) {
-            return { value: undefined, done: true };
+            return { value: undefined, done: true } as any;
           }
 
           return execution.then((value) => {
@@ -206,7 +209,7 @@ class RepeaterController<T, TReturn = any, TNext = any> {
             throw error;
           });
         },
-        () => ({ value: undefined, done: true }),
+        () => ({ value: undefined, done: true } as any),
       );
     }
 
@@ -274,7 +277,9 @@ class RepeaterController<T, TReturn = any, TNext = any> {
     this.pullQueue = [];
   }
 
-  next(value?: TNext): Promise<IteratorResult<T>> {
+  next(
+    value?: PromiseLike<TNext> | TNext,
+  ): Promise<IteratorResult<T, TReturn>> {
     if (this.state === RepeaterState.Initial) {
       this.execute();
     }
@@ -310,13 +315,18 @@ class RepeaterController<T, TReturn = any, TNext = any> {
     });
   }
 
-  return(value?: PromiseLike<TReturn> | TReturn): Promise<IteratorResult<T>> {
+  return(
+    value?: PromiseLike<TReturn> | TReturn,
+  ): Promise<IteratorResult<T, TReturn>> {
     if (this.state >= RepeaterState.Finished) {
       if (this.pending == null) {
-        this.pending = Promise.resolve({ value, done: true });
+        this.pending = Promise.resolve(value).then((value) => ({
+          value: value!,
+          done: true,
+        }));
       } else {
         this.pending = this.pending
-          .then(() => value)
+          .then(() => value!)
           .then((value) => ({ value, done: true }));
       }
 
@@ -329,7 +339,7 @@ class RepeaterController<T, TReturn = any, TNext = any> {
     return this.finish();
   }
 
-  throw(error: any): Promise<IteratorResult<T>> {
+  throw(error: any): Promise<IteratorResult<T, TReturn>> {
     if (this.state >= RepeaterState.Finished) {
       if (this.pending == null) {
         this.pending = Promise.reject(error);
@@ -346,50 +356,32 @@ class RepeaterController<T, TReturn = any, TNext = any> {
     this.stop(error);
     return this.finish();
   }
-}
 
-// TODO: parameterize TReturn
-type Contender<T> = AsyncIterable<T> | Iterable<T> | PromiseLike<any>;
-
-function iterators<T>(
-  contenders: Iterable<Contender<T>>,
-): (AsyncIterator<T> | Iterator<T>)[] {
-  const iters: (AsyncIterator<T> | Iterator<T>)[] = [];
-  for (const contender of contenders) {
-    if (typeof (contender as any)[Symbol.asyncIterator] === "function") {
-      iters.push((contender as AsyncIterable<T>)[Symbol.asyncIterator]());
-    } else if (typeof (contender as any)[Symbol.iterator] === "function") {
-      iters.push((contender as Iterable<T>)[Symbol.iterator]());
-    } else {
-      iters.push(
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        new Repeater((_, stop) => (stop(), contender)),
-      );
-    }
+  [Symbol.asyncIterator](): this {
+    return this;
   }
-
-  return iters;
 }
 
-type RepeaterControllerMap<T = any, TReturn = any, TNext = any> = WeakMap<
-  Repeater<T, TReturn, TNext>,
-  RepeaterController<T, TReturn, TNext>
->;
+const controllers = new WeakMap<
+  Repeater<any, any, any>,
+  RepeaterController<any, any, any>
+>();
 
-const controllers: RepeaterControllerMap = new WeakMap();
-
+// We do not export any types which use the >=3.6 IteratorResult, AsyncIterator
+// or AsyncGenerator types to allow the library to be used with older versions
+// of typescript.
+//
+// TODO: use typesVersions to ship stricter types for newer typescript
+// versions.
 export class Repeater<T, TReturn = any, TNext = any> {
   constructor(
     executor: RepeaterExecutor<T, TReturn, TNext>,
-    buffer: RepeaterBuffer<PromiseLike<T> | T> = new FixedBuffer(0),
+    buffer: RepeaterBuffer<T> = new FixedBuffer(0),
   ) {
-    controllers.set(
-      this,
-      new RepeaterController<T, TReturn, TNext>(executor, buffer),
-    );
+    controllers.set(this, new RepeaterController(executor, buffer));
   }
 
-  next(value?: TNext): Promise<IteratorResult<T>> {
+  next(value?: PromiseLike<TNext> | TNext): Promise<IteratorResult<T>> {
     const controller = controllers.get(this);
     if (controller == null) {
       throw new Error("RepeaterController missing from controllers WeakMap");
@@ -420,303 +412,329 @@ export class Repeater<T, TReturn = any, TNext = any> {
     return this;
   }
 
-  // TODO: rethink the done value for each of the combinators
-  // TODO: remove eslint-disable comments once no-dupe-class-members is fixed
-  // https://github.com/typescript-eslint/typescript-eslint/issues/291
-  // TODO: use prettier-ignore-start/prettier-ignore-end once it’s implemented
-  // https://github.com/prettier/prettier/issues/5287
-  // TODO: stop using overloads once we have variadic kinds
-  // https://github.com/Microsoft/TypeScript/issues/5453
-  /* eslint-disable no-dupe-class-members */
-  static race(contenders: []): Repeater<never>;
-  static race<T>(contenders: Iterable<Contender<T>>): Repeater<T>;
-  // prettier-ignore
-  static race<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Repeater<T1 | T2>;
-  // prettier-ignore
-  static race<T1, T2, T3>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>]): Repeater<T1 | T2 | T3>;
-  // prettier-ignore
-  static race<T1, T2, T3, T4>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>]): Repeater<T1 | T2 | T3 | T4>;
-  // prettier-ignore
-  static race<T1, T2, T3, T4, T5>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>]): Repeater<T1 | T2 | T3 | T4 | T5>;
-  // prettier-ignore
-  static race<T1, T2, T3, T4, T5, T6>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6>;
-  // prettier-ignore
-  static race<T1, T2, T3, T4, T5, T6, T7>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7>;
-  // prettier-ignore
-  static race<T1, T2, T3, T4, T5, T6, T7, T8>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8>;
-  // prettier-ignore
-  static race<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9>;
-  // prettier-ignore
-  static race<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10>;
-  static race<T>(contenders: Iterable<Contender<T>>): Repeater<T> {
-    const iters = iterators(contenders);
-    return new Repeater<T>(async (push, stop) => {
-      if (!iters.length) {
-        stop();
-        return;
-      }
+  static race = race;
+  static merge = merge;
+  static zip = zip;
+  static latest = latest;
+}
 
-      let stopped = false;
-      let returned: any;
-      const finish: Promise<IteratorResult<T>> = stop.then((value) => {
-        stopped = true;
-        returned = value;
-        return { value, done: true };
-      });
-      try {
-        let result: IteratorResult<T> | undefined;
-        while (!stopped) {
-          const results = iters.map((iter) => iter.next());
-          for (const result1 of results) {
-            Promise.resolve(result1)
-              .then((result1) => {
-                if (result1.done && result == null) {
-                  stop();
-                  result = result1;
-                }
-              })
-              .catch(stop);
-          }
+// TODO: parameterize TReturn
+type Contender<T> = AsyncIterable<T> | Iterable<T> | PromiseLike<any> | any;
 
-          results.unshift(finish);
-          const result1 = await Promise.race(results);
-          if (result1.done && result == null) {
-            result = result1;
-            break;
-          }
+function iterators<T>(
+  contenders: Iterable<Contender<T>>,
+): (AsyncIterator<T> | Iterator<T>)[] {
+  const iters: (AsyncIterator<T> | Iterator<T>)[] = [];
+  for (const contender of contenders) {
+    if (typeof (contender as any)[Symbol.asyncIterator] === "function") {
+      iters.push((contender as AsyncIterable<T>)[Symbol.asyncIterator]());
+    } else if (typeof (contender as any)[Symbol.iterator] === "function") {
+      iters.push((contender as Iterable<T>)[Symbol.iterator]());
+    } else {
+      iters.push(
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        new Repeater((_, stop) => (stop(), contender)),
+      );
+    }
+  }
 
-          await push(result1.value as T);
+  return iters;
+}
+
+// TODO: rethink the done value for each of the combinators
+// TODO: parameterize TReturn types
+// TODO: use prettier-ignore-start/prettier-ignore-end once it’s implemented
+// https://github.com/prettier/prettier/issues/5287
+// TODO: stop using overloads once we have variadic kinds
+// https://github.com/Microsoft/TypeScript/issues/5453
+function race(contenders: []): Repeater<never>;
+function race<T>(contenders: Iterable<Contender<T>>): Repeater<T>;
+// prettier-ignore
+function race<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Repeater<T1 | T2>;
+// prettier-ignore
+function race<T1, T2, T3>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>]): Repeater<T1 | T2 | T3>;
+// prettier-ignore
+function race<T1, T2, T3, T4>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>]): Repeater<T1 | T2 | T3 | T4>;
+// prettier-ignore
+function race<T1, T2, T3, T4, T5>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>]): Repeater<T1 | T2 | T3 | T4 | T5>;
+// prettier-ignore
+function race<T1, T2, T3, T4, T5, T6>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6>;
+// prettier-ignore
+function race<T1, T2, T3, T4, T5, T6, T7>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7>;
+// prettier-ignore
+function race<T1, T2, T3, T4, T5, T6, T7, T8>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8>;
+// prettier-ignore
+function race<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9>;
+// prettier-ignore
+function race<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10>;
+function race<T>(contenders: Iterable<Contender<T>>): Repeater<T> {
+  const iters = iterators(contenders);
+  return new Repeater<T>(async (push, stop) => {
+    if (!iters.length) {
+      stop();
+      return;
+    }
+
+    let stopped = false;
+    let returned: any;
+    const finish: Promise<IteratorResult<T>> = stop.then((value) => {
+      stopped = true;
+      returned = value;
+      return { value, done: true };
+    });
+    try {
+      let result: IteratorResult<T> | undefined;
+      while (!stopped) {
+        const results = iters.map((iter) => iter.next());
+        for (const result1 of results) {
+          Promise.resolve(result1)
+            .then((result1) => {
+              if (result1.done && result == null) {
+                stop();
+                result = result1;
+              }
+            })
+            .catch(stop);
         }
 
-        return result && result.value;
-      } catch (err) {
-        stop(err);
-      } finally {
-        stop();
-        await Promise.race<any>(
+        results.unshift(finish);
+        const result1 = await Promise.race(results);
+        if (result1.done && result == null) {
+          result = result1;
+          break;
+        }
+
+        await push(result1.value as T);
+      }
+
+      return result && result.value;
+    } catch (err) {
+      stop(err);
+    } finally {
+      stop();
+      await Promise.race<any>(
+        iters.map((iter) => iter.return && iter.return(returned)),
+      );
+    }
+  });
+}
+
+function merge(contenders: []): Repeater<never>;
+function merge<T>(contenders: Iterable<Contender<T>>): Repeater<T>;
+// prettier-ignore
+function merge<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Repeater<T1 | T2>;
+// prettier-ignore
+function merge<T1, T2, T3>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>]): Repeater<T1 | T2 | T3>;
+// prettier-ignore
+function merge<T1, T2, T3, T4>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>]): Repeater<T1 | T2 | T3 | T4>;
+// prettier-ignore
+function merge<T1, T2, T3, T4, T5>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>]): Repeater<T1 | T2 | T3 | T4 | T5>;
+// prettier-ignore
+function merge<T1, T2, T3, T4, T5, T6>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6>;
+// prettier-ignore
+function merge<T1, T2, T3, T4, T5, T6, T7>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7>;
+// prettier-ignore
+function merge<T1, T2, T3, T4, T5, T6, T7, T8>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8>;
+// prettier-ignore
+function merge<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9>;
+// prettier-ignore
+function merge<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10>;
+function merge<T>(contenders: Iterable<Contender<T>>): Repeater<T> {
+  // need to pass type parameter here for some reason
+  const iters = iterators<T>(contenders);
+  return new Repeater<T>(async (push, stop) => {
+    if (!iters.length) {
+      stop();
+      return;
+    }
+
+    let stopped = false;
+    let returned: any;
+    const finish: Promise<IteratorResult<T>> = stop.then((value) => {
+      stopped = true;
+      returned = value;
+      return { value, done: true };
+    });
+    let value: any | undefined;
+    await Promise.all(
+      iters.map(async (iter) => {
+        try {
+          while (!stopped) {
+            const result: IteratorResult<T> = await Promise.race([
+              finish,
+              iter.next(),
+            ]);
+            if (result.done) {
+              value = result.value;
+              return;
+            }
+
+            await push(result.value as T);
+          }
+        } catch (err) {
+          stop(err);
+        } finally {
+          if (iter.return != null) {
+            await iter.return(returned);
+          }
+        }
+      }),
+    );
+    stop();
+    return value;
+  });
+}
+
+function zip(contenders: []): Repeater<never, []>;
+function zip<T>(contenders: Iterable<Contender<T>>): Repeater<T[]>;
+// prettier-ignore
+function zip<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Repeater<[T1, T2]>;
+// prettier-ignore
+function zip<T1, T2, T3>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>]): Repeater<[T1, T2, T3]>;
+// prettier-ignore
+function zip<T1, T2, T3, T4>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>]): Repeater<[T1, T2, T3, T4]>;
+// prettier-ignore
+function zip<T1, T2, T3, T4, T5>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>]): Repeater<[T1, T2, T3, T4, T5]>;
+// prettier-ignore
+function zip<T1, T2, T3, T4, T5, T6>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>]): Repeater<[T1, T2, T3, T4, T5, T6]>;
+// prettier-ignore
+function zip<T1, T2, T3, T4, T5, T6, T7>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>]): Repeater<[T1, T2, T3, T4, T5, T6, T7]>;
+// prettier-ignore
+function zip<T1, T2, T3, T4, T5, T6, T7, T8>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8]>;
+// prettier-ignore
+function zip<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8, T9]>;
+// prettier-ignore
+function zip<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]>;
+function zip<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
+  const iters = iterators(contenders);
+  return new Repeater<T[]>(async (push, stop) => {
+    if (!iters.length) {
+      stop();
+      return [];
+    }
+
+    let stopped = false;
+    let returned: any;
+    stop.then((value) => {
+      stopped = true;
+      returned = value;
+    });
+    try {
+      while (!stopped) {
+        const resultsP = Promise.all(iters.map((iter) => iter.next()));
+        await Promise.race([stop, resultsP]);
+        if (stopped) {
+          return Promise.all(
+            iters.map(async (iter) => {
+              if (iter.return == null) {
+                return returned;
+              }
+              return (await iter.return(returned)).value;
+            }),
+          );
+        }
+
+        const results = await resultsP;
+        const values = results.map((result) => result.value);
+        if (results.some((result) => result.done)) {
+          return values;
+        }
+
+        await push(values);
+      }
+    } catch (err) {
+      stop(err);
+    } finally {
+      stop();
+      if (!stopped) {
+        await Promise.all<any>(
           iters.map((iter) => iter.return && iter.return(returned)),
         );
       }
+    }
+  });
+}
+
+function latest(contenders: []): Repeater<never, []>;
+function latest<T>(contenders: Iterable<Contender<T>>): Repeater<T[]>;
+// prettier-ignore
+function latest<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Repeater<[T1, T2]>;
+// prettier-ignore
+function latest<T1, T2, T3>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>]): Repeater<[T1, T2, T3]>;
+// prettier-ignore
+function latest<T1, T2, T3, T4>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>]): Repeater<[T1, T2, T3, T4]>;
+// prettier-ignore
+function latest<T1, T2, T3, T4, T5>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>]): Repeater<[T1, T2, T3, T4, T5]>;
+// prettier-ignore
+function latest<T1, T2, T3, T4, T5, T6>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>]): Repeater<[T1, T2, T3, T4, T5, T6]>;
+// prettier-ignore
+function latest<T1, T2, T3, T4, T5, T6, T7>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>]): Repeater<[T1, T2, T3, T4, T5, T6, T7]>;
+// prettier-ignore
+function latest<T1, T2, T3, T4, T5, T6, T7, T8>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8]>;
+// prettier-ignore
+function latest<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8, T9]>;
+// prettier-ignore
+function latest<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]>;
+function latest<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
+  const iters = iterators(contenders);
+  return new Repeater<T[]>(async (push, stop) => {
+    if (!iters.length) {
+      stop();
+      return [];
+    }
+
+    let stopped = false;
+    let returned: any;
+    const finish = stop.then((value) => {
+      stopped = true;
+      returned = value;
+      return { value, done: true };
     });
-  }
-
-  static merge(contenders: []): Repeater<never>;
-  static merge<T>(contenders: Iterable<Contender<T>>): Repeater<T>;
-  // prettier-ignore
-  static merge<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Repeater<T1 | T2>;
-  // prettier-ignore
-  static merge<T1, T2, T3>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>]): Repeater<T1 | T2 | T3>;
-  // prettier-ignore
-  static merge<T1, T2, T3, T4>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>]): Repeater<T1 | T2 | T3 | T4>;
-  // prettier-ignore
-  static merge<T1, T2, T3, T4, T5>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>]): Repeater<T1 | T2 | T3 | T4 | T5>;
-  // prettier-ignore
-  static merge<T1, T2, T3, T4, T5, T6>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6>;
-  // prettier-ignore
-  static merge<T1, T2, T3, T4, T5, T6, T7>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7>;
-  // prettier-ignore
-  static merge<T1, T2, T3, T4, T5, T6, T7, T8>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8>;
-  // prettier-ignore
-  static merge<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9>;
-  // prettier-ignore
-  static merge<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10>;
-  static merge<T>(contenders: Iterable<Contender<T>>): Repeater<T> {
-    const iters = iterators(contenders);
-    return new Repeater<T>(async (push, stop) => {
-      if (!iters.length) {
-        stop();
-        return;
-      }
-
-      let stopped = false;
-      let returned: any;
-      const finish: Promise<IteratorResult<T>> = stop.then((value) => {
-        stopped = true;
-        returned = value;
-        return { value, done: true };
-      });
-      let value: any | undefined;
-      await Promise.all(
+    const resultsP = Promise.all(iters.map((iter) => iter.next()));
+    await Promise.race([stop, resultsP]);
+    if (stopped) {
+      return Promise.all(
         iters.map(async (iter) => {
-          try {
-            while (!stopped) {
-              const result: IteratorResult<T> = await Promise.race([
-                finish,
-                iter.next(),
-              ]);
-              if (result.done) {
-                value = result.value;
-                return;
-              }
-
-              await push(result.value as T);
-            }
-          } catch (err) {
-            stop(err);
-          } finally {
-            if (iter.return != null) {
-              await iter.return(returned);
-            }
+          if (iter.return == null) {
+            return returned;
           }
+          return (await iter.return(returned)).value;
         }),
       );
-      stop();
-      return value;
-    });
-  }
+    }
 
-  static zip(contenders: []): Repeater<never, []>;
-  static zip<T>(contenders: Iterable<Contender<T>>): Repeater<T[]>;
-  // prettier-ignore
-  static zip<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Repeater<[T1, T2]>;
-  // prettier-ignore
-  static zip<T1, T2, T3>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>]): Repeater<[T1, T2, T3]>;
-  // prettier-ignore
-  static zip<T1, T2, T3, T4>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>]): Repeater<[T1, T2, T3, T4]>;
-  // prettier-ignore
-  static zip<T1, T2, T3, T4, T5>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>]): Repeater<[T1, T2, T3, T4, T5]>;
-  // prettier-ignore
-  static zip<T1, T2, T3, T4, T5, T6>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>]): Repeater<[T1, T2, T3, T4, T5, T6]>;
-  // prettier-ignore
-  static zip<T1, T2, T3, T4, T5, T6, T7>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>]): Repeater<[T1, T2, T3, T4, T5, T6, T7]>;
-  // prettier-ignore
-  static zip<T1, T2, T3, T4, T5, T6, T7, T8>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8]>;
-  // prettier-ignore
-  static zip<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8, T9]>;
-  // prettier-ignore
-  static zip<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]>;
-  static zip<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
-    const iters = iterators(contenders);
-    return new Repeater<T[]>(async (push, stop) => {
-      if (!iters.length) {
-        stop();
-        return [];
-      }
+    const results = await resultsP;
+    const values = results.map((result) => result.value);
+    if (results.every((result) => result.done)) {
+      return values;
+    }
 
-      let stopped = false;
-      let returned: any;
-      stop.then((value) => {
-        stopped = true;
-        returned = value;
-      });
-      try {
-        while (!stopped) {
-          const resultsP = Promise.all(iters.map((iter) => iter.next()));
-          await Promise.race([stop, resultsP]);
-          if (stopped) {
-            return Promise.all(
-              iters.map(async (iter) => {
-                if (iter.return == null) {
-                  return returned;
-                }
-                return (await iter.return(returned)).value;
-              }),
-            );
-          }
-
-          const results = await resultsP;
-          const values = results.map((result) => result.value);
-          if (results.some((result) => result.done)) {
-            return values;
-          }
-
-          await push(values);
+    await push(values.slice());
+    const result = await Promise.all(
+      iters.map(async (iter, i) => {
+        if (results[i].done) {
+          return results[i].value;
         }
-      } catch (err) {
-        stop(err);
-      } finally {
-        stop();
-        if (!stopped) {
-          await Promise.all<any>(
-            iters.map((iter) => iter.return && iter.return(returned)),
-          );
+        try {
+          while (!stopped) {
+            const result = await Promise.race([finish, iter.next()]);
+            if (result.done) {
+              return result.value;
+            }
+
+            values[i] = result.value;
+            await push(values.slice());
+          }
+        } catch (err) {
+          stop(err);
+        } finally {
+          if (iter.return != null) {
+            await iter.return(returned);
+          }
         }
-      }
-    });
-  }
-
-  static latest(contenders: []): Repeater<never, []>;
-  static latest<T>(contenders: Iterable<Contender<T>>): Repeater<T[]>;
-  // prettier-ignore
-  static latest<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Repeater<[T1, T2]>;
-  // prettier-ignore
-  static latest<T1, T2, T3>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>]): Repeater<[T1, T2, T3]>;
-  // prettier-ignore
-  static latest<T1, T2, T3, T4>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>]): Repeater<[T1, T2, T3, T4]>;
-  // prettier-ignore
-  static latest<T1, T2, T3, T4, T5>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>]): Repeater<[T1, T2, T3, T4, T5]>;
-  // prettier-ignore
-  static latest<T1, T2, T3, T4, T5, T6>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>]): Repeater<[T1, T2, T3, T4, T5, T6]>;
-  // prettier-ignore
-  static latest<T1, T2, T3, T4, T5, T6, T7>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>]): Repeater<[T1, T2, T3, T4, T5, T6, T7]>;
-  // prettier-ignore
-  static latest<T1, T2, T3, T4, T5, T6, T7, T8>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8]>;
-  // prettier-ignore
-  static latest<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8, T9]>;
-  // prettier-ignore
-  static latest<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]>;
-  static latest<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
-    const iters = iterators(contenders);
-    return new Repeater<T[]>(async (push, stop) => {
-      if (!iters.length) {
-        stop();
-        return [];
-      }
-
-      let stopped = false;
-      let returned: any;
-      const finish = stop.then((value) => {
-        stopped = true;
-        returned = value;
-        return { value, done: true };
-      });
-      const resultsP = Promise.all(iters.map((iter) => iter.next()));
-      await Promise.race([stop, resultsP]);
-      if (stopped) {
-        return Promise.all(
-          iters.map(async (iter) => {
-            if (iter.return == null) {
-              return returned;
-            }
-            return (await iter.return(returned)).value;
-          }),
-        );
-      }
-
-      const results = await resultsP;
-      const values = results.map((result) => result.value);
-      if (results.every((result) => result.done)) {
-        return values;
-      }
-
-      await push(values.slice());
-      const result = await Promise.all(
-        iters.map(async (iter, i) => {
-          if (results[i].done) {
-            return results[i].value;
-          }
-          try {
-            while (!stopped) {
-              const result = await Promise.race([finish, iter.next()]);
-              if (result.done) {
-                return result.value;
-              }
-
-              values[i] = result.value;
-              await push(values.slice());
-            }
-          } catch (err) {
-            stop(err);
-          } finally {
-            if (iter.return != null) {
-              await iter.return(returned);
-            }
-          }
-        }),
-      );
-      stop();
-      return result;
-    });
-  }
-  /* eslint-enable no-dupe-class-members */
+      }),
+    );
+    stop();
+    return result;
+  });
 }
