@@ -1,12 +1,12 @@
 export interface RepeaterBuffer<T> {
   full: boolean;
   empty: boolean;
-  add(value: T): void;
-  remove(): T;
+  add(value: PromiseLike<T> | T): void;
+  remove(): PromiseLike<T> | T;
 }
 
 export class FixedBuffer<T> implements RepeaterBuffer<T> {
-  private arr: T[] = [];
+  private arr: (PromiseLike<T> | T)[] = [];
 
   get empty(): boolean {
     return this.arr.length === 0;
@@ -22,7 +22,7 @@ export class FixedBuffer<T> implements RepeaterBuffer<T> {
     }
   }
 
-  add(value: T): void {
+  add(value: PromiseLike<T> | T): void {
     if (this.full) {
       throw new Error("Buffer full");
     } else {
@@ -30,7 +30,7 @@ export class FixedBuffer<T> implements RepeaterBuffer<T> {
     }
   }
 
-  remove(): T {
+  remove(): PromiseLike<T> | T {
     if (this.empty) {
       throw new Error("Buffer empty");
     }
@@ -41,7 +41,7 @@ export class FixedBuffer<T> implements RepeaterBuffer<T> {
 
 // TODO: use a circular buffer here
 export class SlidingBuffer<T> implements RepeaterBuffer<T> {
-  private arr: T[] = [];
+  private arr: (PromiseLike<T> | T)[] = [];
 
   get empty(): boolean {
     return this.arr.length === 0;
@@ -57,7 +57,7 @@ export class SlidingBuffer<T> implements RepeaterBuffer<T> {
     }
   }
 
-  add(value: T): void {
+  add(value: PromiseLike<T> | T): void {
     while (this.arr.length >= this.capacity) {
       this.arr.shift();
     }
@@ -65,7 +65,7 @@ export class SlidingBuffer<T> implements RepeaterBuffer<T> {
     this.arr.push(value);
   }
 
-  remove(): T {
+  remove(): PromiseLike<T> | T {
     if (this.empty) {
       throw new Error("Buffer empty");
     }
@@ -75,7 +75,7 @@ export class SlidingBuffer<T> implements RepeaterBuffer<T> {
 }
 
 export class DroppingBuffer<T> implements RepeaterBuffer<T> {
-  private arr: T[] = [];
+  private arr: (PromiseLike<T> | T)[] = [];
 
   get empty(): boolean {
     return this.arr.length === 0;
@@ -91,13 +91,13 @@ export class DroppingBuffer<T> implements RepeaterBuffer<T> {
     }
   }
 
-  add(value: T): void {
+  add(value: PromiseLike<T> | T): void {
     if (this.arr.length < this.capacity) {
       this.arr.push(value);
     }
   }
 
-  remove(): T {
+  remove(): PromiseLike<T> | T {
     if (this.empty) {
       throw new Error("Buffer empty");
     }
