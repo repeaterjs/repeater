@@ -1,6 +1,6 @@
 {
   "name": "@repeaterjs/pubsub",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A generic pubsub class, implemented with repeaters",
   "repository": {
     "type": "git",
@@ -11,9 +11,9 @@
   "files": [
     "/lib"
   ],
-  "main": "lib/repeater.cjs.js",
-  "module": "lib/repeater.esm.js",
-  "types": "lib/repeater.d.ts",
+  "main": "lib/pubsub.cjs.js",
+  "module": "lib/pubsub.esm.js",
+  "types": "lib/pubsub.d.ts",
   "scripts": {
     "prebuild": "yarn run clean",
     "build": "rollup -c ../../rollup.config.js",

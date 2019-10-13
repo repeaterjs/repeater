@@ -1,4 +1,7 @@
 # Changelog
+## [pubsub@0.3.2] - 2019-10-13
+- Fixed build error in @repeaterjs/pubsub
+
 ## [timers@0.3.1] - 2019-06-29
 ## [limiters@0.3.1] - 2019-06-29
 ## [pubsub@0.3.1] - 2019-06-29
