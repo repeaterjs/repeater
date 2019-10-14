@@ -907,10 +907,7 @@ describe("Repeater", () => {
     for await (const num of repeater) {
       result.push(num);
       if (num === 3) {
-        await expect(repeater.return()).resolves.toEqual({
-          value: -1,
-          done: true,
-        });
+        await expect(repeater.return()).resolves.toEqual({ done: true });
       }
     }
     expect(result).toEqual([1, 2, 3]);
@@ -922,7 +919,12 @@ describe("Repeater", () => {
   test("return method before start", async () => {
     const mock = jest.fn();
     const repeater = new Repeater(() => mock());
-    await expect(repeater.return()).resolves.toEqual({ done: true });
+    await expect(repeater.return(-1)).resolves.toEqual({
+      value: -1,
+      done: true,
+    });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
     expect(mock).toHaveBeenCalledTimes(0);
   });
@@ -937,7 +939,7 @@ describe("Repeater", () => {
     await expect(repeater.next()).resolves.toEqual({ value: 1, done: false });
     await expect(repeater.next()).resolves.toEqual({ value: 2, done: false });
     await expect(repeater.next()).resolves.toEqual({ value: 3, done: false });
-    await expect(repeater.return()).resolves.toEqual({ value: -1, done: true });
+    await expect(repeater.return()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
@@ -954,7 +956,7 @@ describe("Repeater", () => {
     await expect(repeater.next()).resolves.toEqual({ value: 1, done: false });
     await expect(repeater.next()).resolves.toEqual({ value: 2, done: false });
     await expect(repeater.next()).resolves.toEqual({ value: 3, done: false });
-    await expect(repeater.return()).resolves.toEqual({ value: -1, done: true });
+    await expect(repeater.return()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
@@ -983,15 +985,22 @@ describe("Repeater", () => {
       await push(1);
       await push(2);
       await push(3);
-      await expect(stop).resolves.toEqual(-2);
+      await stop;
       return -1;
     });
     await expect(repeater.next()).resolves.toEqual({ value: 1, done: false });
+    await expect(repeater.next()).resolves.toEqual({ value: 2, done: false });
+    await expect(repeater.next()).resolves.toEqual({ value: 3, done: false });
     await expect(repeater.return(-2)).resolves.toEqual({
-      value: -1,
+      value: -2,
       done: true,
     });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.return()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.return(-3)).resolves.toEqual({
       value: -3,
@@ -1007,16 +1016,21 @@ describe("Repeater", () => {
       await push(1);
       await push(2);
       await push(3);
-      await expect(stop).resolves.toEqual(-2);
+      await stop;
       return -1;
     });
 
     await expect(repeater.next()).resolves.toEqual({ value: 1, done: false });
     await expect(repeater.return(Promise.resolve(-2))).resolves.toEqual({
-      value: -1,
+      value: -2,
       done: true,
     });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.return()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.return(Promise.resolve(-3))).resolves.toEqual({
       value: -3,
@@ -1199,10 +1213,11 @@ describe("Repeater", () => {
     expect(mock).toHaveBeenCalledTimes(0);
     await Promise.resolve();
     expect(mock).toHaveBeenCalledTimes(1);
-    await expect(returned).resolves.toEqual({ value: -1, done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(returned).resolves.toEqual({ done: true });
   });
 
   test("stop promise and return method with argument", async () => {
@@ -1219,11 +1234,12 @@ describe("Repeater", () => {
     expect(mock).toHaveBeenCalledTimes(0);
     const returned = repeater.return(-2);
     expect(mock).toHaveBeenCalledTimes(0);
-    await expect(repeater.next()).resolves.toEqual({ done: true });
-    expect(mock).toHaveBeenCalledWith(-2);
-    await expect(returned).resolves.toEqual({ value: -1, done: true });
-    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await Promise.resolve();
+    expect(mock).toHaveBeenCalledWith(undefined);
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(returned).resolves.toEqual({ value: -2, done: true });
   });
 });
