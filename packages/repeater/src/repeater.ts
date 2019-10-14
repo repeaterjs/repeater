@@ -68,15 +68,14 @@ class RepeaterController<T, TReturn = any, TNext = any>
   // pushQueue and pullQueue will never both contain operations at the same time
   private pushQueue: PushOperation<T, TNext>[] = [];
   private pullQueue: PullOperation<T, TReturn, TNext>[] = [];
-  private onnext?: (value?: PromiseLike<TNext> | TNext) => void;
-  private onthrow?: (err: any) => void;
-  private onstop?: () => void;
   private execution?: Promise<TReturn>;
   private error?: any;
   // pending is continuously reassigned as the repeater is iterated. We use
   // this mechanism to make sure all iterations settle in order.
   private pending?: Promise<IteratorResult<T, TReturn>>;
-
+  private onnext?: (value?: PromiseLike<TNext> | TNext) => void;
+  private onthrow?: (err: any) => void;
+  private onstop?: () => void;
   constructor(
     private executor: RepeaterExecutor<T, TReturn, TNext>,
     private buffer: RepeaterBuffer<T>,
