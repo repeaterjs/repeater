@@ -32,11 +32,11 @@ export type Push<T, TNext = any> = (
   value: PromiseLike<T> | T,
 ) => Promise<TNext | undefined>;
 
-export type Stop<TReturn = any> = Promise<TReturn> & ((error?: any) => void);
+export type Stop = Promise<void> & ((error?: any) => void);
 
 export type RepeaterExecutor<T, TReturn = any, TNext = any> = (
   push: Push<T, TNext>,
-  stop: Stop<TReturn>,
+  stop: Stop,
 ) => PromiseLike<TReturn> | TReturn;
 
 interface PushOperation<T, TNext> {
@@ -69,7 +69,8 @@ class RepeaterController<T, TReturn = any, TNext = any>
   private pushQueue: PushOperation<T, TNext>[] = [];
   private pullQueue: PullOperation<T, TReturn, TNext>[] = [];
   private onnext?: (value?: PromiseLike<TNext> | TNext) => void;
-  private onstop?: (value?: PromiseLike<TReturn> | TReturn) => void;
+  private onthrow?: (err: any) => void;
+  private onstop?: () => void;
   private execution?: Promise<TReturn>;
   private error?: any;
   // pending is continuously reassigned as the repeater is iterated. We use
@@ -93,8 +94,8 @@ class RepeaterController<T, TReturn = any, TNext = any>
 
     this.state = RepeaterState.Started;
     const push: Push<T, TNext> = this.push.bind(this);
-    const stop: Stop<TReturn> = this.stop.bind(this) as Stop<TReturn>;
-    const stopP = new Promise<TReturn>((onstop) => (this.onstop = onstop));
+    const stop: Stop = this.stop.bind(this) as any;
+    const stopP = new Promise<void>((resolve) => (this.onstop = resolve));
     stop.then = stopP.then.bind(stopP);
     stop.catch = stopP.catch.bind(stopP);
     stop.finally = stopP.finally.bind(stopP);
@@ -112,18 +113,30 @@ class RepeaterController<T, TReturn = any, TNext = any>
   /**
    * A helper method which is called when a promise passed to push rejects.
    * Rejections which settle after stop are ignored. This behavior is useful
-   * when you have yielded a pending promise but want to finish instead.
+   * when you push a pending promise but want to finish instead.
    */
-  private reject(err: any): Promise<IteratorResult<T, TReturn>> {
+  private reject(error: any): Promise<IteratorResult<T, TReturn>> {
     if (this.state >= RepeaterState.Stopped) {
-      return Promise.resolve(this.execution!).then((value) => ({
-        value,
-        done: true,
-      }));
+      // We can’t call this.finish because we are already within an assignment
+      // this.pending. Trying to call this.finish will reassign this.pending
+      // and cause the result to hang.
+      // TODO: abstract duplicate code between this and finish
+      const execution = Promise.resolve(this.execution!);
+      const error = this.error;
+      delete this.execution;
+      delete this.error;
+      this.state = RepeaterState.Finished;
+      return execution.then((value) => {
+        if (error == null) {
+          return { value, done: true };
+        }
+
+        throw error;
+      });
     }
 
     this.finish().catch(() => {});
-    return Promise.reject(err);
+    return Promise.reject(error);
   }
 
   /**
@@ -145,7 +158,7 @@ class RepeaterController<T, TReturn = any, TNext = any>
       this.pending = this.pending.then(
         (prev) => {
           if (prev.done) {
-            return { value: undefined, done: true } as any;
+            return { done: true } as IteratorResult<T, TReturn>;
           }
 
           return Promise.resolve(value).then(
@@ -153,7 +166,7 @@ class RepeaterController<T, TReturn = any, TNext = any>
             (err) => this.reject(err),
           );
         },
-        () => ({ value: undefined, done: true } as any),
+        () => ({ done: true } as IteratorResult<T, TReturn>),
       );
     }
 
@@ -188,7 +201,7 @@ class RepeaterController<T, TReturn = any, TNext = any>
 
     if (this.pending === undefined) {
       this.pending = execution.then((value) => {
-        if (error === undefined) {
+        if (error == null) {
           return { value, done: true };
         }
 
@@ -196,20 +209,15 @@ class RepeaterController<T, TReturn = any, TNext = any>
       });
     } else {
       this.pending = this.pending.then(
-        (prev) => {
-          if (prev.done) {
-            return { value: undefined, done: true } as any;
-          }
-
-          return execution.then((value) => {
-            if (error === undefined) {
+        () =>
+          execution.then((value) => {
+            if (error == null) {
               return { value, done: true };
             }
 
             throw error;
-          });
-        },
-        () => ({ value: undefined, done: true } as any),
+          }),
+        () => ({ done: true } as IteratorResult<T, TReturn>),
       );
     }
 
@@ -253,15 +261,18 @@ class RepeaterController<T, TReturn = any, TNext = any>
       return;
     }
 
+    this.state = RepeaterState.Stopped;
     if (this.onnext !== undefined) {
       this.onnext();
+      delete this.onnext;
+      delete this.onthrow;
     }
 
     if (this.onstop !== undefined) {
       this.onstop();
+      delete this.onstop;
     }
 
-    this.state = RepeaterState.Stopped;
     this.error = error;
     for (const push of this.pushQueue) {
       push.resolve();
@@ -286,7 +297,6 @@ class RepeaterController<T, TReturn = any, TNext = any>
 
     if (this.onnext !== undefined) {
       this.onnext(value);
-      delete this.onnext;
     }
 
     if (!this.buffer.empty) {
@@ -318,25 +328,10 @@ class RepeaterController<T, TReturn = any, TNext = any>
   return(
     value?: PromiseLike<TReturn> | TReturn,
   ): Promise<IteratorResult<T, TReturn>> {
-    if (this.state >= RepeaterState.Finished) {
-      if (this.pending === undefined) {
-        this.pending = Promise.resolve(value).then((value) => ({
-          value: value!,
-          done: true,
-        }));
-      } else {
-        this.pending = this.pending
-          .then(() => value!)
-          .then((value) => ({ value, done: true }));
-      }
-
-      return this.pending;
-    }
-
-    if (this.onstop !== undefined) {
-      this.onstop(value);
-    }
-
+    this.execution = Promise.resolve(this.execution).then(
+      () => value!,
+      () => value!,
+    );
     return this.finish();
   }
 
@@ -432,9 +427,7 @@ function iterators<T>(
     } else if (typeof (contender as any)[Symbol.iterator] === "function") {
       iters.push((contender as Iterable<T>)[Symbol.iterator]());
     } else {
-      iters.push(
-        new Repeater((_, stop) => (stop(), contender)),
-      );
+      iters.push(new Repeater((_, stop) => (stop(), contender)));
     }
   }
 
