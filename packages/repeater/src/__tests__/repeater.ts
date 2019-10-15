@@ -980,6 +980,24 @@ describe("Repeater", () => {
     await expect(repeater.next()).resolves.toEqual({ done: true });
   });
 
+  test("return method with throw in executor", async () => {
+    const error = new Error("return method with throw in executor");
+    const repeater = new Repeater<number>(async (push) => {
+      for (let i = 1; i < 100; i++) {
+        await push(i);
+      }
+
+      throw error;
+    }, new FixedBuffer(100));
+    await expect(repeater.next()).resolves.toEqual({ value: 1, done: false });
+    await expect(repeater.next()).resolves.toEqual({ value: 2, done: false });
+    await expect(repeater.next()).resolves.toEqual({ value: 3, done: false });
+    await expect(repeater.return()).rejects.toBe(error);
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+  });
+
   test("return method with argument", async () => {
     const repeater = new Repeater(async (push, stop) => {
       await push(1);
