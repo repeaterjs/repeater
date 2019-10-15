@@ -45,7 +45,7 @@ interface PushOperation<T, TNext> {
 }
 
 interface PullOperation<T, TReturn, TNext> {
-  resolve(result: Promise<IteratorResult<T, TReturn>>): void;
+  resolve(result: PromiseLike<IteratorResult<T, TReturn>>): void;
   reject(error: any): void;
   value?: PromiseLike<TNext> | TNext;
 }
@@ -70,7 +70,9 @@ class RepeaterController<T, TReturn = any, TNext = any>
   private pullQueue: PullOperation<T, TReturn, TNext>[] = [];
   // pending is continuously re-assigned as the repeater is iterated.
   // We use this mechanism to make sure all iterations settle in order.
-  private pending?: Promise<T>;
+  private pending?: Promise<T | TReturn | undefined>;
+  // execution is set to the return value of calling the executor and can be
+  // re-assigned depending on whether stop, return or throw is called.
   private execution?: Promise<TReturn | undefined>;
   private onnext?: (value?: PromiseLike<TNext> | TNext) => unknown;
   private onthrow?: (error: any) => unknown;
@@ -101,124 +103,133 @@ class RepeaterController<T, TReturn = any, TNext = any>
     try {
       execution = Promise.resolve(this.executor(push, stop));
     } catch (error) {
+      // sync error in executor
       execution = Promise.reject(error);
     }
 
     if (this.execution === undefined) {
       this.execution = execution;
     } else {
-      // Because this.execution can be set by when we call the executor by a
-      // call to stop with an error, we cannot simply overwrite it.
+      // Because this.execution can be set by a call to stop with an error, we
+      // cannot simply overwrite it.
       this.execution = this.execution.then(
         () => execution,
         // A rejected execution takes priority over errors passed to stop, but
-        // errors passed to stop take priority over a fulfilled execution.
-        // Therefore, if the execution completes normally, we preserve any
-        // errors passed to stop by rethrowing them with Promise.reject.
+        // an error passed to stop takes priority over a fulfilled execution.
+        // Therefore, if the execution settles normally, we preserve any
+        // errors passed to stop by rethrowing them here.
         (error) => execution.then(() => Promise.reject(error)),
       );
     }
 
-    this.execution.catch(() => stop());
+    // We don’t have to call this.stop with the error because all that does is
+    // reassign this.execution with the rejection.
+    this.execution.catch(() => this.stop());
   }
 
   /**
    * A helper method which is called when a promise passed to push rejects.
    * Rejections which settle after stop are ignored. This behavior is useful
-   * when you push a pending promise but want to finish instead.
+   * when you push a pending promise but want to finish the repeater instead.
    */
   private reject(error: any): Promise<TReturn | undefined> {
-    if (this.state >= RepeaterState.Stopped) {
-      // Trying to call this.finish here will cause a deadlock.
-      const execution = Promise.resolve(this.execution);
-      this.execution = execution.then(() => undefined, () => undefined);
-      this.pushQueue = [];
-      this.buffer = new FixedBuffer(0);
-      this.state = RepeaterState.Finished;
-      return execution;
+    if (this.state < RepeaterState.Stopped) {
+      this.execution = Promise.resolve(this.execution).then(
+        () => Promise.reject(error),
+        () => Promise.reject(error),
+      );
     }
 
-    this.finish().catch(() => {});
-    return Promise.reject(error);
+    return this.finish();
   }
 
   /**
-   * A helper method which unwraps promises passed to push. Unwrapping promises
-   * prevents types of Repeater<Promise<any>> and mimics the awaiting/unwrapping
-   * behavior of async generators where `yield` is equivalent to `yield await`.
+   * A helper method which unwraps promises to build IteratorResult objects.
+   * Unwrapping promises prevents types of Repeater<Promise<any>> (where values
+   * can be promises) and mimics the promise unwrapping behavior of async
+   * generators where `yield` is equivalent to `yield await`.
+   *
+   * Additionally, this method is responsible for making sure that iterations
+   * resolve in order by reassigning the this.pending property.
+   *
+   * All iterator results produced by the repeater are created here.
    */
   private unwrap(
-    value: PromiseLike<T> | T,
+    value: PromiseLike<T | TReturn | undefined> | T | TReturn | undefined,
   ): Promise<IteratorResult<T, TReturn>> {
+    const value1 = Promise.resolve(value);
+    // We need to store done in a variable because this.state may be updated
+    // between now and the time value settles. Additionally, if the value
+    // (or the previous pending value) rejects, done should be updated to true.
     let done = this.state >= RepeaterState.Finished;
     if (this.pending === undefined) {
-      this.pending = Promise.resolve(value).catch((error) => {
+      // Rather than uniformly calling Promise.resolve(this.pending).then, we
+      // check that this.pending is defined so that the first iteration
+      // settles as soon as possible.
+      this.pending = value1.catch((error) => {
+        if (done) {
+          throw error;
+        }
+
         done = true;
-        return this.reject(error) as any;
+        return this.reject(error);
       });
     } else {
       this.pending = this.pending.then(
-        () => {
-          return Promise.resolve(value).catch((error) => {
+        () =>
+          value1.catch((error) => {
+            if (done) {
+              throw error;
+            }
+
             done = true;
-            return this.reject(error) as any;
-          });
-        },
+            return this.reject(error);
+          }),
         () => {
+          if (done) {
+            return value1;
+          }
+
           done = true;
+          // previous value rejected so we drop the current value
           return undefined;
         },
       );
     }
 
-    return this.pending.then((value) => {
-      return { value: value as any, done };
-    });
+    return this.pending.then((value) => ({ value: value as any, done }));
   }
 
   /**
-   * A helper method which “consumes” the final iteration of the repeater,
-   * mimicking the returning/throwing behavior of generators.
+   * A helper method which “consumes” the execution of the repeater, mimicking
+   * the returning/throwing behavior of generators.
    *
    * The difference between stopping a repeater vs finishing a repeater is that
-   * stopping a repeater allows next to continue draining values from the
-   * pushQueue/buffer, while finishing a repeater will clear all queues/buffers
-   * and end all iteration.
+   * stopping a repeater allows next to continue to drain values from the
+   * pushQueue/buffer, while finishing a repeater will clear all pending values
+   * and end iteration immediately.
    *
    * Advances state to RepeaterState.Finished.
    */
-  private finish(): Promise<IteratorResult<T, TReturn>> {
-    if (this.state < RepeaterState.Finished) {
-      if (this.state < RepeaterState.Stopped) {
-        this.stop();
-      }
-
-      this.pushQueue = [];
-      this.buffer = new FixedBuffer(0);
-    }
-
-    this.state = RepeaterState.Finished;
+  private finish(): Promise<TReturn | undefined> {
     const execution = Promise.resolve(this.execution);
-    this.execution = execution.then(() => undefined, () => undefined);
-    if (this.pending === undefined) {
-      this.pending = execution as Promise<any>;
-    } else {
-      this.pending = this.pending.then(
-        () => execution as Promise<any>,
-        () => undefined,
-      );
+    delete this.execution;
+    if (this.state >= RepeaterState.Finished) {
+      return execution;
     }
 
-    return this.pending.then((value) => ({
-      value: value as any,
-      done: true,
-    }));
+    this.stop();
+    this.pushQueue = [];
+    this.buffer = new FixedBuffer(0);
+    this.state = RepeaterState.Finished;
+    return execution;
   }
 
   /**
-   * This method is bound and passed to the executor as `push`.
+   * This method is bound and passed to the executor as the push argument.
    */
   private push(value: PromiseLike<T> | T): Promise<TNext | undefined> {
+    // prevent unhandled rejections
     Promise.resolve(value).catch(() => {});
     if (this.state >= RepeaterState.Stopped) {
       return Promise.resolve(undefined);
@@ -239,11 +250,13 @@ class RepeaterController<T, TReturn = any, TNext = any>
       );
     }
 
-    return new Promise((resolve) => this.pushQueue.push({ resolve, value }));
+    return new Promise((resolve) => {
+      this.pushQueue.push({ resolve, value });
+    });
   }
 
   /**
-   * This method is bound and passed to the executor as `stop`.
+   * This method is bound and passed to the executor as the stop argument.
    *
    * Advances state to RepeaterState.Stopped.
    */
@@ -278,11 +291,11 @@ class RepeaterController<T, TReturn = any, TNext = any>
       push.resolve();
     }
 
-    // If the pullQueue contains operations, the pushQueue and buffer is
+    // If the pullQueue contains operations, the pushQueue and buffer are both
     // necessarily empty, so we don‘t have to worry about this.finish clearing
     // the pushQueue or buffer.
     for (const pull of this.pullQueue) {
-      pull.resolve(this.finish());
+      pull.resolve(this.unwrap(this.finish()));
     }
 
     this.pullQueue = [];
@@ -315,7 +328,7 @@ class RepeaterController<T, TReturn = any, TNext = any>
       this.onnext = push.resolve;
       return this.unwrap(push.value);
     } else if (this.state >= RepeaterState.Stopped) {
-      return this.finish();
+      return this.unwrap(this.finish());
     } else if (this.pullQueue.length >= MAX_QUEUE_LENGTH) {
       throw new RepeaterOverflowError(
         `No more than ${MAX_QUEUE_LENGTH} pending calls to Repeater.prototype.next are allowed on a single repeater.`,
@@ -331,7 +344,7 @@ class RepeaterController<T, TReturn = any, TNext = any>
     value?: PromiseLike<TReturn> | TReturn,
   ): Promise<IteratorResult<T, TReturn>> {
     this.execution = Promise.resolve(this.execution).then(() => value);
-    return this.finish();
+    return this.unwrap(this.finish());
   }
 
   throw(error: any): Promise<IteratorResult<T, TReturn>> {
@@ -344,7 +357,7 @@ class RepeaterController<T, TReturn = any, TNext = any>
       this.stop(error);
     }
 
-    return this.finish();
+    return this.unwrap(this.finish());
   }
 
   [Symbol.asyncIterator](): this {
@@ -357,12 +370,11 @@ const controllers = new WeakMap<
   RepeaterController<any, any, any>
 >();
 
-// We do not export any types which use the >=3.6 IteratorResult, AsyncIterator
-// or AsyncGenerator types to allow the library to be used with older versions
-// of typescript.
+// We do not export any types which use >=3.6 IteratorResult, AsyncIterator or
+// AsyncGenerator type parameters. This allows the code to be used with older
+// versions of typescript.
 //
-// TODO: use typesVersions to ship stricter types for newer typescript
-// versions.
+// TODO: use typesVersions to ship stricter types.
 export class Repeater<T, TReturn = any, TNext = any> {
   constructor(
     executor: RepeaterExecutor<T, TReturn, TNext>,
@@ -408,7 +420,7 @@ export class Repeater<T, TReturn = any, TNext = any> {
   static latest = latest;
 }
 
-// TODO: parameterize TReturn
+// TODO: parameterize TReturn?
 type Contender<T> = AsyncIterable<T> | Iterable<T> | PromiseLike<any>;
 
 function iterators<T>(
@@ -428,8 +440,7 @@ function iterators<T>(
   return iters;
 }
 
-// TODO: rethink the done value for each of the combinators
-// TODO: parameterize TReturn types
+// TODO: rethink the final value for each of the combinators
 // TODO: use prettier-ignore-start/prettier-ignore-end once it’s implemented
 // https://github.com/prettier/prettier/issues/5287
 // TODO: stop using overloads once we have variadic kinds
