@@ -65,16 +65,16 @@ const enum RepeaterState {
 class RepeaterController<T, TReturn = any, TNext = any>
   implements AsyncGenerator<T, TReturn, TNext> {
   private state: RepeaterState = RepeaterState.Initial;
-  // pushQueue and pullQueue will never both contain operations at the same time
+  // pushQueue and pullQueue will never both contain operations at the same time.
   private pushQueue: PushOperation<T, TNext>[] = [];
   private pullQueue: PullOperation<T, TReturn, TNext>[] = [];
+  // pending is continuously re-assigned as the repeater is iterated.
+  // We use this mechanism to make sure all iterations settle in order.
+  private pending?: Promise<T>;
   private execution?: Promise<TReturn | undefined>;
-  // pending is continuously reassigned as the repeater is iterated. We use
-  // this mechanism to make sure all iterations settle in order.
-  private pending?: Promise<IteratorResult<T, TReturn>>;
-  private onnext?: (value?: PromiseLike<TNext> | TNext) => void;
-  private onthrow?: (error: any) => void;
-  private onstop?: () => void;
+  private onnext?: (value?: PromiseLike<TNext> | TNext) => unknown;
+  private onthrow?: (error: any) => unknown;
+  private onstop?: () => unknown;
   constructor(
     private executor: RepeaterExecutor<T, TReturn, TNext>,
     private buffer: RepeaterBuffer<T>,
@@ -127,17 +127,15 @@ class RepeaterController<T, TReturn = any, TNext = any>
    * Rejections which settle after stop are ignored. This behavior is useful
    * when you push a pending promise but want to finish instead.
    */
-  private reject(error: any): Promise<IteratorResult<T, TReturn>> {
+  private reject(error: any): Promise<TReturn | undefined> {
     if (this.state >= RepeaterState.Stopped) {
       // Trying to call this.finish here will cause a deadlock.
       const execution = Promise.resolve(this.execution);
-      delete this.execution;
-      this.state = RepeaterState.Finished;
+      this.execution = execution.then(() => undefined, () => undefined);
       this.pushQueue = [];
       this.buffer = new FixedBuffer(0);
-      return execution.then(
-        (value) => ({ value, done: true } as IteratorResult<T, TReturn>),
-      );
+      this.state = RepeaterState.Finished;
+      return execution;
     }
 
     this.finish().catch(() => {});
@@ -152,28 +150,30 @@ class RepeaterController<T, TReturn = any, TNext = any>
   private unwrap(
     value: PromiseLike<T> | T,
   ): Promise<IteratorResult<T, TReturn>> {
+    let done = this.state >= RepeaterState.Finished;
     if (this.pending === undefined) {
-      this.pending = Promise.resolve(value).then(
-        (value) => ({ value, done: false }),
-        (error) => this.reject(error),
-      );
+      this.pending = Promise.resolve(value).catch((error) => {
+        done = true;
+        return this.reject(error) as any;
+      });
     } else {
       this.pending = this.pending.then(
-        (prev) => {
-          if (prev.done) {
-            return { done: true } as IteratorResult<T, TReturn>;
-          }
-
-          return Promise.resolve(value).then(
-            (value) => ({ value, done: false }),
-            (error) => this.reject(error),
-          );
+        () => {
+          return Promise.resolve(value).catch((error) => {
+            done = true;
+            return this.reject(error) as any;
+          });
         },
-        () => ({ done: true } as IteratorResult<T, TReturn>),
+        () => {
+          done = true;
+          return undefined;
+        },
       );
     }
 
-    return this.pending;
+    return this.pending.then((value) => {
+      return { value: value as any, done };
+    });
   }
 
   /**
@@ -188,33 +188,31 @@ class RepeaterController<T, TReturn = any, TNext = any>
    * Advances state to RepeaterState.Finished.
    */
   private finish(): Promise<IteratorResult<T, TReturn>> {
-    const execution = Promise.resolve(this.execution);
-    delete this.execution;
     if (this.state < RepeaterState.Finished) {
       if (this.state < RepeaterState.Stopped) {
         this.stop();
       }
 
-      this.state = RepeaterState.Finished;
       this.pushQueue = [];
       this.buffer = new FixedBuffer(0);
     }
 
+    this.state = RepeaterState.Finished;
+    const execution = Promise.resolve(this.execution);
+    this.execution = execution.then(() => undefined, () => undefined);
     if (this.pending === undefined) {
-      this.pending = execution.then(
-        (value) => ({ value, done: true } as IteratorResult<T, TReturn>),
-      );
+      this.pending = execution as Promise<any>;
     } else {
       this.pending = this.pending.then(
-        () =>
-          execution.then(
-            (value) => ({ value, done: true } as IteratorResult<T, TReturn>),
-          ),
-        () => ({ done: true } as IteratorResult<T, TReturn>),
+        () => execution as Promise<any>,
+        () => undefined,
       );
     }
 
-    return this.pending;
+    return this.pending.then((value) => ({
+      value: value as any,
+      done: true,
+    }));
   }
 
   /**
