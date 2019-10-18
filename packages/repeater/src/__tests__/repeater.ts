@@ -1261,7 +1261,10 @@ describe("Repeater", () => {
     await expect(repeater.throw(error)).rejects.toBe(error);
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.throw(error)).rejects.toBe(error);
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
   });
 
@@ -1274,22 +1277,10 @@ describe("Repeater", () => {
       }
       return -1;
     }, new FixedBuffer(100));
-    await expect(repeater.next()).resolves.toEqual({ value: 1, done: false });
-    await expect(repeater.throw(error)).resolves.toEqual({
-      value: 2,
-      done: false,
-    });
-    await expect(repeater.next()).resolves.toEqual({ value: 3, done: false });
-    await expect(repeater.throw(error)).resolves.toEqual({
-      value: 4,
-      done: false,
-    });
-    await expect(repeater.next()).resolves.toEqual({ value: 5, done: false });
-    await expect(repeater.throw(error)).resolves.toEqual({
-      value: 6,
-      done: false,
-    });
-    await expect(repeater.next()).resolves.toEqual({ value: 7, done: false });
+    await expect(repeater.throw(error)).rejects.toBe(error);
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
     expect(mock).toHaveBeenCalledTimes(0);
   });
 

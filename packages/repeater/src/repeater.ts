@@ -342,7 +342,8 @@ class RepeaterController<T, TReturn = any, TNext = any>
   throw(error: any): Promise<IteratorResult<T, TReturn>> {
     if (
       this.state === RepeaterState.Initial ||
-      this.state >= RepeaterState.Stopped
+      this.state >= RepeaterState.Stopped ||
+      !this.buffer.empty
     ) {
       this.execution = Promise.resolve(this.execution).then(() =>
         Promise.reject(error),
