@@ -69,7 +69,7 @@ class RepeaterController<T, TReturn = any, TNext = any>
   private pullQueue: PullOperation<T, TReturn, TNext>[] = [];
   // pending is continuously re-assigned as the repeater is iterated.
   // We use this mechanism to make sure all iterations settle in order.
-  private pending?: Promise<any>;
+  private pending?: Promise<T | TReturn | undefined>;
   // execution is set to the return value of calling the executor and can be
   // re-assigned depending on whether stop, return or throw is called.
   private execution?: Promise<TReturn | undefined>;
@@ -189,7 +189,7 @@ class RepeaterController<T, TReturn = any, TNext = any>
       );
     }
 
-    return this.pending.then((value) => ({ value, done }));
+    return this.pending.then((value: any) => ({ value, done }));
   }
 
   /**
