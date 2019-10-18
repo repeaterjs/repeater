@@ -156,18 +156,21 @@ class RepeaterController<T, TReturn = any, TNext = any>
     value: PromiseLike<T | TReturn | undefined> | T | TReturn | undefined,
   ): Promise<IteratorResult<T, TReturn>> {
     // We need to store done in a variable because this.state may be updated
-    // between now and the time value settles. Additionally, if the value
-    // (or the previous pending value) rejects, done should be updated to true.
+    // between now and the time the promise settles.
+    // If the value or the previous pending value rejects, done should be
+    // updated to true.
     let done = this.state >= RepeaterState.Finished;
-    if (this.pending === undefined) {
+    if (done) {
+      if (this.pending === undefined) {
+        this.pending = Promise.resolve(value);
+      } else {
+        this.pending = this.pending.then(() => value, () => value);
+      }
+    } else if (this.pending === undefined) {
       // Rather than uniformly calling Promise.resolve(this.pending).then, we
       // check that this.pending is defined so that the first iteration
       // settles as soon as possible.
       this.pending = Promise.resolve(value).catch((error) => {
-        if (done) {
-          throw error;
-        }
-
         done = true;
         return this.reject(error);
       });
@@ -175,18 +178,10 @@ class RepeaterController<T, TReturn = any, TNext = any>
       this.pending = this.pending.then(
         () =>
           Promise.resolve(value).catch((error) => {
-            if (done) {
-              throw error;
-            }
-
             done = true;
             return this.reject(error);
           }),
         () => {
-          if (done) {
-            return value;
-          }
-
           done = true;
           // previous value rejected so we drop the current value
           return undefined;
