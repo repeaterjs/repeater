@@ -1,18 +1,18 @@
 import { Repeater, RepeaterBuffer } from "@repeaterjs/repeater";
 
 export interface PubSub<T> {
-  publish(topic: string, value: T): Promise<void> | void;
-  unpublish(topic: string, reason?: any): Promise<void> | void;
+  publish(topic: string, value: T): Promise<unknown> | unknown;
+  unpublish(topic: string, reason?: any): Promise<unknown> | unknown;
   subscribe(
     topic: string,
     buffer?: RepeaterBuffer<T>,
   ): AsyncIterableIterator<T>;
-  close(reason?: any): Promise<void> | void;
+  close(reason?: any): Promise<unknown> | unknown;
 }
 
 interface Publisher<T> {
-  push(value: T): void;
-  stop(reason?: any): void;
+  push(value: T): Promise<unknown>;
+  stop(reason?: any): unknown;
 }
 
 export class InMemoryPubSub<T> implements PubSub<T> {
@@ -23,7 +23,7 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     if (publishers != null) {
       for (const { push, stop } of publishers) {
         try {
-          push(value);
+          push(value).catch(stop);
         } catch (err) {
           // push queue is full
           stop(err);

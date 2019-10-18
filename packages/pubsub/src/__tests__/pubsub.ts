@@ -18,6 +18,7 @@ describe("InMemoryPubSub", () => {
     pubsub.publish("topic", "a");
     pubsub.publish("topic", "b");
     pubsub.publish("topic", "c");
+    pubsub.publish("unrelated", "d");
     await expect(messages).resolves.toEqual(["a", "b", "c"]);
   });
 
@@ -35,6 +36,7 @@ describe("InMemoryPubSub", () => {
     pubsub.publish("topic", "a");
     pubsub.publish("topic", "b");
     pubsub.publish("topic", "c");
+    pubsub.publish("unrelated", "d");
     pubsub.unpublish("topic");
     await expect(messages).resolves.toEqual(["a", "b", "c"]);
   });
