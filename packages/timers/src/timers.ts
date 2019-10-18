@@ -65,9 +65,9 @@ class Timer<T> {
 export function delay(wait: number): Repeater<number> {
   return new Repeater(async (push, stop) => {
     const timers: Set<Timer<number>> = new Set();
+    let stopped = false;
+    stop.then(() => (stopped = true));
     try {
-      let stopped = false;
-      stop.then(() => (stopped = true));
       while (!stopped) {
         const timer = new Timer<number>(wait);
         timers.add(timer);
@@ -84,8 +84,6 @@ export function delay(wait: number): Repeater<number> {
 
         await push(timer.promise);
       }
-
-      return stop;
     } finally {
       for (const timer of timers) {
         timer.clear();
@@ -99,24 +97,24 @@ export function timeout(wait: number): Repeater<void> {
     let timer: Timer<void> | undefined;
     let stopped = false;
     stop.then(() => (stopped = true));
-    while (!stopped) {
-      if (timer !== undefined) {
-        timer.resolve();
+    try {
+      while (!stopped) {
+        if (timer !== undefined) {
+          timer.resolve();
+        }
+
+        timer = new Timer(wait);
+        timer.run(() => {
+          throw new TimeoutError(`${wait}ms elapsed without next being called`);
+        });
+
+        await push(timer.promise);
       }
-
-      timer = new Timer(wait);
-      timer.run(() => {
-        throw new TimeoutError(`${wait}ms elapsed without next being called`);
-      });
-
-      await push(timer.promise);
+    } finally {
+      if (timer !== undefined) {
+        timer.clear();
+      }
     }
-
-    if (timer != null) {
-      timer.clear();
-    }
-
-    return stop;
   });
 }
 
