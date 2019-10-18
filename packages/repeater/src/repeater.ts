@@ -420,7 +420,6 @@ export class Repeater<T, TReturn = any, TNext = any> {
   static latest = latest;
 }
 
-// TODO: parameterize TReturn?
 type Contender<T> = AsyncIterable<T> | Iterable<T> | PromiseLike<any>;
 
 function iterators<T>(
@@ -440,7 +439,6 @@ function iterators<T>(
   return iters;
 }
 
-// TODO: rethink the final value for each of the combinators
 // TODO: use prettier-ignore-start/prettier-ignore-end once it’s implemented
 // https://github.com/prettier/prettier/issues/5287
 // TODO: stop using overloads once we have variadic kinds
@@ -466,53 +464,43 @@ function race<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, Co
 // prettier-ignore
 function race<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10>;
 function race<T>(contenders: Iterable<Contender<T>>): Repeater<T> {
-  const iters = iterators(contenders);
   return new Repeater<T>(async (push, stop) => {
+    const iters = iterators(contenders);
     if (!iters.length) {
       stop();
       return;
     }
 
     let stopped = false;
-    let returned: any;
-    const finish: Promise<IteratorResult<T>> = stop.then((value) => {
-      stopped = true;
-      returned = value;
-      return { value, done: true };
-    });
+    stop.then(() => (stopped = true));
     try {
-      let result: IteratorResult<T> | undefined;
+      let returned: any;
       while (!stopped) {
         const results = iters.map((iter) => iter.next());
-        for (const result1 of results) {
-          Promise.resolve(result1)
-            .then((result1) => {
-              if (result === undefined && result1.done) {
+        for (const result of results) {
+          Promise.resolve(result).then(
+            (result) => {
+              if (result.done && !stopped) {
+                returned = result.value;
                 stop();
-                result = result1;
               }
-            })
-            .catch(stop);
+            },
+            (error) => stop(error),
+          );
         }
 
-        results.unshift(finish);
-        const result1 = await Promise.race(results);
-        if (result === undefined && result1.done) {
-          result = result1;
-          break;
+        const result = await Promise.race([...results, stop]);
+        if (result !== undefined) {
+          await push(result.value);
         }
-
-        await push(result1.value as T);
       }
 
-      return result && result.value;
+      return returned;
     } catch (error) {
       stop(error);
     } finally {
       stop();
-      await Promise.race<any>(
-        iters.map((iter) => iter.return && iter.return(returned)),
-      );
+      await Promise.race(iters.map((iter) => iter.return && iter.return()));
     }
   });
 }
@@ -538,48 +526,41 @@ function merge<T1, T2, T3, T4, T5, T6, T7, T8, T9>(contenders: [Contender<T1>, C
 // prettier-ignore
 function merge<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(contenders: [Contender<T1>, Contender<T2>, Contender<T3>, Contender<T4>, Contender<T5>, Contender<T6>, Contender<T7>, Contender<T8>, Contender<T9>, Contender<T10>]): Repeater<T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10>;
 function merge<T>(contenders: Iterable<Contender<T>>): Repeater<T> {
-  // need to pass type parameter here for some reason
-  const iters = iterators(contenders);
   return new Repeater<T>(async (push, stop) => {
+    const iters = iterators(contenders);
     if (!iters.length) {
       stop();
       return;
     }
 
     let stopped = false;
+    stop.then(() => (stopped = true));
     let returned: any;
-    const finish: Promise<IteratorResult<T>> = stop.then((value) => {
-      stopped = true;
-      returned = value;
-      return { value, done: true };
-    });
-    let value: any | undefined;
     await Promise.all(
       iters.map(async (iter) => {
         try {
           while (!stopped) {
-            const result: IteratorResult<T> = await Promise.race([
-              finish,
-              iter.next(),
-            ]);
-            if (result.done) {
-              value = result.value;
-              return;
-            }
+            const result = await Promise.race([iter.next(), stop]);
+            if (result !== undefined) {
+              if (result.done) {
+                returned = result.value;
+                return;
+              }
 
-            await push(result.value as T);
+              await push(result.value);
+            }
           }
         } catch (error) {
           stop(error);
         } finally {
           if (iter.return) {
-            await iter.return(returned);
+            await iter.return();
           }
         }
       }),
     );
     stop();
-    return value;
+    return returned;
   });
 }
 
@@ -612,27 +593,15 @@ function zip<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
     }
 
     let stopped = false;
-    let returned: any;
-    stop.then((value) => {
-      stopped = true;
-      returned = value;
-    });
+    stop.then(() => (stopped = true));
     try {
       while (!stopped) {
         const resultsP = Promise.all(iters.map((iter) => iter.next()));
-        await Promise.race([stop, resultsP]);
-        if (stopped) {
-          return Promise.all(
-            iters.map(async (iter) => {
-              if (iter.return === undefined) {
-                return returned;
-              }
-              return (await iter.return(returned)).value;
-            }),
-          );
+        const results = await Promise.race([resultsP, stop]);
+        if (results === undefined) {
+          break;
         }
 
-        const results = await resultsP;
         const values = results.map((result) => result.value);
         if (results.some((result) => result.done)) {
           return values;
@@ -644,11 +613,7 @@ function zip<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
       stop(error);
     } finally {
       stop();
-      if (!stopped) {
-        await Promise.all<any>(
-          iters.map((iter) => iter.return && iter.return(returned)),
-        );
-      }
+      await Promise.all(iters.map((iter) => iter.return && iter.return()));
     }
   });
 }
@@ -682,26 +647,21 @@ function latest<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
     }
 
     let stopped = false;
-    let returned: any;
-    const finish = stop.then((value) => {
-      stopped = true;
-      returned = value;
-      return { value, done: true };
-    });
+    stop.then(() => (stopped = true));
     const resultsP = Promise.all(iters.map((iter) => iter.next()));
-    await Promise.race([stop, resultsP]);
-    if (stopped) {
+    const results = await Promise.race([stop, resultsP]);
+    if (results === undefined) {
       return Promise.all(
         iters.map(async (iter) => {
           if (iter.return === undefined) {
-            return returned;
+            return;
           }
-          return (await iter.return(returned)).value;
+
+          return (await iter.return()).value;
         }),
       );
     }
 
-    const results = await resultsP;
     const values = results.map((result) => result.value);
     if (results.every((result) => result.done)) {
       return values;
@@ -713,21 +673,24 @@ function latest<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
         if (results[i].done) {
           return results[i].value;
         }
+
         try {
           while (!stopped) {
-            const result = await Promise.race([finish, iter.next()]);
-            if (result.done) {
-              return result.value;
-            }
+            const result = await Promise.race([stop, iter.next()]);
+            if (result !== undefined) {
+              if (result.done) {
+                return result.value;
+              }
 
-            values[i] = result.value;
-            await push(values.slice());
+              values[i] = result.value;
+              await push(values.slice());
+            }
           }
         } catch (error) {
           stop(error);
         } finally {
           if (iter.return) {
-            await iter.return(returned);
+            await iter.return();
           }
         }
       }),
