@@ -1,4 +1,13 @@
 # Changelog
+## [repeater@3.0.0] - Unreleased
+### Changed
+- Rather than having the first call to `push` resolve the first time `next` is called, the second call resolve to the second time `next` is called, etc., the first call now resolves the second time `next` is called, the second call resolves the third time `next` is called. [#37]
+- The `stop` promise no longer resolves to the value passed to `Repeater.prototype.return`. Instead, it consistently resolves to `undefined` when the repeater is stopped. [#41]
+- Calling `Repeater.prototype.return` will return an iterator result whose value is always whatever was passed to `return`. The return value of the executor will be ignored. [#41]
+- The `Repeater.prototype.return` method types now accepts a promise-like as an argument.
+- Calling `Repeater.prototype.throw` will now cause the previous `push` promise to reject, rather than uniformly stopping the repeater and throwing the error.
+- `Repeater`, `RepeaterExecutor` and related types now take the type parameters `TReturn` and `TNext` in line with typescript 3.6’s strict async generator typings.
+
 ## [pubsub@0.3.2] - 2019-10-13
 - Fixed build error in @repeaterjs/pubsub
 
@@ -15,7 +24,7 @@
 ## [pubsub@0.3.0] - 2019-08-24
 ## [repeater@2.0.0] - 2019-08-24
 ### Changed
-- Renamed all instances of `Channel` to `Repeater` e.g. `Channel` to `Repeater, `ChannelBuffer` to `RepeaterBuffer`
+- Renamed all instances of `Channel` to `Repeater` e.g. `Channel` to `Repeater`, `ChannelBuffer` to `RepeaterBuffer`
 
 ## [timers@0.2.1] - 2019-06-09
 ## [limiters@0.2.1] - 2019-06-09
