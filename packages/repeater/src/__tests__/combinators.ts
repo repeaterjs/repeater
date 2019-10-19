@@ -5,7 +5,7 @@ import {
   delayPromise,
   gen,
   hangingGen,
-} from "../_testutils";
+} from "./_testutils";
 
 // TODO: maybe use timer mocks to make this test suite execute faster
 describe("combinators", () => {

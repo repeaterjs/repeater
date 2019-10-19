@@ -1,4 +1,4 @@
-import { Repeater, FixedBuffer } from "./repeater";
+import { Repeater, FixedBuffer } from "../repeater";
 
 export async function* gen<T>(
   values: T[],

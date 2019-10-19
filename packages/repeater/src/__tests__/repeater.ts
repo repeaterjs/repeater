@@ -6,7 +6,7 @@ import {
   MAX_QUEUE_LENGTH,
   SlidingBuffer,
 } from "../repeater";
-import { delayPromise } from "../_testutils";
+import { delayPromise } from "./_testutils";
 
 // TODO: create a jest matcher to help us test AsyncIterators
 describe("Repeater", () => {
