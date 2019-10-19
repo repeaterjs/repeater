@@ -44,7 +44,7 @@ function Body() {
           iterators. You can reuse the same constructor to convert event
           emitters, streams, websockets, or any other callback-based data source
           into a format which can be read using <code>async/await</code> and{" "}
-          <code>for await…of</code> statements.
+          <code>for await…of</code> syntax.
         </Feature>
         <Feature title="Safe" color="#BA00AC">
           Repeaters prevent common mistakes people make when rolling async

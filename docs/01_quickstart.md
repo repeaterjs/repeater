@@ -15,15 +15,16 @@ Repeater.js is available on [npm](https://www.npmjs.com/package/@repeaterjs/repe
 
 The `@repeaterjs/repeater` package has no dependencies, but requires the following globals in order to work:
 - `Promise`
-- `Symbol.iterator`
-- `Symbol.asyncIterator`
 - `WeakMap`
+- `Symbol`
+  - `Symbol.iterator`
+  - `Symbol.asyncIterator`
 
-In addition, repeaters are most useful when used via `async/await` and `for await…of` statements. You can compile your code with babel or typescript to support enviroments which lack these syntax features.
+In addition, repeaters are most useful when used via `async/await` and `for await…of` syntax. You can use polyfills and compile your code with babel or typescript to support enviroments which lack these features.
 
 ## Examples
 
-#### Logging timestamps with setInterval
+<h4 id="timestamps">Logging timestamps with setInterval</h4>
 
 ```js
 import { Repeater } from "@repeaterjs/repeater";
@@ -48,7 +49,7 @@ const timestamps = new Repeater(async (push, stop) => {
 })();
 ```
 
-#### Creating a repeater from a websocket
+<h4 id="websocket">Creating a repeater from a websocket</h4>
 
 ```js
 import { Repeater } from "@repeaterjs/repeater";
@@ -79,7 +80,7 @@ socket.onopen = () => {
 };
 ```
 
-#### Listening for the [Konami Code](https://en.wikipedia.org/wiki/Konami_Code) and canceling if <kbd>Escape</kbd> is pressed
+<h4 id="konami-code">Listening for the <a href="https://en.wikipedia.org/wiki/Konami_Code">Konami Code</a> and canceling if <kbd>Escape</kbd> is pressed</h4>
 
 ```js
 import { Repeater } from "@repeaterjs/repeater";

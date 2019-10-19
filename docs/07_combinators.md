@@ -7,13 +7,13 @@ Combining async iterators is a [non-trivial task](https://stackoverflow.com/ques
 
 ## `Repeater.race`
 
-`Repeater.race` takes an iterable of async iterators and races iterations from each iterator using `Promise.race`, yielding the value which resolved first. One important use-case is to place a fixed upper bound on how long each iteration of an async iterator can take:
+`Repeater.race` takes an iterable of async iterators and races iterations from each iterator using `Promise.race`, yielding the value which resolved first. One important use-case is using `Promise.race` with `timeout` to place a fixed upper bound on how long each iteration of an async iterator can take:
 
 ```js
 import { Repeater } from "@repeaterjs/repeater";
 import { timeout } from "@repeaterjs/timers";
 
-const chan = new Repeater(async (push) => {
+const numbers = new Repeater(async (push) => {
   await push(1);
   await push(2);
   await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -22,7 +22,7 @@ const chan = new Repeater(async (push) => {
 
 (async () => {
   try {
-    for await (const num of Repeater.race([chan, timeout(1000)])) {
+    for await (const num of Repeater.race([numbers, timeout(1000)])) {
       console.log(num); // 1, 2
     }
   } catch (err) {
@@ -31,7 +31,7 @@ const chan = new Repeater(async (push) => {
 })();
 ```
 
-The `timeout` function is a useful repeater-based utility which errors if `next` is not called within a specified period of time. In the above example, each iteration has one second to resolve or the iterator throws.
+The `timeout` function is a useful repeater-based utility which errors if `next` is not called within a specified period of time. In the above example, each iteration of `numbers` has one second to resolve before the returned iterator throws.
 
 You can also pass a promise to `Repeater.race` in which case the entire iteration will be raced against the promise:
 
@@ -39,7 +39,7 @@ You can also pass a promise to `Repeater.race` in which case the entire iteratio
 import { Repeater } from "@repeaterjs/repeater";
 import { timeout } from "@repeaterjs/timers";
 
-const chan = new Repeater(async (push) => {
+const numbers = new Repeater(async (push) => {
   await new Promise((resolve) => setTimeout(resolve, 800));
   await push(1);
   await new Promise((resolve) => setTimeout(resolve, 800));
@@ -47,11 +47,12 @@ const chan = new Repeater(async (push) => {
   await new Promise((resolve) => setTimeout(resolve, 800));
   await push(3);
 });
+
 const timer = timeout(2000);
 
-(async () => {
+(async function() {
   try {
-    for await (const num of Repeater.race([chan, timer.next()])) {
+    for await (const num of Repeater.race([numbers, timer.next()])) {
       console.log(num); // 1, 2
     }
   } catch (err) {
@@ -62,7 +63,7 @@ const timer = timeout(2000);
 })();
 ```
 
-Note that it is important to call `timer.return` manually in a `finally` block to close the timer and ensure there are no unhandled promise rejections.
+*Note: it is important to call `timer.return` manually in a `finally` block to release the timer and ensure there are no unhandled promise rejections.*
 
 ## `Repeater.merge`
 
@@ -83,7 +84,7 @@ const rightClicks = new Repeater(async (push, stop) => {
   window.removeEventListener("contextmenu", listener);
 });
 
-(async () => {
+(async function() {
   for await (const click of Repeater.merge([leftClicks, rightClicks])) {
     console.log(click); // left, left, right, left, right
   }
@@ -92,12 +93,55 @@ const rightClicks = new Repeater(async (push, stop) => {
 
 ## `Repeater.zip`
 
-`Repeater.zip` takes an iterable of async iterators awaits every iteration from every iterator using `Promise.all`, and yields the resulting array.
+`Repeater.zip` takes an iterable of async iterators, awaits iteration from every iterator using `Promise.all`, and yields the resulting array. This method is useful for when you want to synchronize multiple iterators, making sure that values are pulled from each iterator in lockstep with another. For instance, you can use `Repeater.zip` with a buffer and `delay` to throttle another repeater.
 
-** TODO: provide a useful example **
+```js
+import { Repeater, SlidingBuffer } from "@repeaterjs/repeater";
+import { delay } from "@repeaterjs/timers";
+const keys = new Repeater(async (push, stop) => {
+  const listener = (ev) => push(ev.key);
+  window.addEventListener("keydown", listener);
+  await stop;
+  window.removeEventListener("keydown", listener);
+}, new SlidingBuffer(1));
+(async function() {
+  for await (const [key] of Repeater.zip([keys, delay(1000)])) {
+    console.log(key); // will only log the latest key every second
+  }
+})();
+```
 
 ## `Repeater.latest`
 
-`Repeater.latest` takes an iterable of async iterators and returns a repeater which yields an array of the latest values from each iterator whenever any of the iterators yields a value.
+`Repeater.latest` takes an iterable of async iterators and returns a repeater which yields an array of latest values from each iterator whenever any of the iterators yields a value. This method is similar to merge, except that it allows you to compare values from each iterator against each other. The first result of this iterator will not resolve until all iterators resolve at least once.
 
-** TODO: provide a useful example **
+```js
+import { Repeater } from "@repeaterjs/repeater";
+const leftCount = new Repeater(async (push, stop) => {
+  let i = 0;
+  push(i++);
+  const listener = (ev) => push(i++);
+  window.addEventListener("click", listener);
+  await stop;
+  window.removeEventListener("click", listener);
+});
+const rightCount = new Repeater(async (push, stop) => {
+  let i = 0;
+  push(i++);
+  const listener = (ev) => push(i++);
+  window.addEventListener("contextmenu", listener);
+  await stop;
+  window.removeEventListener("contextmenu", listener);
+});
+(async function() {
+  for await (const [left, right] of Repeater.latest([leftCount, rightCount])) {
+    if (left === right) {
+      console.log("You have left- and right-clicked the exact same number of times");
+    } else if (left > right) {
+      console.log(`You have left-clicked ${left - right} more times than right-clicked`);
+    } else {
+      console.log(`You have right-clicked ${right - left} more times than left-clicked`);
+    }
+  }
+})();
+```
