@@ -69,7 +69,7 @@ class RepeaterController<T, TReturn = any, TNext = any>
   private pullQueue: PullOperation<T, TReturn, TNext>[] = [];
   // pending is continuously re-assigned as the repeater is iterated.
   // We use this mechanism to make sure all iterations settle in order.
-  private pending?: Promise<T | TReturn | undefined>;
+  private pending?: Promise<any>;
   // execution is set to the return value of calling the executor and can be
   // re-assigned depending on whether stop, return or throw is called.
   private execution?: Promise<TReturn | undefined>;
@@ -160,27 +160,25 @@ class RepeaterController<T, TReturn = any, TNext = any>
     // If the value or the previous pending value rejects, done should be
     // updated to true.
     let done = this.state >= RepeaterState.Finished;
-    if (done) {
-      if (this.pending === undefined) {
-        this.pending = Promise.resolve(value);
-      } else {
-        this.pending = this.pending.then(() => value, () => value);
+    const promise = Promise.resolve(value).catch((error) => {
+      if (!done) {
+        done = true;
+        return this.reject(error);
       }
-    } else if (this.pending === undefined) {
+
+      throw error;
+    });
+    promise.catch(() => {});
+    if (this.pending === undefined) {
       // Rather than uniformly calling Promise.resolve(this.pending).then, we
       // check that this.pending is defined so that the first iteration
       // settles as soon as possible.
-      this.pending = Promise.resolve(value).catch((error) => {
-        done = true;
-        return this.reject(error);
-      });
+      this.pending = promise;
+    } else if (done) {
+      this.pending = this.pending.then(() => promise, () => promise);
     } else {
       this.pending = this.pending.then(
-        () =>
-          Promise.resolve(value).catch((error) => {
-            done = true;
-            return this.reject(error);
-          }),
+        () => promise,
         () => {
           done = true;
           // previous value rejected so we drop the current value
@@ -206,14 +204,16 @@ class RepeaterController<T, TReturn = any, TNext = any>
   private finish(): Promise<TReturn | undefined> {
     const execution = Promise.resolve(this.execution);
     delete this.execution;
-    if (this.state >= RepeaterState.Finished) {
-      return execution;
+    if (this.state < RepeaterState.Finished) {
+      if (this.state < RepeaterState.Stopped) {
+        this.stop();
+      }
+
+      this.state = RepeaterState.Finished;
+      this.pushQueue = [];
+      this.buffer = new FixedBuffer(0);
     }
 
-    this.stop();
-    this.pushQueue = [];
-    this.buffer = new FixedBuffer(0);
-    this.state = RepeaterState.Finished;
     return execution;
   }
 
@@ -222,16 +222,16 @@ class RepeaterController<T, TReturn = any, TNext = any>
    */
   private push(value: PromiseLike<T> | T): Promise<TNext | undefined> {
     Promise.resolve(value).catch(() => {});
-    let promise: Promise<TNext | undefined>;
+    let yielded: Promise<TNext | undefined>;
     if (this.state >= RepeaterState.Stopped) {
       return Promise.resolve(undefined);
     } else if (this.pullQueue.length) {
       const pull = this.pullQueue.shift()!;
       pull.resolve(this.unwrap(value));
       if (this.pullQueue.length) {
-        promise = Promise.resolve(this.pullQueue[0].value);
+        yielded = Promise.resolve(this.pullQueue[0].value);
       } else {
-        promise = new Promise((resolve) => (this.onnext = resolve));
+        yielded = new Promise((resolve) => (this.onnext = resolve));
       }
     } else if (!this.buffer.full) {
       this.buffer.add(value);
@@ -241,13 +241,13 @@ class RepeaterController<T, TReturn = any, TNext = any>
         `No more than ${MAX_QUEUE_LENGTH} pending calls to push are allowed on a single repeater.`,
       );
     } else {
-      promise = new Promise((resolve) =>
+      yielded = new Promise((resolve) =>
         this.pushQueue.push({ resolve, value }),
       );
     }
 
-    promise.catch(() => {});
-    return promise;
+    yielded.catch(() => {});
+    return yielded;
   }
 
   /**
