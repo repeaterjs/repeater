@@ -6,10 +6,10 @@
       "rationale"
     ],
     "Guides": [
-      "combinators",
       "safety",
       "error_handling",
       "inverted_repeaters",
+      "combinators",
       "utilities"
     ]
   }

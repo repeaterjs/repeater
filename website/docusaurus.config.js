@@ -40,7 +40,7 @@ module.exports = {
       "@docusaurus/preset-classic",
       {
         docs: {
-          path: "./docs",
+          path: "../docs",
           sidebarPath: require.resolve("./sidebars.json"),
         },
         theme: {

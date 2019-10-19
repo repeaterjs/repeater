@@ -57,8 +57,8 @@ function Body() {
           You can use repeaters to implement architectural patterns like
           cancelable timers, semaphores, and generic pubsub classes. The
           Repeater class also defines static methods like{" "}
-          <code>Repeater.race</code> and <code>Repeater.merge</code> which allow
-          you to use async iterators for reactive programming purposes.
+          <code>Repeater.race</code> and <code>Repeater.merge</code>, which
+          allow you to use async iterators for reactive programming purposes.
         </Feature>
       </div>
     </main>
