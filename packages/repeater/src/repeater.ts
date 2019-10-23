@@ -191,12 +191,12 @@ class RepeaterController<T, TReturn = any, TNext = any>
    */
   private push(value: PromiseLike<T> | T): Promise<TNext | undefined> {
     Promise.resolve(value).catch(() => {});
-    if (this.state >= RepeaterState.Stopped) {
-      return Promise.resolve(undefined);
-    } else if (this.pushQueue.length >= MAX_QUEUE_LENGTH) {
+    if (this.pushQueue.length >= MAX_QUEUE_LENGTH) {
       throw new RepeaterOverflowError(
         `No more than ${MAX_QUEUE_LENGTH} pending calls to push are allowed on a single repeater.`,
       );
+    } else if (this.state >= RepeaterState.Stopped) {
+      return Promise.resolve(undefined);
     }
 
     let value1: Promise<any>;
@@ -302,6 +302,13 @@ class RepeaterController<T, TReturn = any, TNext = any>
   next(
     value?: PromiseLike<TNext> | TNext,
   ): Promise<IteratorResult<T, TReturn>> {
+    Promise.resolve(value).catch(() => {});
+    if (this.pullQueue.length >= MAX_QUEUE_LENGTH) {
+      throw new RepeaterOverflowError(
+        `No more than ${MAX_QUEUE_LENGTH} pending calls to Repeater.prototype.next are allowed on a single repeater.`,
+      );
+    }
+
     if (this.state === RepeaterState.Initial) {
       this.execute();
     }
@@ -337,10 +344,6 @@ class RepeaterController<T, TReturn = any, TNext = any>
       }
 
       return this.unwrap(execution);
-    } else if (this.pullQueue.length >= MAX_QUEUE_LENGTH) {
-      throw new RepeaterOverflowError(
-        `No more than ${MAX_QUEUE_LENGTH} pending calls to Repeater.prototype.next are allowed on a single repeater.`,
-      );
     }
 
     return new Promise((resolve) => this.pullQueue.push({ resolve, value }));
