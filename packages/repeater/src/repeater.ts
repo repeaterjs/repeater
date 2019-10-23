@@ -160,7 +160,9 @@ class RepeaterController<T, TReturn = any, TNext = any>
   private finish(): void {
     if (this.state >= RepeaterState.Finished) {
       return;
-    } else if (this.state < RepeaterState.Stopped) {
+    }
+
+    if (this.state < RepeaterState.Stopped) {
       this.stop();
     }
 
@@ -175,7 +177,6 @@ class RepeaterController<T, TReturn = any, TNext = any>
         () => Promise.reject(error),
         () => Promise.reject(error),
       );
-      this.execution.catch(() => {});
     }
 
     if (this.state < RepeaterState.Finished) {
@@ -205,11 +206,10 @@ class RepeaterController<T, TReturn = any, TNext = any>
       value1 = this.pending.then(() => value);
     }
 
-    value1 = this.pending = value1.catch((error) => {
+    value1 = value1.catch((error) => {
       this.reject(error);
       return this.consume();
     });
-    this.pending.catch(() => {});
     let next: Promise<TNext | undefined>;
     if (this.pullQueue.length) {
       const pull = this.pullQueue.shift()!;
@@ -240,7 +240,6 @@ class RepeaterController<T, TReturn = any, TNext = any>
     };
 
     this.pending = value1.then(() => unhandled);
-    this.pending.catch(() => {});
     return next;
   }
 
@@ -271,8 +270,6 @@ class RepeaterController<T, TReturn = any, TNext = any>
       } else {
         this.execution = this.execution.then(() => Promise.reject(error));
       }
-
-      this.execution.catch(() => {});
     }
 
     for (const push of this.pushQueue) {
@@ -371,7 +368,6 @@ class RepeaterController<T, TReturn = any, TNext = any>
     }
 
     const value = Promise.reject(error);
-    value.catch(() => {});
     return this.next(value);
   }
 
