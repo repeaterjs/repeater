@@ -1,12 +1,12 @@
-export interface RepeaterBuffer<T> {
+export interface RepeaterBuffer {
   full: boolean;
   empty: boolean;
-  add(value: PromiseLike<T> | T): void;
-  remove(): PromiseLike<T> | T;
+  add(value: unknown): void;
+  remove(): unknown;
 }
 
-export class FixedBuffer<T> implements RepeaterBuffer<T> {
-  private arr: (PromiseLike<T> | T)[] = [];
+export class FixedBuffer implements RepeaterBuffer {
+  private arr: unknown[] = [];
 
   get empty(): boolean {
     return this.arr.length === 0;
@@ -22,7 +22,7 @@ export class FixedBuffer<T> implements RepeaterBuffer<T> {
     }
   }
 
-  add(value: PromiseLike<T> | T): void {
+  add(value: unknown): void {
     if (this.full) {
       throw new Error("Buffer full");
     } else {
@@ -30,7 +30,7 @@ export class FixedBuffer<T> implements RepeaterBuffer<T> {
     }
   }
 
-  remove(): PromiseLike<T> | T {
+  remove(): unknown {
     if (this.empty) {
       throw new Error("Buffer empty");
     }
@@ -40,8 +40,8 @@ export class FixedBuffer<T> implements RepeaterBuffer<T> {
 }
 
 // TODO: use a circular buffer here
-export class SlidingBuffer<T> implements RepeaterBuffer<T> {
-  private arr: (PromiseLike<T> | T)[] = [];
+export class SlidingBuffer implements RepeaterBuffer {
+  private arr: unknown[] = [];
 
   get empty(): boolean {
     return this.arr.length === 0;
@@ -57,7 +57,7 @@ export class SlidingBuffer<T> implements RepeaterBuffer<T> {
     }
   }
 
-  add(value: PromiseLike<T> | T): void {
+  add(value: unknown): void {
     while (this.arr.length >= this.capacity) {
       this.arr.shift();
     }
@@ -65,7 +65,7 @@ export class SlidingBuffer<T> implements RepeaterBuffer<T> {
     this.arr.push(value);
   }
 
-  remove(): PromiseLike<T> | T {
+  remove(): unknown {
     if (this.empty) {
       throw new Error("Buffer empty");
     }
@@ -74,8 +74,8 @@ export class SlidingBuffer<T> implements RepeaterBuffer<T> {
   }
 }
 
-export class DroppingBuffer<T> implements RepeaterBuffer<T> {
-  private arr: (PromiseLike<T> | T)[] = [];
+export class DroppingBuffer implements RepeaterBuffer {
+  private arr: unknown[] = [];
 
   get empty(): boolean {
     return this.arr.length === 0;
@@ -91,13 +91,13 @@ export class DroppingBuffer<T> implements RepeaterBuffer<T> {
     }
   }
 
-  add(value: PromiseLike<T> | T): void {
+  add(value: unknown): void {
     if (this.arr.length < this.capacity) {
       this.arr.push(value);
     }
   }
 
-  remove(): PromiseLike<T> | T {
+  remove(): unknown {
     if (this.empty) {
       throw new Error("Buffer empty");
     }

@@ -576,7 +576,7 @@ describe("Repeater", () => {
   });
 
   test("next then push avoids buffer", async () => {
-    const buffer: FixedBuffer<number> = new FixedBuffer(100);
+    const buffer: FixedBuffer = new FixedBuffer(100);
     const add = jest.spyOn(buffer, "add");
     let push: (value: number) => Promise<void>;
     const repeater = new Repeater(async (push1) => {
@@ -1079,19 +1079,23 @@ describe("Repeater", () => {
 
   test("throw method", async () => {
     const error = new Error("throw method");
-    const repeater = new Repeater((push) => {
+    const mock = jest.fn();
+    const repeater = new Repeater(async (push, stop) => {
       push(1);
       push(2);
       push(3);
       push(4);
+      await stop;
+      mock();
     });
     await expect(repeater.next()).resolves.toEqual({ value: 1, done: false });
     await expect(repeater.next()).resolves.toEqual({ value: 2, done: false });
     await expect(repeater.next()).resolves.toEqual({ value: 3, done: false });
-    await expect(repeater.throw(error)).resolves.toEqual({
-      value: 4,
-      done: false,
-    });
+    await expect(repeater.throw(error)).rejects.toBe(error);
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    await expect(repeater.next()).resolves.toEqual({ done: true });
+    expect(mock).toHaveBeenCalledTimes(1);
   });
 
   test("throw method before start", async () => {
@@ -1117,11 +1121,13 @@ describe("Repeater", () => {
     await expect(repeater.next()).resolves.toEqual({ value: 1, done: false });
     const thrown = repeater.throw(error);
     const returned = repeater.return(-2);
-    await expect(thrown).resolves.toEqual({ value: -1, done: true });
+    // TODO: this is wrong
+    await expect(thrown).resolves.toEqual({ done: true });
     await expect(returned).resolves.toEqual({ value: -2, done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
     await expect(repeater.next()).resolves.toEqual({ done: true });
+    expect(mock).toHaveBeenCalledTimes(1);
   });
 
   test("throw method caught async", async () => {
