@@ -1146,26 +1146,6 @@ describe("Repeater", () => {
     expect(mock).toHaveBeenCalledTimes(0);
   });
 
-  test("throw method then return method", async () => {
-    const error = new Error("throw method then return method");
-    const mock = jest.fn();
-    const r = new Repeater(async (push, stop) => {
-      push(1);
-      await stop;
-      mock();
-      return -1;
-    });
-    await expect(r.next()).resolves.toEqual({ value: 1, done: false });
-    const thrown = r.throw(error);
-    const returned = r.return(-2);
-    await expect(thrown).rejects.toBe(error);
-    await expect(returned).resolves.toEqual({ value: -2, done: true });
-    // await expect(r.next()).resolves.toEqual({ done: true });
-    // await expect(r.next()).resolves.toEqual({ done: true });
-    // await expect(r.next()).resolves.toEqual({ done: true });
-    expect(mock).toHaveBeenCalledTimes(1);
-  });
-
   test("throw method caught in async function", async () => {
     const error = new Error("throw method caught in async function");
     const errors: Error[] = [];
@@ -1307,8 +1287,28 @@ describe("Repeater", () => {
     expect(mock).toHaveBeenCalledTimes(1);
   });
 
-  test("throw method after return", async () => {
-    const error = new Error("throw method after return");
+  test("return method before throw method", async () => {
+    const error = new Error("return method before throw method");
+    const mock = jest.fn();
+    const r = new Repeater(async (push, stop) => {
+      push(1);
+      await stop;
+      mock();
+      return -1;
+    });
+    await expect(r.next()).resolves.toEqual({ value: 1, done: false });
+    const thrown = r.throw(error);
+    const returned = r.return(-2);
+    await expect(thrown).rejects.toBe(error);
+    await expect(returned).resolves.toEqual({ value: -2, done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+    expect(mock).toHaveBeenCalledTimes(1);
+  });
+
+  test("throw method after return method", async () => {
+    const error = new Error("throw method after return method");
     const r = new Repeater(async (push) => {
       await push(1);
       await push(2);
