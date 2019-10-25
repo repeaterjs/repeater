@@ -80,8 +80,8 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
   // pushQueue and pullQueue will never both contain operations at the same time.
   private pushQueue: PushOperation<T, TNext>[] = [];
   private pullQueue: PullOperation<T, TReturn, TNext>[] = [];
-  // pending is continuously re-assigned as the repeater is iterated.
-  // We use this mechanism to make sure all iterations settle in order.
+  // We continuously re-assign pending in push to make sure all results settle
+  // in order. The pending promise will never reject.
   private pending?: Promise<any>;
   // execution is set to the return value of calling the executor and can be
   // re-assigned depending on whether stop, return or throw is called.
@@ -147,6 +147,11 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
     });
   }
 
+  /**
+   * A helper method used to mimic the behavior of async generators where the
+   * final result or any error are consumed, so that further calls to next,
+   * return or throw return { done: true }.
+   */
   private consume(): Promise<TReturn | undefined> {
     const error = this.error;
     const execution = Promise.resolve(this.execution).then((value) => {
@@ -218,13 +223,10 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
       return Promise.resolve(undefined);
     }
 
-    let valueP: Promise<T | undefined>;
-    if (this.pending === undefined) {
-      valueP = Promise.resolve(value);
-    } else {
-      valueP = this.pending.then(() => value);
-    }
-
+    let valueP: Promise<T | undefined> =
+      this.pending === undefined
+        ? Promise.resolve(value)
+        : this.pending.then(() => value);
     valueP = valueP.catch((error) => {
       if (this.state < RepeaterState.Stopped) {
         this.error = error;
@@ -252,22 +254,26 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
       });
     }
 
+    // This method of catching unhandled rejections is adapted from
+    // https://stackoverflow.com/a/57792542/1825413
     let floating = true;
-    const unhandled = next.catch((error) => {
+    let error: any;
+    const unhandled = next.catch((error1) => {
       if (floating) {
-        throw error;
+        error = error1;
       }
     });
-    swallow(unhandled);
     next.then = function(onFulfilled, onRejected): Promise<any> {
       floating = false;
       return Promise.prototype.then.call(this, onFulfilled, onRejected);
     };
     this.pending = valueP
       .then(() => unhandled)
-      .catch((error) => {
-        this.error = error;
-        this.reject();
+      .then(() => {
+        if (error != null) {
+          this.error = error;
+          this.reject();
+        }
       });
     return next;
   }
@@ -299,13 +305,10 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
     if (this.pullQueue.length) {
       this.finish();
       for (const pull of this.pullQueue) {
-        let execution: Promise<TReturn | undefined>;
-        if (this.pending === undefined) {
-          execution = this.consume();
-        } else {
-          execution = this.pending.then(() => this.consume());
-        }
-
+        const execution: Promise<TReturn | undefined> =
+          this.pending === undefined
+            ? this.consume()
+            : this.pending.then(() => this.consume());
         pull.resolve(this.unwrap(execution));
       }
     }

@@ -342,25 +342,6 @@ describe("Repeater", () => {
     await expect(r.next()).resolves.toEqual({ done: true });
   });
 
-  test("push rejection and stop", async () => {
-    const error = new Error("push rejection and stop");
-    const r = new Repeater((push, stop) => {
-      push(1);
-      push(2);
-      push(Promise.reject(error));
-      push(4);
-      stop();
-      return -1;
-    });
-
-    await expect(r.next()).resolves.toEqual({ value: 1, done: false });
-    await expect(r.next()).resolves.toEqual({ value: 2, done: false });
-    await expect(r.next()).resolves.toEqual({ value: -1, done: true });
-    await expect(r.next()).resolves.toEqual({ done: true });
-    await expect(r.next()).resolves.toEqual({ done: true });
-    await expect(r.next()).resolves.toEqual({ done: true });
-  });
-
   test("push delayed promise and stop", async () => {
     const r = new Repeater((push, stop) => {
       push(1);
@@ -374,6 +355,25 @@ describe("Repeater", () => {
     await expect(r.next()).resolves.toEqual({ value: 2, done: false });
     await expect(r.next()).resolves.toEqual({ value: 3, done: false });
     await expect(r.next()).resolves.toEqual({ value: 4, done: false });
+    await expect(r.next()).resolves.toEqual({ value: -1, done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+  });
+
+  test("push rejection and stop", async () => {
+    const error = new Error("push rejection and stop");
+    const r = new Repeater((push, stop) => {
+      push(1);
+      push(2);
+      push(Promise.reject(error));
+      push(4);
+      stop();
+      return -1;
+    });
+
+    await expect(r.next()).resolves.toEqual({ value: 1, done: false });
+    await expect(r.next()).resolves.toEqual({ value: 2, done: false });
     await expect(r.next()).resolves.toEqual({ value: -1, done: true });
     await expect(r.next()).resolves.toEqual({ done: true });
     await expect(r.next()).resolves.toEqual({ done: true });
@@ -436,7 +436,7 @@ describe("Repeater", () => {
     await expect(r.next()).resolves.toEqual({ done: true });
   });
 
-  test("stop promise", async () => {
+  test("awaiting stop promise", async () => {
     const mock = jest.fn();
     const r = new Repeater(async (push, stop) => {
       push(1);
@@ -451,7 +451,7 @@ describe("Repeater", () => {
     await expect(r.next()).resolves.toEqual({ done: true });
     await expect(r.next()).resolves.toEqual({ done: true });
     await expect(r.next()).resolves.toEqual({ done: true });
-    expect(mock).toHaveBeenCalled();
+    expect(mock).toHaveBeenCalledTimes(1);
   });
 
   test("throw error in executor", async () => {
@@ -927,7 +927,7 @@ describe("Repeater", () => {
     await expect(r.next()).resolves.toEqual({ done: true });
   });
 
-  test("return method before start", async () => {
+  test("return method before execution", async () => {
     const mock = jest.fn();
     const r = new Repeater(() => mock());
     await expect(r.return(-1)).resolves.toEqual({
@@ -1264,27 +1264,45 @@ describe("Repeater", () => {
     await expect(r.next()).resolves.toEqual({ done: true });
   });
 
+  test("throw method with throw in executor", async () => {
+    const error1 = new Error("throw method with throw in executor 1");
+    const error2 = new Error("throw method with throw in executor 2");
+    const r = new Repeater(async (push, stop) => {
+      for (let i = 1; i < 100; i++) {
+        push(i);
+      }
+      throw error1;
+    });
+    await expect(r.next()).resolves.toEqual({ value: 1, done: false });
+    await expect(r.next()).resolves.toEqual({ value: 2, done: false });
+    await expect(r.next()).resolves.toEqual({ value: 3, done: false });
+    await expect(r.throw(error2)).rejects.toBe(error1);
+    await expect(r.next()).resolves.toEqual({ done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+  });
+
   test("throw method with pending next", async () => {
     const mock = jest.fn();
     const error = new Error("throw method with pending next");
-    let push!: (value: unknown) => Promise<unknown>;
-    const r = new Repeater(async (push1, stop) => {
-      push = push1;
-      push(1);
-      push(2);
-      push(3);
-      push(4);
-      push(5);
+    const r = new Repeater(async (push, stop) => {
+      for (let i = 1; i < 100; i++) {
+        push(i);
+      }
+
       await stop;
       mock();
       return -1;
     });
-    await expect(r.next(-1)).resolves.toEqual({ value: 1, done: false });
-    await expect(r.next(-2)).resolves.toEqual({ value: 2, done: false });
-    await expect(r.next(-3)).resolves.toEqual({ value: 3, done: false });
-    const next = r.next(-4);
+    const next1 = r.next(-1);
+    const next2 = r.next(-2);
+    const next3 = r.next(-3);
+    const next4 = r.next(-4);
     const thrown = r.throw(error);
-    await expect(next).resolves.toEqual({ value: 4, done: false });
+    await expect(next1).resolves.toEqual({ value: 1, done: false });
+    await expect(next2).resolves.toEqual({ value: 2, done: false });
+    await expect(next3).resolves.toEqual({ value: 3, done: false });
+    await expect(next4).resolves.toEqual({ value: 4, done: false });
     await expect(thrown).rejects.toBe(error);
     expect(mock).toHaveBeenCalledTimes(1);
   });
