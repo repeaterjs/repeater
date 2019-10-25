@@ -115,3 +115,34 @@ const konami = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "Ar
   }
 })();
 ```
+
+<h4 id="observables">Converting an observable to an async iterator</h4>
+
+```js
+import { Subject } from "rxjs";
+import { Repeater } from "@repeaterjs/repeater";
+
+const observable = new Subject();
+const repeater = new Repeater(async (push, stop) => {
+  const subscription = observable.subscribe({
+    next: (value) => push(value),
+    error: (err) => stop(err),
+    complete: () => stop(),
+  });
+  await stop;
+  subscription.unsubscribe();
+});
+
+(async function() {
+  try {
+    for await (const value of repeater) {
+      console.log(value);
+    }
+  } catch (err) {
+    console.log("error caught");
+  }
+})();
+observable.next(1); // 1
+observable.next(2); // 2
+observable.error(new Error("HELLO")); // error caught
+```
