@@ -54,11 +54,11 @@ class Timer<T> {
 
   clear(): void {
     clearTimeout(this.timeout);
-    // In the code below, this method is only called after the repeater is
+    // In code below, this method is only called after the repeater is
     // stopped. Because repeaters swallow rejections which settle after stop, we
     // use this mechanism to make any pending call which has received the
     // deferred promise resolve to `{ done: true }`.
-    this.reject(new TimeoutError("THIS ERROR SHOULD NEVER BE SEEN"));
+    this.reject(new TimeoutError("Timer.clear called before stop"));
   }
 }
 
@@ -92,15 +92,15 @@ export function delay(wait: number): Repeater<number> {
   });
 }
 
-export function timeout(wait: number): Repeater<void> {
+export function timeout(wait: number): Repeater<undefined> {
   return new Repeater(async (push, stop) => {
-    let timer: Timer<void> | undefined;
+    let timer: Timer<undefined> | undefined;
     let stopped = false;
     stop.then(() => (stopped = true));
     try {
       while (!stopped) {
         if (timer !== undefined) {
-          timer.resolve();
+          timer.resolve(undefined);
         }
 
         timer = new Timer(wait);
@@ -120,7 +120,7 @@ export function timeout(wait: number): Repeater<void> {
 
 export function interval(
   wait: number,
-  buffer: RepeaterBuffer<number> = new SlidingBuffer(1),
+  buffer: RepeaterBuffer = new SlidingBuffer(1),
 ): Repeater<number> {
   return new Repeater<number>(async (push, stop) => {
     push(Date.now());
