@@ -3,7 +3,7 @@ id: error_handling
 title: Error Handling
 ---
 
-Because error handling is an important part of creating robust applications, repeaters are designed to catch and propagate any errors they receive in a predictable manner. Every promise which is passed to a repeater is preemptively caught using `Promise.prototype.catch` to prevent unhandled rejections, and the errors are then forwarded to consumers during iteration.
+Because error handling is an important part of creating robust applications, repeaters are designed to catch and propagate any errors they receive in a predictable manner. Every promise which is passed to a repeater is preemptively handled to prevent unhandled promise rejections, and the errors are then forwarded to consumers during iteration.
 
 ## The four ways a repeater can error
 
@@ -12,7 +12,7 @@ Because error handling is an important part of creating robust applications, rep
 The most common way to pass an error to a repeater is to call the `stop` function with the error.
 
 ```js
-const chan = new Repeater((push, stop) => {
+const repeater = new Repeater((push, stop) => {
   for (let i = 0; i < 100; i++) {
     push(i);
   }
@@ -21,15 +21,15 @@ const chan = new Repeater((push, stop) => {
 
 (async function() {
   try {
-    console.log(await chan.next()); // { value: 0, done: true }
-    console.log(await chan.next()); // { value: 1, done: true }
-    console.log(await chan.next()); // { value: 2, done: true }
-    console.log(await errorChan().return()); // This line throws an error.
+    console.log(await repeater.next()); // { value: 0, done: true }
+    console.log(await repeater.next()); // { value: 1, done: true }
+    console.log(await repeater.next()); // { value: 2, done: true }
+    console.log(await repeater.return()); // This line throws an error.
   } catch (err) {
     console.log(err); // Error: Stop in the name of love 😘
   } finally {
-    console.log(await chan.next()); // { done: true }
-    console.log(await chan.next()); // { done: true }
+    console.log(await repeater.next()); // { done: true }
+    console.log(await repeater.next()); // { done: true }
   }
 })();
 ```
@@ -43,7 +43,7 @@ As seen in the example above, repeaters error only once before entering a finish
 The repeater constructor catches both synchronous and asynchronous errors thrown by the executor.
 
 ```js
-const chan = new Repeater((push, stop) => {
+const repeater = new Repeater((push, stop) => {
   push("a");
   push("b");
   push("c");
@@ -55,24 +55,24 @@ const chan = new Repeater((push, stop) => {
 
 (async function() {
   try {
-    for await (const letter of chan) {
+    for await (const letter of repeater) {
       console.log(letter); // "a", "b", "c"
     }
   } catch (err) {
     console.log(err); // Error: This executor is busted ☠️
   } finally {
-    console.log(await chan.next()); // { done: true }
+    console.log(await repeater.next()); // { done: true }
   }
 })();
 ```
 
 When an error occurs in the executor, the repeater is stopped. Because errors
-which occur in the executor are usually indicative of a programming mistake, the error thrown by the executor takes precedence over any errors passed via `stop`, regardless of when they were passed to the repeater.  
+which occur in the executor are usually indicative of a programming mistake, the error thrown by the executor takes precedence over any errors passed via `stop`, regardless of when stop was called.  
 
 ### 3. A promise passed to the `push` function rejects
 
 ```js
-const chan = new Repeater(async (push, stop) => {
+const repeater = new Repeater(async (push, stop) => {
   await push("a");
   await push("b");
   await push("c");
@@ -86,32 +86,32 @@ const chan = new Repeater(async (push, stop) => {
   await push("f");
   // these errors are ignored
   stop(new Error("My error"));
-  throw new Error("this executor is busted");
+  throw new Error("This executor is busted ☠️");
 });
 
 (async function() {
   try {
-    for await (const letter of chan) {
+    for await (const letter of repeater) {
       console.log(letter); // "a", "b", "c"
     }
   } catch (err) {
     console.log(err); // Error: A rejection passed to push ⏰
   } finally {
-    console.log(await chan.next()); // { done: true }
+    console.log(await repeater.next()); // { done: true }
   }
 })();
 ```
 
-Repeaters unwrap promises and thenables passed to `push`. If a promise passed to `push` rejects, the repeater finishes and any further pending values are dropped. A rejection which settles before the repeater is stopped takes precedence over all other errors. However, if a pushed rejection settles *after* the repeater has already stopped, the rejection is dropped. This behavior is useful when creating [inverted repeaters](/docs/inverted-repeaters).
+Repeaters unwrap promises passed to `push`. If a promise passed to `push` rejects, the repeater finishes and any further pending values are dropped. A rejection which settles before the repeater is stopped takes precedence over all other errors. However, if a pushed rejection settles *after* the repeater has already stopped, the rejection is dropped. This behavior is useful when creating [inverted repeaters](/docs/inverted-repeaters).
 
 ### 4. Calling the `throw` method
 
-The async iterator interface defines an optional `throw` method which allows consumers to throw errors into the iterator. With async generators, `throw` will resume the generator and throw the error at the point of `yield`. Generators can recover from these errors by wrapping `yield` operations in a `try`/`catch` block.
+The async iterator interface defines an optional `throw` method which allows consumers to throw errors into the iterator. With async generators, `throw` will resume the generator and throw the error at the point of `yield`. Generators can recover from these errors by wrapping `yield` operations in a `try` block.
 
 Repeaters allow for errors to be thrown in by causing the promise returned from the previous `push` call to reject with the error.
 
 ```js
-const chan = Repeater(async (push) => {
+const repeater = Repeater(async (push) => {
   for (let i = 0; i < 10; i++) {
     try {
       await push(i);
@@ -124,15 +124,17 @@ const chan = Repeater(async (push) => {
 
 (async function() {
   try {
-    console.log(await chan.next()); // { value: 1, done: false };
-    console.log(await chan.throw("This error is passed to push 📞")); // This line throws an error.
-    // Error: This error is passed to push 📞
+    console.log(await repeater.next()); // { value: 1, done: false };
+    console.log(await repeater.throw("This error is passed to throw 📞")); // This line throws an error.
+    // Error: This error is passed to throw 📞
   } catch (err) {
     console.log(err); // Error: Hello yes I caught your error 👀
   } finally {
-    console.log(await chan.next()); // { done: true }
+    console.log(await repeater.next()); // { done: true }
   }
 })();
 ```
 
-By default, errors passed to `push` are caught using `Promise.prototype.catch` to prevent unhandled rejections, and iteration continues normally. Therefore, if you want the `throw` method to bubble out of the repeater, you must either call `stop` with the error or rethrow the error from the executor.
+The promise returned from `push` has special behavior where, if it is “floating,” i.e. it is not awaited and the `then/catch` methods are not called, the `throw` will simply rethrow the error and finish the iterator. This makes it safe to ignore the promise returned from `push`. However, if you await or otherwise use the `push` promise, it becomes your responsiblity to handle errors and propagate the error by calling `stop` with the error or rethrowing the error.
+
+*Note: The `throw` method will also immediately rethrow its error if the repeater has not been started, the repeater has stopped, or the repeater has a non-empty buffer, because in each of these cases, there is no `push` call whose return value can be caught.*
