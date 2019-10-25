@@ -28,7 +28,7 @@ export class RepeaterOverflowError extends Error {
   }
 }
 
-export type Push<T, TNext = any> = (
+export type Push<T, TNext = unknown> = (
   value: PromiseLike<T> | T,
 ) => Promise<TNext | undefined>;
 
@@ -74,7 +74,7 @@ function swallow(value: any): void {
  * hidden using a private WeakMap to make repeaters themselves opaque and
  * maximally compatible with async generators.
  */
-class RepeaterController<T, TReturn = any, TNext = any>
+class RepeaterController<T, TReturn = any, TNext = unknown>
   implements AsyncGenerator<T, TReturn, TNext> {
   private state: RepeaterState = RepeaterState.Initial;
   // pushQueue and pullQueue will never both contain operations at the same time.
@@ -86,8 +86,9 @@ class RepeaterController<T, TReturn = any, TNext = any>
   // execution is set to the return value of calling the executor and can be
   // re-assigned depending on whether stop, return or throw is called.
   private execution?: Promise<TReturn | undefined>;
-  private onnext?: (value?: PromiseLike<TNext> | TNext) => unknown;
-  private onstop?: () => unknown;
+  private error?: any;
+  private onnext: (value?: PromiseLike<TNext> | TNext) => unknown = () => {};
+  private onstop: () => unknown = () => {};
   constructor(
     private executor: RepeaterExecutor<T, TReturn, TNext>,
     private buffer: RepeaterBuffer,
@@ -106,31 +107,20 @@ class RepeaterController<T, TReturn = any, TNext = any>
     this.state = RepeaterState.Started;
     const push: Push<T, TNext> = this.push.bind(this);
     const stop: Stop = this.stop.bind(this) as any;
-    const stopP = new Promise<undefined>((resolve) => (this.onstop = resolve));
-    stop.then = stopP.then.bind(stopP);
-    stop.catch = stopP.catch.bind(stopP);
-    stop.finally = stopP.finally.bind(stopP);
-    let execution: Promise<TReturn | undefined>;
-    try {
-      execution = Promise.resolve(this.executor(push, stop));
-    } catch (error) {
-      // sync error in executor
-      execution = Promise.reject(error);
+    {
+      const stopP = new Promise<undefined>(
+        (resolve) => (this.onstop = resolve),
+      );
+      stop.then = stopP.then.bind(stopP);
+      stop.catch = stopP.catch.bind(stopP);
+      stop.finally = stopP.finally.bind(stopP);
     }
 
-    if (this.execution === undefined) {
-      this.execution = execution;
-    } else {
-      // Because this.execution can be set by a call to stop with an error
-      // inside the executor, we cannot simply overwrite it. An execution which
-      // throws takes priority over errors passed to stop, but an error passed
-      // to stop takes priority over a fulfilled execution. Therefore, if the
-      // execution settles normally, we preserve passed to stop by rethrowing
-      // them here.
-      this.execution = this.execution.then(
-        () => execution,
-        (error) => execution.then(() => Promise.reject(error)),
-      );
+    try {
+      this.execution = Promise.resolve(this.executor(push, stop));
+    } catch (error) {
+      // sync error in executor
+      this.execution = Promise.reject(error);
     }
 
     // We don’t have to call this.stop with the error because all that does is
@@ -145,9 +135,9 @@ class RepeaterController<T, TReturn = any, TNext = any>
    * generators, where yield is equivalent to yield await.
    */
   private unwrap(
-    value?: Promise<T | TReturn | undefined> | T | TReturn,
+    value?: PromiseLike<T | TReturn | undefined> | T | TReturn,
   ): Promise<IteratorResult<T, TReturn>> {
-    let done = this.state >= RepeaterState.Finished;
+    const done = this.state >= RepeaterState.Finished;
     return Promise.resolve(value).then((value: any) => {
       if (!done && this.state >= RepeaterState.Rejected) {
         return this.consume().then((value: any) => ({ value, done: true }));
@@ -158,13 +148,19 @@ class RepeaterController<T, TReturn = any, TNext = any>
   }
 
   private consume(): Promise<TReturn | undefined> {
-    const execution = Promise.resolve(this.execution);
+    const error = this.error;
+    const execution = Promise.resolve(this.execution).then((value) => {
+      if (error != null) {
+        throw error;
+      }
+
+      return value;
+    });
+    this.error = undefined;
     this.execution = execution.then(() => undefined, () => undefined);
-    if (this.pending === undefined) {
-      return execution;
-    } else {
-      return this.pending.then(() => execution);
-    }
+    return this.pending === undefined
+      ? execution
+      : this.pending.then(() => execution);
   }
 
   /**
@@ -196,20 +192,14 @@ class RepeaterController<T, TReturn = any, TNext = any>
    *
    * Advances state to RepeaterState.Rejected
    */
-  private reject(error: any, options: { force?: boolean } = {}): void {
+  private reject(): void {
     if (this.state >= RepeaterState.Rejected) {
       return;
     }
 
-    if (this.state < RepeaterState.Stopped || options.force) {
-      this.execution = Promise.resolve(this.execution).then(
-        () => Promise.reject(error),
-        () => Promise.reject(error),
-      );
-    }
-
     if (this.state < RepeaterState.Finished) {
       this.finish();
+      this.execution = Promise.resolve(this.execution).catch(() => undefined);
     }
 
     this.state = RepeaterState.Rejected;
@@ -228,14 +218,22 @@ class RepeaterController<T, TReturn = any, TNext = any>
       return Promise.resolve(undefined);
     }
 
-    let valueP: Promise<any>;
+    let valueP: Promise<T | undefined>;
     if (this.pending === undefined) {
       valueP = Promise.resolve(value);
     } else {
       valueP = this.pending.then(() => value);
     }
 
-    valueP = valueP.catch((error) => this.reject(error));
+    valueP = valueP.catch((error) => {
+      if (this.state < RepeaterState.Stopped) {
+        this.error = error;
+      }
+
+      this.reject();
+      return undefined;
+    });
+
     let next: Promise<TNext | undefined>;
     if (this.pullQueue.length) {
       const pull = this.pullQueue.shift()!;
@@ -265,10 +263,12 @@ class RepeaterController<T, TReturn = any, TNext = any>
       floating = false;
       return Promise.prototype.then.call(this, onFulfilled, onRejected);
     };
-
     this.pending = valueP
       .then(() => unhandled)
-      .catch((error) => this.reject(error, { force: true }));
+      .catch((error) => {
+        this.error = error;
+        this.reject();
+      });
     return next;
   }
 
@@ -283,22 +283,10 @@ class RepeaterController<T, TReturn = any, TNext = any>
     }
 
     this.state = RepeaterState.Stopped;
-    if (this.onnext !== undefined) {
-      this.onnext();
-      delete this.onnext;
-    }
-
-    if (this.onstop !== undefined) {
-      this.onstop();
-      delete this.onstop;
-    }
-
-    if (error != null) {
-      if (this.execution === undefined) {
-        this.execution = Promise.reject(error);
-      } else {
-        this.execution = this.execution.then(() => Promise.reject(error));
-      }
+    this.onnext();
+    this.onstop();
+    if (this.error == null) {
+      this.error = error;
     }
 
     for (const push of this.pushQueue) {
@@ -335,15 +323,11 @@ class RepeaterController<T, TReturn = any, TNext = any>
       );
     }
 
-    if (this.state === RepeaterState.Initial) {
+    if (this.state <= RepeaterState.Initial) {
       this.execute();
     }
 
-    if (this.onnext !== undefined) {
-      this.onnext(value);
-      delete this.onnext;
-    }
-
+    this.onnext(value);
     if (!this.buffer.empty) {
       const result = this.unwrap(this.buffer.remove() as any);
       if (this.pushQueue.length) {
@@ -376,14 +360,14 @@ class RepeaterController<T, TReturn = any, TNext = any>
 
   throw(error: any): Promise<IteratorResult<T, TReturn>> {
     if (
-      this.state === RepeaterState.Initial ||
+      this.state <= RepeaterState.Initial ||
       this.state >= RepeaterState.Stopped ||
       !this.buffer.empty
     ) {
       this.finish();
-      this.execution = Promise.resolve(this.execution).then(() =>
-        Promise.reject(error),
-      );
+      if (this.error == null) {
+        this.error = error;
+      }
 
       return this.unwrap(this.consume());
     }
@@ -406,7 +390,7 @@ const controllers = new WeakMap<
 // versions of typescript.
 //
 // TODO: use typesVersions to ship stricter types.
-export class Repeater<T, TReturn = any, TNext = any> {
+export class Repeater<T, TReturn = any, TNext = unknown> {
   constructor(
     executor: RepeaterExecutor<T, TReturn, TNext>,
     buffer: RepeaterBuffer = new FixedBuffer(0),
