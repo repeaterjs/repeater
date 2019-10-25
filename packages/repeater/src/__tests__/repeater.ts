@@ -1135,8 +1135,8 @@ describe("Repeater", () => {
     expect(mock).toHaveBeenCalledTimes(1);
   });
 
-  test("throw method before start", async () => {
-    const error = new Error("throw method before start");
+  test("throw method before execution", async () => {
+    const error = new Error("throw method before execution");
     const mock = jest.fn();
     const r = new Repeater(() => mock());
     await expect(r.throw(error)).rejects.toBe(error);
@@ -1182,6 +1182,9 @@ describe("Repeater", () => {
       done: false,
     });
     await expect(r.next()).resolves.toEqual({ value: -1, done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
     expect(errors).toEqual(Array(4).fill(error));
   });
 
