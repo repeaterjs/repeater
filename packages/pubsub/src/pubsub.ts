@@ -3,10 +3,7 @@ import { Repeater, RepeaterBuffer } from "@repeaterjs/repeater";
 export interface PubSub<T> {
   publish(topic: string, value: T): Promise<unknown> | unknown;
   unpublish(topic: string, reason?: any): Promise<unknown> | unknown;
-  subscribe(
-    topic: string,
-    buffer?: RepeaterBuffer<T>,
-  ): AsyncIterableIterator<T>;
+  subscribe(topic: string, buffer?: RepeaterBuffer): AsyncIterableIterator<T>;
   close(reason?: any): Promise<unknown> | unknown;
 }
 
@@ -45,7 +42,7 @@ export class InMemoryPubSub<T> implements PubSub<T> {
     publishers.clear();
   }
 
-  subscribe(topic: string, buffer?: RepeaterBuffer<T>): Repeater<T> {
+  subscribe(topic: string, buffer?: RepeaterBuffer): Repeater<T> {
     if (this.publishers[topic] == null) {
       this.publishers[topic] = new Set();
     }
