@@ -3,7 +3,7 @@ id: utilities
 title: Additional Repeater-Based Utilities
 ---
 
-In addition to the `@repeaterjs/repeater` package, the [repeater repository](https://github.com/repeaterjs/repeater) and [package scope](https://www.npmjs.com/org/repeater) contain various async utilities implemented with repeaters.
+In addition to the `@repeaterjs/repeater` package, the [repeater repository](https://github.com/repeaterjs/repeater), [github organization](https://github.com/repeaterjs) and [package scope](https://www.npmjs.com/org/repeater) contain various async utilities implemented with repeaters.
 
 - [`@repeaterjs/timers`](https://github.com/repeaterjs/repeater/tree/master/packages/timers) - Cancelable timers using `setTimeout` and `setInterval`
 - [`@repeaterjs/limiters`](https://github.com/repeaterjs/repeater/tree/master/packages/limiters) - Async semaphores and throttlers for limiting concurrency

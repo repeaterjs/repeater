@@ -51,7 +51,7 @@ const repeater = new Repeater((push, stop) => {
 })();
 ```
 
-In addition, the executor API exposes promises which resolve according to the state of the repeater. `push` returns a promise which resolves when `next` is called, and the `stop` function doubles as a promise which resolves when the repeater is stopped. As a promise, `stop` can be awaited to defer event listener cleanup.
+In addition, the executor API exposes promises which resolve according to the state of the repeater. The `push` function returns a promise which resolves the next time `next` is called, and the `stop` function doubles as a promise which resolves when the repeater is stopped. As a promise, `stop` can be awaited to defer event listener cleanup.
 
 ```js
 const repeater = new Repeater(async (push, stop) => {
@@ -64,12 +64,15 @@ const repeater = new Repeater(async (push, stop) => {
 });
 
 (async () => {
-  console.log(await repeater.next());   // { value: 1, done: false }
+  console.log(await repeater.next());
+  // { value: 1, done: false }
+  console.log(await repeater.next());
   // "pushed 1"
-  console.log(await repeater.next());   // { value: 2, done: false }
+  // { value: 2, done: false }
+  console.log(await repeater.return());
   // "pushed 2"
-  console.log(await repeater.return()); // { done: true }
   // "done"
+  // { done: true }
 })();
 ```
 
@@ -77,6 +80,6 @@ These two arguments make it easy to setup and teardown callbacks within the exec
 
 ## Acknowledgments
 
-Thanks to Clojure’s `core.async` for inspiration. Specifically, the implementation of repeaters is more or less based on [this video](https://vimeo.com/100518968) explaining `core.async` internals.
+Thanks to Clojure’s `core.async` for inspiring the basic data structure and algorithm for pushing and pulling values. Specifically, the implementation of repeaters is more or less based on [this video](https://vimeo.com/100518968) explaining `core.async` internals.
 
 Thanks to [this StackOverflow answer](https://stackoverflow.com/a/47214496/1825413) for providing a helpful overview of the different types of async APIs available in javascript.
