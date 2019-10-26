@@ -20,7 +20,7 @@ The `@repeaterjs/repeater` package has no dependencies, but requires the followi
   - `Symbol.iterator`
   - `Symbol.asyncIterator`
 
-In addition, repeaters are most useful when used via `async/await` and `for await…of` syntax. You can use polyfills and compile your code with babel or typescript to support enviroments which lack these features.
+In addition, repeaters are most useful when used via `async/await` and `for await…of` syntax. You can install polyfills and compile your code with babel or typescript to support enviroments which lack these features.
 
 ## Examples
 
@@ -136,13 +136,16 @@ const repeater = new Repeater(async (push, stop) => {
 (async function() {
   try {
     for await (const value of repeater) {
-      console.log(value);
+      console.log("Value: ", value);
     }
   } catch (err) {
-    console.log("error caught");
+    console.log("Error caught: ", err);
   }
 })();
-observable.next(1); // 1
-observable.next(2); // 2
-observable.error(new Error("HELLO")); // error caught
+observable.next(1);
+// Value: 1
+observable.next(2);
+// Value: 2
+observable.error(new Error("Hello from observable"));
+// Error caught: Error: Hello from observable
 ```

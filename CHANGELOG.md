@@ -13,6 +13,8 @@ For the most part, code which awaits `push` will work as expected, except when t
 
 This change was made because there is no way with async generators to inspect the value passed to return from within the async generator. Additionally, the only way to modify the result returned from the `return` method would be to put a `return` statement in a `finally` block within the async generator, which is typically considered to be a bad practice. Repeaters now uniformly return the value passed to the `return` method.
 
+- Errors thrown by the executor now take priority over rejections passed to push. If a pushed promise rejects, the repeater will await the execution result and throw an error thrown by the executor instead of the rejection if the execution rejects.
+
 - Changes to typescript typings:
   - `Repeater`, `RepeaterExecutor`, `Push` and other related types now take the type parameters `TReturn` and `TNext` in line with typescript 3.6’s strict async generator typings.
   - The `RepeaterBuffer` interface and concrete classes no longer accept a type parameter. All places where the type parameter would have been used, `unknown` is used instead. You should never directly add or remove values from buffers.
