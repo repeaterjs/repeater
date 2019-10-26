@@ -204,7 +204,6 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
 
     if (this.state < RepeaterState.Finished) {
       this.finish();
-      this.execution = Promise.resolve(this.execution).catch(() => undefined);
     }
 
     this.state = RepeaterState.Rejected;
@@ -389,11 +388,12 @@ const controllers = new WeakMap<
 >();
 
 // We do not export any types which use >=3.6 IteratorResult, AsyncIterator or
-// AsyncGenerator type parameters. This allows the code to be used with older
-// versions of typescript.
+// AsyncGenerator types. This allows the code to be used with older versions of
+// typescript. We cannot implement `AsyncIterator` or `AsyncIterableIterator`
+// here because the default types are busted as hell.
 //
 // TODO: use typesVersions to ship stricter types.
-export class Repeater<T, TReturn = any, TNext = unknown> {
+export class Repeater<T, TReturn = any, TNext = unknown>  {
   constructor(
     executor: RepeaterExecutor<T, TReturn, TNext>,
     buffer: RepeaterBuffer = new FixedBuffer(0),
