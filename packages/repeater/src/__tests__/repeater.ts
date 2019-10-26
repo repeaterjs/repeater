@@ -566,6 +566,24 @@ describe("Repeater", () => {
     await expect(r.next()).resolves.toEqual({ done: true });
   });
 
+  test("throw error after pushing rejection", async () => {
+    const error1 = new Error("throw error after pushing rejection 1");
+    const error2 = new Error("throw error after pushing rejection 2");
+    const r = new Repeater((push) => {
+      push(1);
+      push(2);
+      push(Promise.reject(error1));
+      push(4);
+      throw error2;
+    });
+    await expect(r.next()).resolves.toEqual({ value: 1, done: false });
+    await expect(r.next()).resolves.toEqual({ value: 2, done: false });
+    await expect(r.next()).rejects.toBe(error2);
+    await expect(r.next()).resolves.toEqual({ done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+  });
+
   test("throw error after async pushing rejection", async () => {
     const error1 = new Error("throw error after async pushing rejection 1");
     const error2 = new Error("throw error after async pushing rejection 2");
@@ -578,7 +596,33 @@ describe("Repeater", () => {
     });
     await expect(r.next()).resolves.toEqual({ value: 1, done: false });
     await expect(r.next()).resolves.toEqual({ value: 2, done: false });
-    await expect(r.next()).rejects.toBe(error1);
+    await expect(r.next()).rejects.toBe(error2);
+    await expect(r.next()).resolves.toEqual({ done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+    await expect(r.next()).resolves.toEqual({ done: true });
+  });
+
+  test("throw error after stopping with error and pushing rejection", async () => {
+    const error1 = new Error(
+      "throw error after stopping with error and pushing rejection 1",
+    );
+    const error2 = new Error(
+      "throw error after stopping with error and pushing rejection 2",
+    );
+    const error3 = new Error(
+      "throw error after stopping with error and pushing rejection 3",
+    );
+    const r = new Repeater((push, stop) => {
+      push(1);
+      push(2);
+      push(Promise.reject(error1));
+      push(4);
+      stop(error2);
+      throw error3;
+    });
+    await expect(r.next()).resolves.toEqual({ value: 1, done: false });
+    await expect(r.next()).resolves.toEqual({ value: 2, done: false });
+    await expect(r.next()).rejects.toBe(error3);
     await expect(r.next()).resolves.toEqual({ done: true });
     await expect(r.next()).resolves.toEqual({ done: true });
     await expect(r.next()).resolves.toEqual({ done: true });
@@ -1231,7 +1275,7 @@ describe("Repeater", () => {
   test("throw method after stop with error", async () => {
     const error1 = new Error("throw method after stop with error 1");
     const error2 = new Error("throw method after stop with error 2");
-    const r = new Repeater(async (push, stop) => {
+    const r = new Repeater((push, stop) => {
       for (let i = 1; i < 100; i++) {
         push(i);
       }
@@ -1250,10 +1294,11 @@ describe("Repeater", () => {
   test("throw method with throw in executor", async () => {
     const error1 = new Error("throw method with throw in executor 1");
     const error2 = new Error("throw method with throw in executor 2");
-    const r = new Repeater(async (push, stop) => {
+    const r = new Repeater((push) => {
       for (let i = 1; i < 100; i++) {
         push(i);
       }
+
       throw error1;
     });
     await expect(r.next()).resolves.toEqual({ value: 1, done: false });
