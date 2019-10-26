@@ -55,6 +55,7 @@ In addition, the executor API exposes promises which resolve according to the st
 
 ```js
 const repeater = new Repeater(async (push, stop) => {
+  console.log("repeater started!");
   await push(1);
   console.log("pushed 1");
   await push(2);
@@ -65,6 +66,7 @@ const repeater = new Repeater(async (push, stop) => {
 
 (async () => {
   console.log(await repeater.next());
+  // repeater started!
   // { value: 1, done: false }
   console.log(await repeater.next());
   // "pushed 1"
@@ -76,10 +78,19 @@ const repeater = new Repeater(async (push, stop) => {
 })();
 ```
 
-These two arguments make it easy to setup and teardown callbacks within the executor, and they can be exposed to parent closures to model architectural patterns like [generic pubsub classes](https://github.com/repeaterjs/repeater/blob/master/packages/pubsub/src/index.ts) and [semaphores](https://github.com/repeaterjs/repeater/blob/master/packages/limiters/src/index.ts).
+These two arguments make it easy to setup and teardown callbacks within the executor, and they can be exposed to parent closures to model architectural patterns like [generic pubsub classes](https://github.com/repeaterjs/repeater/blob/master/packages/pubsub) and [semaphores](https://github.com/repeaterjs/repeater/blob/master/packages/limiters).
+
+```js
+const keys = new Repeater(async (push, stop) => {
+  const listener = (ev) => push(ev.key);
+  window.addEventListener("keyup", listener);
+  await stop;
+  window.removeEventListener("keyup", listener);
+});
+```
 
 ## Acknowledgments
 
-Thanks to Clojure’s `core.async` for inspiring the basic data structure and algorithm for pushing and pulling values. Specifically, the implementation of repeaters is more or less based on [this video](https://vimeo.com/100518968) explaining `core.async` internals.
+Thanks to Clojure’s `core.async` for inspiring the basic data structure and algorithm for pushing and pulling values. The implementation of repeater methods is more or less based on [this video](https://vimeo.com/100518968) explaining `core.async` internals.
 
 Thanks to [this StackOverflow answer](https://stackoverflow.com/a/47214496/1825413) for providing a helpful overview of the different types of async APIs available in javascript.
