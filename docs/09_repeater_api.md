@@ -40,6 +40,9 @@ type Push<T, TNext = unknown> = (
 ) => Promise<TNext | undefined>;
 ```
 
+##### Parameters
+- `value` - the value to pass to repeater consumers.
+
 The `push` argument is a function which can be called with a value to enqueue the value on the repeater. Consumers can then pull the pushed value using `Repeater.prototype.next`. If the value passed to `push` is a promise, the repeater will unwrap the promise before passing it to consumers.
 
 The `push` function returns a promise which fulfills or rejects depending on the state of the repeater:
@@ -56,12 +59,13 @@ The `push` function will synchronously throw an error if there are too many pend
 type Stop = ((error?: any) => undefined) & Promise<undefined>;
 ```
 
-- error:
-
 The `stop` argument is both a function and a promise.
 
 As a function, `stop` can be called to stop the repeater, preventing any further values from being pushed. Calling `stop` without arguments stops the repeater without error, and passing an error both stops the repeater and causes the final iteration to reject with that error.
  
+##### Parameters
+- error: An optional error. If the error passed to `stop` is non-null and non-undefined, the final iteration will reject to the error.
+
 As a promise, `stop` resolves when `stop` is called, when `Repeater.prototype.return` is called, when a promise rejection is passed to push, or when the executor errors. It can be awaited to defer event handler cleanup, and it can also be used with `Promise.race` to abort pending promises. The `stop` promise will always resolve to `undefined` and will never reject.
 
 ### `Repeater.prototype.next`
@@ -142,7 +146,7 @@ class FixedBuffer implements RepeaterBuffer {
 }
 ```
 
-### The `SlidingBuffer` class
+## The `SlidingBuffer` class
 The `SlidingBuffer` object drops the *earliest* values when the buffer has reached capacity.
 ```ts
 class SlidingBuffer implements RepeaterBuffer {
@@ -154,7 +158,7 @@ class SlidingBuffer implements RepeaterBuffer {
 }
 ```
 
-### The `DroppingBuffer` class
+## The `DroppingBuffer` class
 The `DroppingBuffer` object drops the *latest* values when the buffer has reached capacity. 
 ```ts
 class DroppingBuffer implements RepeaterBuffer {

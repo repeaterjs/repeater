@@ -34,7 +34,6 @@ module.exports = {
       ],
     },
     footer: {
-      style: "dark",
       links: [],
       logo: {},
       copyright: `Copyright © ${new Date().getFullYear()} Brian Kim`,

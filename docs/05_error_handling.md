@@ -3,13 +3,13 @@ id: error_handling
 title: Error Handling
 ---
 
-Because error handling is an important part of creating robust applications, repeaters catch and propagate any errors they receive in a predictable, well-specified manner. Every promise which is passed to a repeater is preemptively handled to prevent unhandled promise rejections.
+Because error handling is an important part of creating robust applications, repeaters catch and propagate any errors they receive in a predictable, well-specified manner. Every promise which is passed to a repeater is preemptively caught to prevent unhandled promise rejections.
 
 ## The four ways a repeater can error
 
 ### 1. Calling `stop` with an error
 
-The most common way to pass an error to a repeater is to call the `stop` function with the error.
+The most common way to caus a repeater to error is to call the `stop` function with the error.
 
 ```js
 const repeater = new Repeater((push, stop) => {
@@ -43,16 +43,16 @@ As seen in the example above, repeaters error only once before entering a finish
 
 ```js
 const repeater = new Repeater(async (push, stop) => {
-  await push("a");
-  await push("b");
-  await push("c");
-  await push(new Promise((_, reject) => {
+  push("a");
+  push("b");
+  push("c");
+  push(new Promise((_, reject) => {
     setTimeout(() => {
       reject(new Error("A rejection passed to push ⏰"));
     }, 100);
   }));
-  // these values are ignored
-  await push("e");
+  // these values are dropped
+  push("e");
   await push("f");
   // this error is ignored
   stop(new Error("Stop in the name of love 😘"));
@@ -71,11 +71,11 @@ const repeater = new Repeater(async (push, stop) => {
 })();
 ```
 
-Repeaters unwrap promises passed to `push`. If a promise passed to `push` rejects, the repeater finishes and any further values are dropped, regardless of when those values settled. If the rejection settles *before* the repeater stops, the next and final result will reject with the pushed rejection. However, if it settles *after* the repeater has stopped, the push rejection is dropped. This behavior is useful when creating [inverted repeaters](/docs/inverted-repeaters).
+Repeaters unwrap promises passed to `push` before sending them along to consumers. If a promise passed to `push` rejects, the repeater finishes and any further values which were pushed before the the promise rejected are dropped, regardless of when those values settled. If the rejection settles *before* the repeater stops, the next call to `next` will reject with the pushed rejection. However, if it settles *after* the repeater has stopped, the rejection is dropped. This behavior is useful when creating [inverted repeaters](/docs/inverted-repeaters).
 
 ### 3. The executor throws an error
 
-The repeater constructor catches both synchronous and asynchronous errors thrown by the executor.
+Repeaters catch both synchronous and asynchronous errors thrown by the executor.
 
 ```js
 const repeater = new Repeater((push, stop) => {
@@ -105,7 +105,7 @@ When an error occurs in the executor, the repeater is stopped. Because errors th
 
 ### 4. Calling the `throw` method
 
-The async iterator interface defines an optional `throw` method which allows consumers to throw errors into the iterator. With async generators, the `throw` method will resume the generator, throwing the error at the point of the `yield` operator. Generators can recover from these errors by wrapping `yield` operations in a `try` block.
+The async iterator interface defines an optional `throw` method which allows consumers to throw errors into the iterator. With async generators, the `throw` method resumes the generator, throwing the error at the point of the `yield` operator. Generators can recover from these errors by wrapping `yield` operations in a `try` block.
 
 Repeaters simulate this behavior by causing the promise returned from the previous `push` call to reject.
 
@@ -134,6 +134,6 @@ const repeater = Repeater(async (push) => {
 })();
 ```
 
-The promise returned from `push` has special behavior where, if it is “floating,” i.e. it is not awaited and the `then/catch` methods are not called, the `throw` method will rethrow the error passed in. This makes it safe to ignore the promise returned from `push`. However, if you await or otherwise use the `push` promise, it becomes your responsiblity to handle errors and propagate the error by calling `stop` with the error or rethrowing the error from the `executor`.
+The promise returned from `push` has special behavior where if it is “floating,” i.e. it is not awaited and the `then/catch` methods are not called, the `throw` method will rethrow the error passed in. This makes it safe to ignore the promise returned from `push`. However, if you await or otherwise use the `push` promise, it becomes your responsiblity to handle and propagate errors passed in via `throw`.
 
-*Note: The `throw` method will also immediately rethrow its error if the repeater has not been started, the repeater has stopped, or the repeater has a non-empty buffer, because in each of these cases, there is no `push` call whose return value can be caught.*
+*Note: The `throw` method will also immediately rethrow its error if the repeater has not been started, the repeater has stopped, or the repeater has a non-empty buffer, because in each of these cases, there is no corresponding `push` call which can reject with the error.*

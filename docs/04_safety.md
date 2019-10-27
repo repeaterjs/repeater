@@ -80,9 +80,9 @@ function listen(target, name) {
 }
 ```
 
-If we swap in the repeater-based `listen` function for the one above, neither `target.addEventListener` nor `target.removeEventListener` are called, and the `clicks` repeater can be safely garbage collected.
+If we swap in the repeater-based `listen` function for the one above, neither `target.addEventListener` nor `target.removeEventListener` are called, and the `clicks` repeater can be safely ignored.
 
-Because repeaters execute lazily, the contract for safely consuming repeaters is simple: **if you call `next`, you must call `return`**. This happens automatically when using `for await…of` loops and is easily enforce when calling `next` manually using `try/finally`.
+Because repeaters execute lazily, the contract for safely consuming repeaters is simple: **if you call `next`, you must call `return`**. This happens automatically when using `for await…of` loops and is easy to enforce when calling `next` manually using `try/finally`.
 
 ## Repeaters respond to backpressure
 The naive `listen` function has an additional, potentially more insidious problem, which is that it pushes events onto an unbounded array. For instance, one can imagine creating an async iterator which listens for scroll events, where the rate at which events are created outpaces the rate at which values are pulled from the iterator, perhaps because of a bottleneck or hanging promise. In this situation, the `events` array created by the naive `listen` function would continue to grow as the user scrolled, eventually causing application performance to degrade. This is often referred to as the “fast producer, slow consumer” problem and while it might not seem like a big issue for short-lived browser sessions, it is crucial to deal with when writing long-running server processes with Node.js.
@@ -94,23 +94,42 @@ The `push` function passed to the executor returns a promise which resolves when
 
 ```js
 const numbers = new Repeater(async (push, stop) => {
-  for (let i = 0; i <= 100; i++) {
+  console.log("starting...");
+  for (let i = 1; i <= 4; i++) {
+    console.log(`pushing ${i}`);
     await push(i);
+    console.log(`pushed ${i}`);
   }
+
+  console.log("stopping...");
   stop();
 });
 
 (async function() {
-  console.log(await numbers.next()); // { value: 0, done: false }
-  let result = [];
-  for await (number of numbers) {
-    result.push(number);
-  }
-  console.log(result); // [1, 2, 3, ..., 99, 100]
+  // starting...
+  console.log(await numbers.next());
+  // pushing 1
+  // { value: 1, done: false }
+  console.log(await numbers.next());
+  // pushed 1
+  // pushing 2
+  // { value: 2, done: false }
+  console.log(await numbers.next());
+  // pushed 2
+  // pushing 3
+  // { value: 3, done: false }
+  console.log(await numbers.next());
+  // pushed 3
+  // pushing 4
+  // { value: 4, done: false }
+  // pushed 4
+  // stopping...
+  console.log(await numbers.next());
+  // { done: true }
 })();
 ```
 
-By awaiting `push`, code in the executor can wait for values to be pulled and the repeater becomes a simple synchronization mechanism between producers and consumers.
+By awaiting `push`, code in the executor can wait for values to be consumed and the repeater becomes a simple synchronization mechanism between producers and consumers.
 
 ### 2. Throwing errors
 
@@ -146,5 +165,4 @@ const ys = new Repeater(async (push, stop) => {
 ys.next();
 ```
 
-The `@repeaterjs/repeater` package exports three buffer classes: `FixedBuffer`, `DroppingBuffer` and `SlidingBuffer`. `FixedBuffer` allows repeaters to push a set number of values without pushes waiting or throwing an error, but preserves the waiting/error throwing behavior described above when the buffer is full. Alternatively, `DroppingBuffer` will drop the *latest* values when the buffer is full and `SlidingBuffer` will drop the *earliest* values. Because `DroppingBuffer` and `SlidingBuffer` instances never fill, pushes to repeaters with these buffers never throw, and the returned promise will resolve immediately. You can define custom buffer classes to give repeaters more complex buffering behaviors.
-
+The `@repeaterjs/repeater` module exports three buffer classes: `FixedBuffer`, `DroppingBuffer` and `SlidingBuffer`. `FixedBuffer` allows repeaters to push a set number of values without pushes waiting or throwing an error, but preserves the waiting/error throwing behavior described above when the buffer is full. Alternatively, `DroppingBuffer` will drop the *latest* values when the buffer is full and `SlidingBuffer` will drop the *earliest* values. Because `DroppingBuffer` and `SlidingBuffer` instances never fill, pushes to repeaters with these buffers never throw overflow errors, and the returned promise resolves immediately. You can define custom buffer classes to give repeaters more complex buffering behaviors.

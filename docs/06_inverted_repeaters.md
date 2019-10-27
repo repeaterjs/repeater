@@ -3,7 +3,7 @@ id: inverted_repeaters
 title: Inverted Repeaters
 ---
 
-Sometimes you want to create async iterators which responds to calls to `next` as asynchronous events themselves. For instance, you might want create a timer which fires a fixed period of time after `next` is called, or even throws an error if it is not called within that fixed period of time. You can create these *inverted repeaters* by taking advantage of the fact that repeaters unwrap and await promises passed to the `push` function.
+Sometimes you want to create async iterators which respond to calls to `next` as asynchronous events themselves. For instance, you might want create a timer which fires a fixed period of time after `next` is called, or even throws an error if it is not called within that fixed period of time. You can create these *inverted repeaters* by taking advantage of the fact that repeaters unwrap and await promises passed to the `push` function.
 
 
 ```js
@@ -11,27 +11,30 @@ const timer = new Repeater(async (push, stop) => {
   const timers = [];
   let stopped = false;
   stopped.then(() => (stopped = true));
-  while (!stopped) {
-    let resolve;
-    let reject;
-    const promise = new Promise((resolve1, reject1) => {
-      resolve = resolve1;
-      reject = reject1;
-    });
-    const timer = {
-      resolve,
-      reject,
-      timeout: setTimeout(() => {
-        resolve(Date.now());
-        timers.unshift();
-      }, 1000),
-    };
-    timers.push(timer);
-    await push(promise);
-  }
-  for (const timer of timers) {
-    timer.reject(new Error("This error is never seen"));
-    clearTimeout(timer.timeout);
+  try {
+    while (!stopped) {
+      let resolve;
+      let reject;
+      const promise = new Promise((resolve1, reject1) => {
+        resolve = resolve1;
+        reject = reject1;
+      });
+      const timer = {
+        resolve,
+        reject,
+        timeout: setTimeout(() => {
+          resolve(Date.now());
+          timers.unshift();
+        }, 1000),
+      };
+      timers.push(timer);
+      await push(promise);
+    }
+  } finally {
+    for (const timer of timers) {
+      timer.reject(new Error("This error is never seen"));
+      clearTimeout(timer.timeout);
+    }
   }
 });
 ```
