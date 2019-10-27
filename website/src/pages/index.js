@@ -1,5 +1,4 @@
 import React from "react";
-import classnames from "classnames";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import withBaseUrl from "@docusaurus/withBaseUrl";
 import Link from "@docusaurus/Link";
@@ -9,13 +8,13 @@ function Hero() {
   const context = useDocusaurusContext();
   const { siteConfig = {} } = context;
   return (
-    <header className={classnames("hero")}>
-      <div className="container">
+    <header className="hero">
+      <div className="container margin-vert--lg">
         <h1 className="hero__title">{siteConfig.title}</h1>
         <p className="hero__subtitle">{siteConfig.tagline}</p>
         <Link
           to={withBaseUrl("docs/quickstart")}
-          className="button button--outline button--primary button--lg"
+          className="button button--primary button--outline button--lg"
         >
           Get Started
         </Link>
@@ -27,10 +26,11 @@ function Hero() {
   );
 }
 
-function Feature({ title, children, color = "white" }) {
+function Feature({ title, children, color = "primary" }) {
+  const h2 = "text";
   return (
     <div className="col">
-      <h2 className="text--center" style={{ color }}>
+      <h2 className={"text--center text--" + color} style={{color}}>
         {title}
       </h2>
       <p className="text--justify">{children}</p>
@@ -40,12 +40,12 @@ function Feature({ title, children, color = "white" }) {
 
 function Body() {
   return (
-    <main className="container padding-horiz--md margin-vert--xl">
-      <div className="row">
-        <Feature title="Convenient" color="#00ABAA">
-          The Repeater class provides a promise-fluent API for creating async
+    <main className="container">
+      <div className="row margin-vert--xl">
+        <Feature title="Convenient">
+          The <code>Repeater</code> class provides a promise-fluent API for creating async
           iterators. You can reuse the same constructor to convert event
-          emitters, streams, websockets, or any other callback-based data source
+          emitters, websockets, streams or any other callback-based data source
           into a format which can be read using <code>async/await</code> and{" "}
           <code>for await…of</code> syntax.
         </Feature>

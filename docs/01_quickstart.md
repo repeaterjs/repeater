@@ -11,17 +11,6 @@ Repeater.js is available on [npm](https://www.npmjs.com/package/@repeaterjs/repe
 
 `$ yarn add @repeaterjs/repeater`
 
-## Requirements
-
-The `@repeaterjs/repeater` package has no dependencies, but requires the following globals in order to work:
-- `Promise`
-- `WeakMap`
-- `Symbol`
-  - `Symbol.iterator`
-  - `Symbol.asyncIterator`
-
-In addition, repeaters are most useful when used via `async/await` and `for await…of` syntax. You can install polyfills and compile your code with babel or typescript to support enviroments which lack these features.
-
 ## Examples
 
 <h4 id="timestamps">Logging timestamps with setInterval</h4>
@@ -149,3 +138,14 @@ observable.next(2);
 observable.error(new Error("Hello from observable"));
 // Error caught: Error: Hello from observable
 ```
+
+## Requirements
+
+The core `@repeaterjs/repeater` module has no dependencies, but requires the following globals in order to work:
+- `Promise`
+- `WeakMap`
+- `Symbol`
+  - `Symbol.iterator`
+  - `Symbol.asyncIterator`
+
+In addition, repeaters are most useful when used via `async/await` and `for await…of` syntax. You can transpile your code with babel or typescript to support enviroments which lack these features.
