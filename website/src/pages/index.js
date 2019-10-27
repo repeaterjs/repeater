@@ -19,6 +19,9 @@ function Hero() {
         >
           Get Started
         </Link>
+        <div className="button button--link">
+          <iframe src="https://ghbtns.com/github-btn.html?user=repeaterjs&repo=repeater&type=star&count=true&size=large" frameBorder="0" scrolling="0" width="160px" height="30px"></iframe>
+        </div>
       </div>
     </header>
   );
