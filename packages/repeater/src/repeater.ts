@@ -32,9 +32,9 @@ export type Push<T, TNext = unknown> = (
   value: PromiseLike<T> | T,
 ) => Promise<TNext | undefined>;
 
-export type Stop = Promise<undefined> & ((error?: any) => undefined);
+export type Stop = ((error?: any) => undefined) & Promise<undefined>;
 
-export type RepeaterExecutor<T, TReturn = any, TNext = any> = (
+export type RepeaterExecutor<T, TReturn = any, TNext = unknown> = (
   push: Push<T, TNext>,
   stop: Stop,
 ) => PromiseLike<TReturn> | TReturn;
