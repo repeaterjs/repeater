@@ -17,6 +17,11 @@ module.exports = {
           position: "left",
         },
         {
+          to: "docs/repeater_api",
+          label: "API",
+          position: "left",
+        },
+        {
           href: "https://github.com/repeaterjs/repeater",
           label: "GitHub",
           position: "right",
