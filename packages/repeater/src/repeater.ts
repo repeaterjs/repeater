@@ -393,7 +393,7 @@ const controllers = new WeakMap<
 // here because the default types are busted as hell.
 //
 // TODO: use typesVersions to ship stricter types.
-export class Repeater<T, TReturn = any, TNext = unknown>  {
+export class Repeater<T, TReturn = any, TNext = unknown> {
   constructor(
     executor: RepeaterExecutor<T, TReturn, TNext>,
     buffer: RepeaterBuffer = new FixedBuffer(0),
@@ -500,7 +500,6 @@ function race<T>(contenders: Iterable<Contender<T>>): Repeater<T> {
             (result) => {
               if (result.done && !stopped) {
                 stop();
-                stopped = true;
                 returned = result.value;
               }
             },
@@ -509,7 +508,7 @@ function race<T>(contenders: Iterable<Contender<T>>): Repeater<T> {
         }
 
         const result = await Promise.race([...results, stop]);
-        if (result !== undefined) {
+        if (result !== undefined && !result.done) {
           await push(result.value);
         }
       }

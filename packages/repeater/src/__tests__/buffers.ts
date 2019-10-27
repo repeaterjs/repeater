@@ -2,7 +2,7 @@ import { DroppingBuffer, FixedBuffer, SlidingBuffer } from "../repeater";
 
 describe("RepeaterBuffer", () => {
   test("FixedBuffer", () => {
-    const buffer = new FixedBuffer<number>(2);
+    const buffer = new FixedBuffer(2);
     expect([buffer.empty, buffer.full]).toEqual([true, false]);
     buffer.add(1);
     expect([buffer.empty, buffer.full]).toEqual([false, false]);
@@ -17,7 +17,7 @@ describe("RepeaterBuffer", () => {
   });
 
   test("SlidingBuffer", () => {
-    const buffer = new SlidingBuffer<number>(2);
+    const buffer = new SlidingBuffer(2);
     expect([buffer.empty, buffer.full]).toEqual([true, false]);
     buffer.add(1);
     buffer.add(2);
@@ -32,7 +32,7 @@ describe("RepeaterBuffer", () => {
   });
 
   test("DroppingBuffer", () => {
-    const buffer = new DroppingBuffer<number>(2);
+    const buffer = new DroppingBuffer(2);
     expect([buffer.empty, buffer.full]).toEqual([true, false]);
     buffer.add(1);
     buffer.add(2);
