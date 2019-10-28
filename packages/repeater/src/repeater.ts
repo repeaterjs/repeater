@@ -9,6 +9,8 @@ export {
 
 export const MAX_QUEUE_LENGTH = 1024;
 
+const NOOP = () => {};
+
 export class RepeaterOverflowError extends Error {
   constructor(message: string) {
     super(message);
@@ -57,18 +59,6 @@ const enum RepeaterState {
   Rejected,
 }
 
-function isPromiseLike(value: any): value is PromiseLike<unknown> {
-  return value != null && typeof value.then === "function";
-}
-
-const noop = () => {};
-// utility to make sure we don’t cause any unhandled promise rejections
-function swallow(value: any): void {
-  if (isPromiseLike(value)) {
-    value.then(noop, noop);
-  }
-}
-
 /**
  * The functionality for repeaters is implemented in this helper class and
  * hidden using a private WeakMap to make repeaters themselves opaque and
@@ -87,8 +77,8 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
   // re-assigned depending on whether stop, return or throw is called.
   private execution?: Promise<TReturn | undefined>;
   private error?: any;
-  private onnext: (value?: PromiseLike<TNext> | TNext) => unknown = () => {};
-  private onstop: () => unknown = () => {};
+  private onnext: (value?: PromiseLike<TNext> | TNext) => unknown = NOOP;
+  private onstop: () => unknown = NOOP;
   constructor(
     private executor: RepeaterExecutor<T, TReturn, TNext>,
     private buffer: RepeaterBuffer,
@@ -213,7 +203,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
    * This method is bound and passed to the executor as the push argument.
    */
   private push(value: PromiseLike<T> | T): Promise<TNext | undefined> {
-    swallow(value);
+    Promise.resolve(value).catch(NOOP);
     if (this.pushQueue.length >= MAX_QUEUE_LENGTH) {
       throw new RepeaterOverflowError(
         `No more than ${MAX_QUEUE_LENGTH} pending calls to push are allowed on a single repeater.`,
@@ -318,7 +308,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
   next(
     value?: PromiseLike<TNext> | TNext,
   ): Promise<IteratorResult<T, TReturn>> {
-    swallow(value);
+    Promise.resolve(value).catch(NOOP);
     if (this.pullQueue.length >= MAX_QUEUE_LENGTH) {
       throw new RepeaterOverflowError(
         `No more than ${MAX_QUEUE_LENGTH} pending calls to Repeater.prototype.next are allowed on a single repeater.`,
@@ -354,7 +344,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
   return(
     value?: PromiseLike<TReturn> | TReturn,
   ): Promise<IteratorResult<T, TReturn>> {
-    swallow(value);
+    Promise.resolve(value).catch(NOOP);
     this.finish();
     this.execution = Promise.resolve(this.execution).then(() => value);
     return this.unwrap(this.consume());
