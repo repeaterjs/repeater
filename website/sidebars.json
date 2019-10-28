@@ -1,10 +1,6 @@
 {
   "docs": {
-    "Getting Started": [
-      "quickstart",
-      "overview",
-      "rationale"
-    ],
+    "Getting Started": ["quickstart", "overview", "rationale"],
     "Guides": [
       "safety",
       "error_handling",
@@ -12,8 +8,6 @@
       "combinators",
       "utilities"
     ],
-    "API Reference": [
-      "repeater_api"
-    ]
+    "API Reference": ["repeater"]
   }
 }

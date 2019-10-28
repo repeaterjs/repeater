@@ -7,7 +7,7 @@ Combining async iterators is a [non-trivial task](https://stackoverflow.com/ques
 
 ## `Repeater.race`
 
-`Repeater.race` takes an iterable of async iterators and races results from each iterator using `Promise.race`, yielding the value which resolved first. One important use-case is using `Promise.race` with `timeout` to place a fixed upper bound on how long each iteration of an async iterator can take:
+`Repeater.race` takes an iterable of async iterables and races results from each iterable using `Promise.race`, yielding the value which fulfilled first. One important use-case is using `Promise.race` with `timeout` to place a fixed upper bound on how long each iteration of an async iterator can take:
 
 ```js
 import { Repeater } from "@repeaterjs/repeater";
@@ -31,9 +31,9 @@ const numbers = new Repeater(async (push) => {
 })();
 ```
 
-The `timeout` function is a useful repeater-based utility which errors if `next` is not called within a specified period of time. In the above example, each iteration of `numbers` has one second to resolve before the returned iterator throws.
+The `timeout` function is a useful repeater-based utility which errors if `next` is not called within a specified period of time. In the above example, each iteration of `numbers` has one second to fulfill before the returned iterator throws.
 
-You can also pass a promise to `Repeater.race` in which case the entire iteration will be raced against the promise:
+You can also pass a promise to `Repeater.race`, in which case the entire iteration will be raced against the promise:
 
 ```js
 import { Repeater } from "@repeaterjs/repeater";
@@ -67,7 +67,7 @@ const timer = timeout(2000);
 
 ## `Repeater.merge`
 
-`Repeater.merge` takes an iterable of async iterators and returns a repeater which yields values whenever any of the child iterators yield values. This method is useful for when you have multiple async iterators and want to consume values from all of them in the order in which they occur.
+`Repeater.merge` takes an iterable of async iterables and returns a repeater which yields values whenever any of the iterables yield values. This method is useful for when you have multiple async iterators and want to consume values from all of them in the order in which they occur.
 
 ```js
 import { Repeater } from "@repeaterjs/repeater";
@@ -93,7 +93,7 @@ const rightClicks = new Repeater(async (push, stop) => {
 
 ## `Repeater.zip`
 
-`Repeater.zip` takes an iterable of async iterators, awaits iteration from every iterator using `Promise.all`, and yields the resulting array. This method is useful for when you want to synchronize multiple iterators, making sure that values are pulled from each iterator in lockstep with another. For instance, you can use `Repeater.zip` with a buffer and the `delay` function from the `@repeaterjs/timers` package to throttle another repeater.
+`Repeater.zip` takes an iterable of async iterables, awaits a result from every iterable using `Promise.all`, and yields the resulting array. This method is useful for when you want to synchronize multiple iterators, making sure that values are pulled from each iterator in lockstep motion. For instance, you can use `Repeater.zip` with the `delay` function from the `@repeaterjs/timers` package to throttle a buffered repeater.
 
 ```js
 import { Repeater, SlidingBuffer } from "@repeaterjs/repeater";
@@ -106,14 +106,14 @@ const keys = new Repeater(async (push, stop) => {
 }, new SlidingBuffer(1));
 (async function() {
   for await (const [key] of Repeater.zip([keys, delay(1000)])) {
-    console.log(key); // will only log the latest key every second
+    console.log(key); // will log the latest key every second
   }
 })();
 ```
 
 ## `Repeater.latest`
 
-`Repeater.latest` takes an iterable of async iterators and returns a repeater which yields an array of the latest values from each iterator whenever any of them yields a value. This method is similar to merge, except that it allows you to compare values from each iterator against each other. The first call to `next` on this iterator will not resolve until all iterators resolve at least once.
+`Repeater.latest` takes an iterable of async iterables and returns a repeater which yields an array of the latest values from each iterable whenever any of them yields a value. This method is similar to merge, except that it allows you to compare values from each iterator against each other. The first call to `next` on this repeater will not fulfill until all iterators produce a value.
 
 ```js
 import { Repeater } from "@repeaterjs/repeater";
