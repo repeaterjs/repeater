@@ -1,5 +1,5 @@
 # Changelog
-## repeater@3.0.0 - Unreleased
+## repeater@3.0.0-beta.1 2019-10-27
 This release overhauls the `push` and `stop` promises and the `return` and `throw` methods to be more in line with the behavior of async generators. If you used repeaters to simply add and remove event handlers, you can upgrade without worrying about breaking changes. However, if you awaited `push` calls, read the value of the `stop` promise, or used the `return` or `throw` methods in non-trivial ways, this release may break your code.
 
 ### Changed
