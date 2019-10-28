@@ -7,7 +7,7 @@ title: Overview
 
 *Note: These docs assume some familiarity with recent javascript features, specifically [promises](https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous/Promises), [async/await](https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous/Async_await) and [iterators/generators](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators).*
 
-Repeaters are opaque objects which represent an asynchronous sequence of values. These values can be read using the methods found on the [async iterator interface](https://tc39.es/ecma262/#sec-asynciterator-interface). `Repeater.prototype.next` returns a promise which resolves to the next iteration result, and `Repeater.prototype.return` prematurely ends iteration. Repeaters are most useful when consumed via [`for await…of`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of) loops, which call and await the repeater’s `next` and `return` methods automatically.
+The `Repeater` object represents an asynchronous sequence of values. These values can be read using the methods found on the [async iterator interface](https://tc39.es/ecma262/#sec-asynciterator-interface). `Repeater.prototype.next` returns a promise which resolves to the next iteration result, and `Repeater.prototype.return` prematurely ends iteration. Repeaters are most useful when consumed via [`for await…of`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of) loops, which call and await the repeater’s `next` and `return` methods automatically.
 
 Repeaters are designed with the explicit goal of behaving exactly like async generator objects and contain no methods or properties not found on async iterator interface. If you discover a discrepancy between repeaters and async generators, please [open an issue](https://github.com/repeaterjs/repeater/issues/new).
 
@@ -82,6 +82,6 @@ These two arguments make it easy to setup and teardown callbacks within the exec
 
 ## Acknowledgments
 
-Thanks to Clojure’s `core.async` for inspiring the basic data structure and algorithm for pushing and pulling values. The implementation of repeater methods is more or less based on [this video](https://vimeo.com/100518968) explaining `core.async` internals.
+Thanks to Clojure’s `core.async` for inspiring the basic data structure and algorithm for pushing and pulling values. The implementation of repeaters is more or less based on [this presentation](https://vimeo.com/100518968) explaining `core.async` internals.
 
 Thanks to [this StackOverflow answer](https://stackoverflow.com/a/47214496/1825413) for providing a helpful overview of the different types of async APIs available in javascript.

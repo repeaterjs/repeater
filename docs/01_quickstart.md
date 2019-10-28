@@ -20,9 +20,9 @@ import { Repeater } from "@repeaterjs/repeater";
 
 const timestamps = new Repeater(async (push, stop) => {
   push(Date.now());
-  const timer = setInterval(() => push(Date.now()), 1000);
+  const interval = setInterval(() => push(Date.now()), 1000);
   await stop;
-  clearInterval(timer);
+  clearInterval(interval);
 });
 
 (async function() {

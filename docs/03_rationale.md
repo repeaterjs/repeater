@@ -14,12 +14,12 @@ async function* messages(url) {
   const socket = new WebSocket(url);
   socket.onmessage = (ev) => {
     // can’t make the outer generator yield from here.
-    yield ev.data // this line is a syntax error
+    yield ev.data // this line throws a syntax error
   };
 }
 ```
 
-The solution using async generators exclusively is often some ad-hoc `while (true)` loop which constructs and awaits a promise which adds and removes event handlers each iteration. The resulting code is often prone to race-conditions, dropped messages and memory leaks unless done with an expert understanding of both promises and generators. Repeaters behave identically to async generators, except they provide the `yield`, `return` and `throw` operators as the functions `push` and `stop`. These functions can then be used in child closures, making repeaters ideal for use with callback-based APIs.
+The solution using async generators exclusively is often to create a `while (true)` loop which awaits a promise which adds and removes event handlers each iteration. The resulting code is prone to race-conditions, dropped messages and memory leaks unless done with an expert understanding of both promises and generators. Repeaters behave identically to async generators, except they provide the `yield`, `return` and `throw` operators as the functions `push` and `stop`. These functions can be used in child closures, making repeaters ideal for use with callback-based APIs.
 
 Once you have converted callback-based APIs to repeater-returning functions, repeaters can be used seamlessly with async generators to write elegant async code.
 
@@ -30,8 +30,8 @@ Observables are often thought of as competing with async iterators and therefore
 ```js
 import { Observable } from "rxjs";
 import { takeWhile } from "rxjs/operators";
-const keys = new Observable(subscriber => {
-  const listener = ev => {
+const keys = new Observable((subscriber) => {
+  const listener = (ev) => {
     if (ev.key === "Escape") {
       subscriber.complete();
     } else {
@@ -47,7 +47,7 @@ const konami = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "Ar
 let i = 0;
 let subscription = keys
   .pipe(
-    takeWhile(key => {
+    takeWhile((key) => {
       if (key === konami[i]) {
         i++;
       } else {
@@ -65,6 +65,6 @@ let subscription = keys
 
 While you can often create an equivalent observable for any repeater, there are differences which make repeaters more convenient to use.
 
-Firstly, repeaters support `async/await` and `for await…of` syntax, so we don’t need a library of “operators” like `takeWhile` to prematurely end iteration. In the example above, someone unfamiliar with `rxjs` might not immediately recognize what `takeWhile` does, whereas the same programmer would probably recognize what a `break` statement does in a `for await…of` loop. Using `for await…of` loops means we get to leverage what we already know about synchronous loops and control-flow operators to write cleaner, more intuitive code. Rather than using the `map` operator, we can assign a variable, rather than using the `filter` operator, we can use `if/else` statements, and rather than using the `reduce` operator, we can reassign or mutate a variable in an outer scope.
+Firstly, repeaters support `async/await` and `for await…of` syntax out of the box, so we don’t need a library of “operators” like `takeWhile` to consume them. In the example above, someone unfamiliar with `rxjs` might not immediately recognize what `takeWhile` does, whereas the same programmer would probably recognize what a `break` statement does in a `for await…of` loop. Using `for` loops means we get to leverage what we already know about synchronous loops and control-flow operators to write cleaner, more intuitive code.
 
-Secondly, despite the claims observable advocates make about how observables are “monadic” or that they are the “mathematical dual” of synchronous iterables, observables are ultimately callback-based APIs. The above example hides this detail by calling the `subscribe` method without arguments, but if we wanted to compose this observable with other code, we would have to make additional calls to `pipe` and `subscribe`, passing in additional callbacks. While calls to `pipe` can be chained or combined using “higher-order observable operators,” the resulting code can be difficult to understand or split up into reasonably named functions.
+Secondly, despite the claims observable advocates make about how observables are “monadic” or that they are the “mathematical dual” of synchronous iterables, observables are ultimately callback-based APIs. The above example hides this detail by calling the `subscribe` method without arguments, but if we wanted to compose this observable with other code, we would have to make additional calls to `pipe`, passing in additional callbacks. While these calls to `pipe` can be combined using “higher-order observable operators,” the resulting code can be difficult to understand or split up into reasonably named functions.
