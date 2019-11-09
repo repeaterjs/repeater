@@ -85,7 +85,7 @@ If we swap in this repeater-based `listen` function for the one above, neither `
 Because repeaters execute lazily, the contract for safely consuming repeaters is simple: **if you call `next`, you must call `return`**. This happens automatically when using `for await…of` loops and is easy to enforce when calling `next` manually using `try/finally`.
 
 ## Repeaters respond to backpressure
-The naive `listen` function has an additional, more insidious problem, which is that it pushes events onto an unbounded array. Imagine for instance, using the naive `listen` function to create an async iterator which listens for scroll events. It is easy to think of a situation where the rate at which these scroll events are created outpaces the rate at which they are pulled from the iterator, as the scroll event fires frequently as the user scrolls through a website. In this situation, the `events` array created by the naive `listen` function would continue to grow, eventually causing application performance to degrade. This is often referred to as the “fast producer, slow consumer” problem and while it might not seem like a big issue for short-lived browser sessions, it is crucial to deal with when writing long-running server processes with Node.js.
+The naive `listen` function has an additional, more insidious problem, which is that it pushes events onto an unbounded array. Imagine for instance, using the naive `listen` function to create an async iterator which listens for scroll events. It is easy to think of a situation where the rate at which these scroll events are pushed outpaces the rate at which they are pulled from the iterator. In this situation, the `events` array created by the naive `listen` function would continue to grow unbounded, eventually causing application performance to degrade. This is often referred to as the “fast producer, slow consumer” problem and while it might not seem like a big issue for short-lived browser sessions, it is crucial to deal with when writing long-running server processes with Node.js.
 
 Inspired by Clojure’s `core.async` library, repeaters provide three solutions for dealing with slow consumers:
 
@@ -98,7 +98,6 @@ const numbers = new Repeater(async (push, stop) => {
   for (let i = 1; i <= 4; i++) {
     console.log(`pushing ${i}`);
     await push(i);
-    console.log(`pushed ${i}`);
   }
 
   console.log("stopping...");
@@ -111,18 +110,14 @@ const numbers = new Repeater(async (push, stop) => {
   // pushing 1
   // { value: 1, done: false }
   console.log(await numbers.next());
-  // pushed 1
   // pushing 2
   // { value: 2, done: false }
   console.log(await numbers.next());
-  // pushed 2
   // pushing 3
   // { value: 3, done: false }
   console.log(await numbers.next());
-  // pushed 3
   // pushing 4
   // { value: 4, done: false }
-  // pushed 4
   // stopping...
   console.log(await numbers.next());
   // { done: true }
@@ -165,4 +160,4 @@ const ys = new Repeater(async (push, stop) => {
 ys.next();
 ```
 
-The `@repeaterjs/repeater` module exports three buffer classes: `FixedBuffer`, `DroppingBuffer` and `SlidingBuffer`. `FixedBuffer` allows repeaters to push a set number of values without pushes waiting or throwing errors, but preserves the waiting/error throwing behavior described above when the buffer is full. Alternatively, `DroppingBuffer` drops the *latest* values when the buffer is full and `SlidingBuffer` drops the *earliest* values. Because `DroppingBuffer` and `SlidingBuffer` instances never fill up, pushes to repeaters with these buffers never throw overflow errors, and the returned promises always resolve immediately. You can define custom buffer classes to give repeaters more complex buffering behaviors.
+The `@repeaterjs/repeater` module exports three buffer classes: `FixedBuffer`, `DroppingBuffer` and `SlidingBuffer`. `FixedBuffer` allows repeaters to push a set number of values without pushes waiting or throwing errors, but preserves the waiting/error throwing behavior described above when the buffer is full. Alternatively, `DroppingBuffer` drops the *latest* values when the buffer is full and `SlidingBuffer` drops the *earliest* values. Because `DroppingBuffer` and `SlidingBuffer` instances never fill up, pushes to repeaters with these buffers never throw overflow errors, and the promises returned from `push` always resolve immediately. You can define custom buffer classes to give repeaters more complex buffering behaviors.

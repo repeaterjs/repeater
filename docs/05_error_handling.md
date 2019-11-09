@@ -130,6 +130,6 @@ const repeater = Repeater(async (push) => {
 })();
 ```
 
-The promise returned from `push` has special behavior where if it is “floating,” i.e. it is not awaited and its `then/catch` methods are not called, the `throw` method rethrows the error passed in. This makes it safe to ignore the promise returned from `push`. However, if you await or otherwise use the `push` promise, it becomes your responsibility to handle and propagate errors passed to `throw`.
+The promise returned from `push` has special behavior where if it is “floating” (i.e. it is not awaited and its `then/catch` methods are not called) the `throw` method rethrows the error passed in. This makes it safe to ignore the promise returned from `push`. However, if you await or otherwise use the `push` promise, it becomes your responsibility to handle and propagate errors passed to `throw`.
 
 *Note: The `throw` method will also immediately rethrow its error if the repeater has not been started, the repeater has stopped, or the repeater has a non-empty buffer, because in each of these cases, there is no corresponding `push` call which can reject with the error.*
