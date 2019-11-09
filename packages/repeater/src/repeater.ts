@@ -150,7 +150,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
   /**
    * A helper method used to mimic the behavior of async generators where the
    * final result or any error are consumed, so that further calls to next,
-   * return or throw return { done: true }.
+   * return or throw return { value: undefined, done: true }.
    */
   private consume(): Promise<TReturn | undefined> {
     const err = this.err;
@@ -222,8 +222,6 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
       return Promise.resolve(undefined);
     }
 
-    // “return undefined” here is required because of the horrible semantics of
-    // the typescript void type
     let valueP: Promise<T | undefined> =
       this.pending === undefined
         ? Promise.resolve(value)
@@ -234,6 +232,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
       }
 
       this.reject();
+      // Explicitly return undefined to avoid typescript’s horrible void type
       return undefined;
     });
 
@@ -264,6 +263,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
         err = err1;
       }
 
+      // Explicitly return undefined to avoid typescript’s horrible void type
       return undefined;
     });
     next.then = function(onFulfilled, onRejected): Promise<any> {
@@ -278,6 +278,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
           this.reject();
         }
 
+        // Explicitly return undefined to avoid typescript’s horrible void type
         return undefined;
       });
     return next;
