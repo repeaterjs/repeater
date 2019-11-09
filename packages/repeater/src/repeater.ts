@@ -11,6 +11,16 @@ export const MAX_QUEUE_LENGTH = 1024;
 
 const NOOP = () => {};
 
+function isPromiseLike(value: any): value is PromiseLike<unknown> {
+  return value != null && typeof value.then === "function";
+}
+
+function swallow(value: unknown): void {
+  if (isPromiseLike(value)) {
+    value.then(NOOP, NOOP);
+  }
+}
+
 export class RepeaterOverflowError extends Error {
   constructor(message: string) {
     super(message);
@@ -203,7 +213,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
    * This method is bound and passed to the executor as the push argument.
    */
   private push(value: PromiseLike<T> | T): Promise<TNext | undefined> {
-    Promise.resolve(value).catch(NOOP);
+    swallow(value);
     if (this.pushQueue.length >= MAX_QUEUE_LENGTH) {
       throw new RepeaterOverflowError(
         `No more than ${MAX_QUEUE_LENGTH} pending calls to push are allowed on a single repeater.`,
@@ -308,7 +318,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
   next(
     value?: PromiseLike<TNext> | TNext,
   ): Promise<IteratorResult<T, TReturn>> {
-    Promise.resolve(value).catch(NOOP);
+    swallow(value);
     if (this.pullQueue.length >= MAX_QUEUE_LENGTH) {
       throw new RepeaterOverflowError(
         `No more than ${MAX_QUEUE_LENGTH} pending calls to Repeater.prototype.next are allowed on a single repeater.`,
@@ -344,7 +354,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
   return(
     value?: PromiseLike<TReturn> | TReturn,
   ): Promise<IteratorResult<T, TReturn>> {
-    Promise.resolve(value).catch(NOOP);
+    swallow(value);
     this.finish();
     this.execution = Promise.resolve(this.execution).then(() => value);
     return this.unwrap(this.consume());
