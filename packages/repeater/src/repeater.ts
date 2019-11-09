@@ -670,12 +670,10 @@ function latest<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
     const results = await Promise.race([stop, resultsP]);
     if (results === undefined) {
       return Promise.all(
-        iters.map(async (iter) => {
-          if (iter.return === undefined) {
-            return;
+        iters.map((iter) => {
+          if (iter.return !== undefined) {
+            return Promise.resolve(iter.return()).then((result) => result.value);
           }
-
-          return (await iter.return()).value;
         }),
       );
     }
@@ -685,7 +683,19 @@ function latest<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
       return values;
     }
 
-    await push(values.slice());
+    try {
+      await push(values.slice());
+    } catch (err) {
+      await Promise.all(
+        iters.map((iter) => {
+          if (iter.return !== undefined) {
+            return iter.return();
+          }
+        }),
+      );
+      throw err;
+    }
+
     const result = await Promise.all(
       iters.map(async (iter, i) => {
         if (results[i].done) {
