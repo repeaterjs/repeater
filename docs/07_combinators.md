@@ -63,7 +63,7 @@ const timer = timeout(2000);
 })();
 ```
 
-*Note: it is important to call `timer.return` manually in a `finally` block to release the timer and ensure there are no unhandled promise rejections.*
+*Note: it is important to call `timer.return` manually in a `finally` block to make sure the timer is cleaned up.*
 
 ## `Repeater.merge`
 
