@@ -17,7 +17,7 @@ function isPromiseLike(value: any): value is PromiseLike<unknown> {
 
 function swallow(value: unknown): void {
   if (isPromiseLike(value)) {
-    value.then(NOOP, NOOP);
+    Promise.resolve(value).catch(NOOP);
   }
 }
 
@@ -44,7 +44,7 @@ export type Push<T, TNext = unknown> = (
   value: PromiseLike<T> | T,
 ) => Promise<TNext | undefined>;
 
-export type Stop = ((error?: any) => undefined) & Promise<undefined>;
+export type Stop = ((err?: any) => undefined) & Promise<undefined>;
 
 export type RepeaterExecutor<T, TReturn = any, TNext = unknown> = (
   push: Push<T, TNext>,
@@ -86,7 +86,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
   // execution is set to the return value of calling the executor and can be
   // re-assigned depending on whether stop, return or throw is called.
   private execution?: Promise<TReturn | undefined>;
-  private error?: any;
+  private err?: any;
   private onnext: (value?: PromiseLike<TNext> | TNext) => unknown = NOOP;
   private onstop: () => unknown = NOOP;
   constructor(
@@ -118,9 +118,9 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
 
     try {
       this.execution = Promise.resolve(this.executor(push, stop));
-    } catch (error) {
-      // sync error in executor
-      this.execution = Promise.reject(error);
+    } catch (err) {
+      // sync err in executor
+      this.execution = Promise.reject(err);
     }
 
     // We don’t have to call this.stop with the error because all that does is
@@ -153,15 +153,15 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
    * return or throw return { done: true }.
    */
   private consume(): Promise<TReturn | undefined> {
-    const error = this.error;
+    const err = this.err;
     const execution = Promise.resolve(this.execution).then((value) => {
-      if (error != null) {
-        throw error;
+      if (err != null) {
+        throw err;
       }
 
       return value;
     });
-    this.error = undefined;
+    this.err = undefined;
     this.execution = execution.then(() => undefined, () => undefined);
     return this.pending === undefined
       ? execution
@@ -226,9 +226,9 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
       this.pending === undefined
         ? Promise.resolve(value)
         : this.pending.then(() => value);
-    valueP = valueP.catch((error) => {
+    valueP = valueP.catch((err) => {
       if (this.state < RepeaterState.Stopped) {
-        this.error = error;
+        this.err = err;
       }
 
       this.reject();
@@ -256,10 +256,10 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
     // This method of catching unhandled rejections is adapted from
     // https://stackoverflow.com/a/57792542/1825413
     let floating = true;
-    let error: any;
-    const unhandled = next.catch((error1) => {
+    let err: any;
+    const unhandled = next.catch((err1) => {
       if (floating) {
-        error = error1;
+        err = err1;
       }
     });
     next.then = function(onFulfilled, onRejected): Promise<any> {
@@ -269,8 +269,8 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
     this.pending = valueP
       .then(() => unhandled)
       .then(() => {
-        if (error != null) {
-          this.error = error;
+        if (err != null) {
+          this.err = err;
           this.reject();
         }
       });
@@ -282,7 +282,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
    *
    * Advances state to RepeaterState.Stopped
    */
-  private stop(error?: any): void {
+  private stop(err?: any): void {
     if (this.state >= RepeaterState.Stopped) {
       return;
     }
@@ -290,8 +290,8 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
     this.state = RepeaterState.Stopped;
     this.onnext();
     this.onstop();
-    if (this.error == null) {
-      this.error = error;
+    if (this.err == null) {
+      this.err = err;
     }
 
     for (const push of this.pushQueue) {
@@ -360,21 +360,21 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
     return this.unwrap(this.consume());
   }
 
-  throw(error: any): Promise<IteratorResult<T, TReturn>> {
+  throw(err: any): Promise<IteratorResult<T, TReturn>> {
     if (
       this.state <= RepeaterState.Initial ||
       this.state >= RepeaterState.Stopped ||
       !this.buffer.empty
     ) {
       this.finish();
-      if (this.error == null) {
-        this.error = error;
+      if (this.err == null) {
+        this.err = err;
       }
 
       return this.unwrap(this.consume());
     }
 
-    return this.next(Promise.reject(error));
+    return this.next(Promise.reject(err));
   }
 
   [Symbol.asyncIterator](): this {
@@ -419,13 +419,13 @@ export class Repeater<T, TReturn = any, TNext = unknown> {
     return controller.return(value);
   }
 
-  throw(error?: any): Promise<IteratorResult<T>> {
+  throw(err?: any): Promise<IteratorResult<T>> {
     const controller = controllers.get(this);
     if (controller === undefined) {
       throw new Error("RepeaterController missing from controllers WeakMap");
     }
 
-    return controller.throw(error);
+    return controller.throw(err);
   }
 
   [Symbol.asyncIterator](): this {
@@ -491,8 +491,8 @@ function race<T>(contenders: Iterable<Contender<T>>): Repeater<T> {
 
     let stopped = false;
     stop.then(() => (stopped = true));
+    let returned: any;
     try {
-      let returned: any;
       while (!stopped) {
         const results = iters.map((iter) => iter.next());
         for (const result of results) {
@@ -503,19 +503,19 @@ function race<T>(contenders: Iterable<Contender<T>>): Repeater<T> {
                 returned = result.value;
               }
             },
-            (error) => stop(error),
+            (err) => stop(err),
           );
         }
 
-        const result = await Promise.race([...results, stop]);
+        const result = await Promise.race([stop, ...results]);
         if (result !== undefined && !result.done) {
           await push(result.value);
         }
       }
 
       return returned;
-    } catch (error) {
-      stop(error);
+    } catch (err) {
+      stop(err);
     } finally {
       stop();
       await Promise.race(iters.map((iter) => iter.return && iter.return()));
@@ -568,12 +568,10 @@ function merge<T>(contenders: Iterable<Contender<T>>): Repeater<T> {
               await push(result.value);
             }
           }
-        } catch (error) {
-          stop(error);
+        } catch (err) {
+          stop(err);
         } finally {
-          if (iter.return) {
-            await iter.return();
-          }
+          iter.return && (await iter.return());
         }
       }),
     );
@@ -615,7 +613,7 @@ function zip<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
     try {
       while (!stopped) {
         const resultsP = Promise.all(iters.map((iter) => iter.next()));
-        const results = await Promise.race([resultsP, stop]);
+        const results = await Promise.race([stop, resultsP]);
         if (results === undefined) {
           break;
         }
@@ -627,8 +625,8 @@ function zip<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
 
         await push(values);
       }
-    } catch (error) {
-      stop(error);
+    } catch (err) {
+      stop(err);
     } finally {
       stop();
       await Promise.all(iters.map((iter) => iter.return && iter.return()));
@@ -672,7 +670,9 @@ function latest<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
       return Promise.all(
         iters.map((iter) => {
           if (iter.return !== undefined) {
-            return Promise.resolve(iter.return()).then((result) => result.value);
+            return Promise.resolve(iter.return()).then(
+              (result) => result.value,
+            );
           }
         }),
       );
@@ -686,6 +686,8 @@ function latest<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
     try {
       await push(values.slice());
     } catch (err) {
+      // after the first call to next, throw was called or next was called with
+      // a value which rejected
       await Promise.all(
         iters.map((iter) => {
           if (iter.return !== undefined) {
@@ -714,8 +716,8 @@ function latest<T>(contenders: Iterable<Contender<T>>): Repeater<T[]> {
               await push(values.slice());
             }
           }
-        } catch (error) {
-          stop(error);
+        } catch (err) {
+          stop(err);
         } finally {
           if (iter.return) {
             await iter.return();
