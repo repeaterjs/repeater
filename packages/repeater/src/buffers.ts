@@ -1,7 +1,7 @@
 export interface RepeaterBuffer {
   full: boolean;
   empty: boolean;
-  add(value: unknown): void;
+  add(value: unknown): unknown;
   remove(): unknown;
 }
 
