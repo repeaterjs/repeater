@@ -82,7 +82,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
   private pullQueue: PullOperation<T, TReturn, TNext>[] = [];
   // We continuously re-assign pending in push to make sure all results settle
   // in order. The pending promise will never reject.
-  private pending?: Promise<any>;
+  private pending?: Promise<T | undefined>;
   // execution is set to the return value of calling the executor and can be
   // re-assigned depending on whether stop, return or throw is called.
   private execution?: Promise<TReturn | undefined>;
@@ -106,7 +106,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
 
     this.state = RepeaterState.Started;
     const push: Push<T, TNext> = this.push.bind(this);
-    const stop: Stop = this.stop.bind(this) as any;
+    const stop: Stop = this.stop.bind(this) as Stop;
     {
       const stopP = new Promise<undefined>(
         (resolve) => (this.onstop = resolve),
@@ -135,7 +135,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
    * generators, where yield is equivalent to yield await.
    */
   private unwrap(
-    value?: PromiseLike<T | TReturn | undefined> | T | TReturn,
+    value: Promise<T | TReturn | undefined> | T | TReturn | undefined,
   ): Promise<IteratorResult<T, TReturn>> {
     const done = this.state >= RepeaterState.Finished;
     return Promise.resolve(value).then((value: any) => {
@@ -222,6 +222,8 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
       return Promise.resolve(undefined);
     }
 
+    // “return undefined” here is required because of the horrible semantics of
+    // the typescript void type
     let valueP: Promise<T | undefined> =
       this.pending === undefined
         ? Promise.resolve(value)
@@ -261,6 +263,8 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
       if (floating) {
         err = err1;
       }
+
+      return undefined;
     });
     next.then = function(onFulfilled, onRejected): Promise<any> {
       floating = false;
@@ -273,6 +277,8 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
           this.err = err;
           this.reject();
         }
+
+        return undefined;
       });
     return next;
   }
@@ -331,7 +337,9 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
 
     this.onnext(value);
     if (!this.buffer.empty) {
-      const result = this.unwrap(this.buffer.remove() as any);
+      const result = this.unwrap(this.buffer.remove() as Promise<
+        T | undefined
+      >);
       if (this.pushQueue.length) {
         const push = this.pushQueue.shift()!;
         this.buffer.add(push.value);
