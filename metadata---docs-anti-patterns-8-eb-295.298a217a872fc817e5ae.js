@@ -1,1 +1,0 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[15],{55:function(n){n.exports=JSON.parse('{"id":"anti-patterns","title":"Common Anti-Patterns","description":"**👷‍♀️ Under Construction 👷‍♂️**","source":"@site/docs/09_anti-patterns.md","permalink":"/docs/anti-patterns"}')}}]);
