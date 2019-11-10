@@ -1,6 +1,6 @@
 {
   "name": "@repeaterjs/repeater",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "The missing constructor function for creating safe async iterators",
   "repository": {
     "type": "git",
