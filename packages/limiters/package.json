@@ -1,6 +1,6 @@
 {
   "name": "@repeaterjs/limiters",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Basic async iterators functions for limiting concurrency",
   "repository": {
     "type": "git",
@@ -23,8 +23,8 @@
     "test": "jest --config ./jest.config.js --rootDir --color"
   },
   "dependencies": {
-    "@repeaterjs/repeater": "^2.0.0",
-    "@repeaterjs/timers": "^0.3.1"
+    "@repeaterjs/repeater": "^3.0.0",
+    "@repeaterjs/timers": "^0.3.2"
   },
   "devDependencies": {
     "@types/jest": "^24.0.18",
