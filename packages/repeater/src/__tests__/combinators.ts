@@ -1,5 +1,6 @@
 import { Repeater } from "../repeater";
 import {
+  AssertTypeEquals,
   deferredGen,
   delayRepeater,
   delayPromise,
@@ -38,6 +39,7 @@ describe("combinators", () => {
         gen([1, 2, 3, 4, 5], 6),
         Promise.resolve("z"),
       ]);
+      await expect(iter.next()).resolves.toEqual({ value: 1, done: false });
       await expect(iter.next()).resolves.toEqual({ value: "z", done: true });
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
@@ -191,6 +193,30 @@ describe("combinators", () => {
       expect(spy2).toHaveBeenCalledTimes(1);
       expect(spy3).toHaveBeenCalledTimes(1);
     });
+
+    test("type inference", async () => {
+      const iter1 = delayRepeater(100, [1, 2, 3]);
+      const iter2 = delayRepeater(100, ["a", "b", "c"]);
+      const iter3 = delayRepeater(100, [
+        Promise.resolve("a"),
+        Promise.resolve("b"),
+        Promise.resolve("c"),
+      ]);
+      const iter4 = [Promise.resolve(null), null, Promise.resolve(null)];
+      const iter = Repeater.race([
+        iter1,
+        iter2,
+        iter3,
+        iter4,
+        Promise.resolve(false),
+        true,
+      ]);
+      const assertion: AssertTypeEquals<
+        typeof iter,
+        Repeater<string | number | null>
+      > = true;
+      expect(assertion).toBe(true);
+    });
   });
 
   describe("Repeater.merge", () => {
@@ -230,7 +256,7 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([1, 2, 3, 4, 5]);
+      expect(nums).toEqual([1, -1, 2, 3, 4, 5]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
@@ -249,7 +275,7 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([1, 2, 3, 4, 5]);
+      expect(nums).toEqual([1, -1, 2, 3, 4, 5]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
@@ -268,7 +294,7 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([1, 2, 3, 4, 5]);
+      expect(nums).toEqual([-1, 1, 2, 3, 4, 5]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
@@ -287,7 +313,7 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([1, 2, 3, 4, 5]);
+      expect(nums).toEqual([-1, 1, 2, 3, 4, 5]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
@@ -344,13 +370,13 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([1, 2, 3, 4, 5]);
+      expect(nums).toEqual([1, 2, -1, 3, 4, 5]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
     test("promise vs slow repeater vs fast repeater", async () => {
       const iter = Repeater.merge([
-        delayPromise(500, -1),
+        delayPromise(530, -1),
         delayRepeater(160, [0, 1, 2, 3, 4], -2),
         delayRepeater(100, [100, 101, 102, 103, 104, 105], -3),
       ]);
@@ -365,7 +391,7 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([100, 0, 101, 102, 1, 103, 2, 104, 105, 3, 4]);
+      expect(nums).toEqual([100, 0, 101, 102, 1, 103, 2, 104, -1, 105, 3, 4]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
@@ -444,6 +470,30 @@ describe("combinators", () => {
       expect(spy1).toHaveBeenCalledTimes(1);
       expect(spy2).toHaveBeenCalledTimes(1);
       expect(spy3).toHaveBeenCalledTimes(1);
+    });
+
+    test("type inference", async () => {
+      const iter1 = delayRepeater(100, [1, 2, 3]);
+      const iter2 = delayRepeater(100, ["a", "b", "c"]);
+      const iter3 = delayRepeater(100, [
+        Promise.resolve("a"),
+        Promise.resolve("b"),
+        Promise.resolve("c"),
+      ]);
+      const iter4 = [Promise.resolve(null), null, Promise.resolve(null)];
+      const iter = Repeater.merge([
+        iter1,
+        iter2,
+        iter3,
+        iter4,
+        Promise.resolve(false),
+        false,
+      ]);
+      const assertion: AssertTypeEquals<
+        typeof iter,
+        Repeater<string | number | null | boolean>
+      > = true;
+      expect(assertion).toBe(true);
     });
   });
 
@@ -663,6 +713,30 @@ describe("combinators", () => {
       expect(spy2).toHaveBeenCalledTimes(1);
       expect(spy3).toHaveBeenCalledTimes(1);
     });
+
+    test("type inference", async () => {
+      const iter1 = delayRepeater(100, [1, 2, 3]);
+      const iter2 = delayRepeater(100, ["a", "b", "c"]);
+      const iter3 = delayRepeater(100, [
+        Promise.resolve("a"),
+        Promise.resolve("b"),
+        Promise.resolve("c"),
+      ]);
+      const iter4 = [Promise.resolve(null), null, Promise.resolve(null)];
+      const iter = Repeater.zip([
+        iter1,
+        iter2,
+        iter3,
+        iter4,
+        Promise.resolve(false),
+        true,
+      ]);
+      const assertion: AssertTypeEquals<
+        typeof iter,
+        Repeater<[number, string, string, null, boolean, boolean]>
+      > = true;
+      expect(assertion).toBe(true);
+    });
   });
 
   describe("Repeater.latest", () => {
@@ -672,7 +746,7 @@ describe("combinators", () => {
     });
 
     test("single iterator", async () => {
-      const iter = Repeater.latest<number>([delayRepeater(100, [1, 2, 3], 4)]);
+      const iter = Repeater.latest([delayRepeater(100, [1, 2, 3], 4)]);
       let result: IteratorResult<number[]>;
       const values: number[][] = [];
       do {
@@ -883,6 +957,30 @@ describe("combinators", () => {
       expect(spy1).toHaveBeenCalledTimes(1);
       expect(spy2).toHaveBeenCalledTimes(1);
       expect(spy3).toHaveBeenCalledTimes(1);
+    });
+
+    test("type inference", async () => {
+      const iter1 = delayRepeater(100, [1, 2, 3]);
+      const iter2 = delayRepeater(100, ["a", "b", "c"]);
+      const iter3 = delayRepeater(100, [
+        Promise.resolve("a"),
+        Promise.resolve("b"),
+        Promise.resolve("c"),
+      ]);
+      const iter4 = [Promise.resolve(null), null, Promise.resolve(null)];
+      const iter = Repeater.latest([
+        iter1,
+        iter2,
+        iter3,
+        iter4,
+        Promise.resolve(false),
+        true,
+      ]);
+      const assertion: AssertTypeEquals<
+        typeof iter,
+        Repeater<[number, string, string, null, boolean, boolean]>
+      > = true;
+      expect(assertion).toBe(true);
     });
   });
 });
