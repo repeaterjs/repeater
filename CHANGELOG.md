@@ -1,5 +1,26 @@
 # Changelog
-## repeater@3.0.0-beta.1 2019-10-27
+## limiters@0.3.3 - 2019-10-13
+### Fixed 
+- build files with target set to es5 rather than esnext
+## timers@0.3.3 2019-11-10
+### Fixed
+- build files with target set to es5 rather than esnext
+## pubsub@0.3.4 2019-11-10
+### Fixed
+- build files with target set to es5 rather than esnext
+## repeater@3.0.1 2019-11-10
+### Fixed
+- build files with target set to es5 rather than esnext
+## limiters@0.3.2 - 2019-10-13
+### Changed
+- upgrade dependencies
+## timers@0.3.2 - 2019-10-13
+### Changed
+- upgrade dependencies
+## pubsub@0.3.3 - 2019-10-13
+### Changed
+- upgrade dependencies
+## repeater@3.0.0 2019-11-10
 This release overhauls the `push` and `stop` promises and the `return` and `throw` methods to be more in line with the behavior of async generators. If you used repeaters to simply add and remove event handlers, you can upgrade without worrying about breaking changes. However, if you awaited `push` calls, read the value of the `stop` promise, or used the `return` or `throw` methods in non-trivial ways, this release may break your code.
 
 ### Changed
