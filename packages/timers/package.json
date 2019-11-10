@@ -1,6 +1,6 @@
 {
   "name": "@repeaterjs/timers",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Async iterator timer functions",
   "repository": {
     "type": "git",
