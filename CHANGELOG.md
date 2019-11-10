@@ -15,6 +15,11 @@ This release overhauls the `push` and `stop` promises and the `return` and `thro
 
 - Errors thrown by the executor now take priority over rejections passed to push. If a pushed promise rejects, the repeater will await the execution result and throw an error thrown by the executor instead of the rejected promise.
 
+- Changes to combinator methods
+  - Improved type inference for `Repeater.race` and `Repeater.merge`
+  - `Repeater.merge` yields non-iterable values, so you can call merge on an iterable of promises to get an async iterator which produces values as each promise fulfills.
+  - Iterables passed to combinator methods are upgraded to async iterators, so that promise-like values are awaited and unwrapped before being pushed to the repeater
+
 - Changes to typescript typings:
   - `Repeater`, `RepeaterExecutor`, `Push` and other related types now take the type parameters `TReturn` and `TNext` in line with typescript 3.6’s strict async generator typings.
   - The `RepeaterBuffer` interface and concrete classes no longer accept a type parameter. All places where the type parameter would have been used, `unknown` is used instead. You should never directly add or remove values from buffers.

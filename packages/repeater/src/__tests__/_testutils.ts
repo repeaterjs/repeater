@@ -1,4 +1,8 @@
 import { Repeater, FixedBuffer } from "../repeater";
+// take from https://2ality.com/2019/07/testing-static-types.html
+export type AssertTypeEquals<T, TExpected> = T extends TExpected
+  ? (TExpected extends T ? true : never)
+  : never;
 
 export async function* gen<T>(
   values: T[],
