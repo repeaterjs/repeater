@@ -260,6 +260,19 @@ describe("combinators", () => {
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
+    test("multiple promises", async () => {
+      const a = delayPromise(300, "a");
+      const b = delayPromise(200, "b");
+      const c = delayPromise(100, "c");
+      const d = delayPromise(400, "d");
+      const iter = Repeater.merge([a, b, c, d]);
+      await expect(iter.next()).resolves.toEqual({ value: "c", done: false });
+      await expect(iter.next()).resolves.toEqual({ value: "b", done: false });
+      await expect(iter.next()).resolves.toEqual({ value: "a", done: false });
+      await expect(iter.next()).resolves.toEqual({ value: "d", done: false });
+      await expect(iter.next()).resolves.toEqual({ done: true });
+    });
+
     test("generator vs Promise.resolve", async () => {
       const iter = Repeater.merge([
         gen([1, 2, 3, 4, 5], 6),
