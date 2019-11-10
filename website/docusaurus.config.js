@@ -14,30 +14,30 @@ module.exports = {
         {
           to: "docs/quickstart",
           label: "Docs",
-          position: "left"
+          position: "left",
         },
         {
           to: "docs/repeater",
           label: "API",
-          position: "left"
+          position: "left",
         },
         {
           href: "https://github.com/repeaterjs/repeater",
           label: "GitHub",
-          position: "right"
+          position: "right",
         },
         {
           href: "https://www.npmjs.com/package/@repeaterjs/repeater",
           label: "NPM",
-          position: "right"
-        }
-      ]
+          position: "right",
+        },
+      ],
     },
     footer: {
       links: [],
       logo: {},
-      copyright: `Copyright © ${new Date().getFullYear()} Brian Kim`
-    }
+      copyright: `Copyright © ${new Date().getFullYear()} Brian Kim`,
+    },
   },
   presets: [
     [
@@ -45,12 +45,12 @@ module.exports = {
       {
         docs: {
           path: "../docs",
-          sidebarPath: require.resolve("./sidebars.json")
+          sidebarPath: require.resolve("./sidebars.json"),
         },
         theme: {
-          customCss: require.resolve("./src/css/custom.css")
-        }
-      }
-    ]
-  ]
+          customCss: require.resolve("./src/css/custom.css"),
+        },
+      },
+    ],
+  ],
 };

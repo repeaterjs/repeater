@@ -49,10 +49,11 @@ function Body() {
     <main className="container">
       <div className="row margin-vert--xl">
         <Feature title="Convenient">
-          The <code>Repeater</code> class provides a memorable, promise-based API for creating async iterators. You can reuse the same constructor to
-          convert event targets, websockets or any other
-          callback-based data source into a format which can be read using{" "}
-          <code>async/await</code> and <code>for await…of</code> syntax.
+          The <code>Repeater</code> class provides a memorable promise-based API
+          for creating async iterators. You can reuse the same constructor to
+          convert event targets, websockets or any other callback-based data
+          source into a format which can be read using <code>async/await</code>{" "}
+          and <code>for await…of</code> syntax.
         </Feature>
         <Feature title="Safe" color="#BA00AC">
           Repeaters prevent common mistakes people make when rolling async
@@ -65,8 +66,8 @@ function Body() {
           You can use repeaters to implement architectural patterns like
           cancelable timers, semaphores, and generic pubsub classes. The
           Repeater class also defines static methods like{" "}
-          <code>Repeater.race</code> and <code>Repeater.merge</code> which
-          allow you to use async iterators for reactive programming purposes.
+          <code>Repeater.race</code> and <code>Repeater.merge</code> which allow
+          you to use async iterators for reactive programming purposes.
         </Feature>
       </div>
     </main>
