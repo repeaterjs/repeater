@@ -1,6 +1,6 @@
 {
   "name": "@repeaterjs/pubsub",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "A generic pubsub class, implemented with repeaters",
   "repository": {
     "type": "git",
