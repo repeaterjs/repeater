@@ -181,50 +181,77 @@ The `DroppingBuffer` object allows repeaters to push unlimited values without ha
  
 ## `Repeater.race`
 ```ts
-Repeater.race = function(
-  contenders: Iterable<AsyncIterable<T> | Iterable<T> | PromiseLike<any>>,
-): Repeater<T>;
+Repeater.race = function <T>(
+  contenders: Iterable<T>,
+): Repeater<
+  T extends AsyncIterable<infer U> | Iterable<infer U>
+    ? U extends PromiseLike<infer V>
+      ? V
+      : U
+    : never
+>;
 ```
+
 ##### Parameters
-- `contenders` - An iterable of async iterables, iterables or promises. Promises are treated as an async iterable which returns the promise’s value when the promise settles.
+- `contenders` - An iterable of async iterables, iterables or promises.
 
 ##### Return value
-A repeater which yields the fastest resolving value from each iterable for each iteration. If any iterables finishes, the repeater returns with that iterable’s final value.
+A repeater which yields the first settling value from each iterable for each iteration. If any iterables finishes, the repeater returns with that iterable’s final value. Promises are treated as an async iterator which returns the value when the promise fulfills.
 
 ## `Repeater.merge`
 ```ts
-Repeater.merge = function(
-  contenders: Iterable<AsyncIterable<T> | Iterable<T> | PromiseLike<any>>,
-): Repeater<T>;
+Repeater.merge = function <T>(
+  contenders: Iterable<T>,
+): Repeater<
+  T extends AsyncIterable<infer U> | Iterable<infer U>
+    ? U extends PromiseLike<infer V>
+      ? V
+      : U
+    : T extends PromiseLike<infer U>
+    ? U
+    : T
+>;
 ```
 ##### Parameters
-- `contenders` - An iterable of async iterables, iterables or promises. Promises are treated as an async iterable which returns the promise’s value when the promise settles.
+- `contenders` - An iterable of async iterables, iterables or promises.
 
 ##### Return value
-A repeater which yields values from each iterable as they resolve. When all iterables finish, the repeater returns with the final value of the last iterator which finished.
+A repeater which yields values from each iterable as they settle. When all iterables finish, the repeater returns with the final value of the last iterator which finished. Promises are treated as an async iterator which yields the value when the promise fulfills.
 
 ## `Repeater.zip`
 ```ts
-Repeater.zip = function(
-  contenders: Iterable<AsyncIterable<T> | Iterable<T> | PromiseLike<any>>,
+type Contender<T>
+  = AsyncIterable<Promise<T> | T>
+  | Iterable<Promise<T> | T>
+  | PromiseLike<T>
+  | T;
+
+Repeater.zip = function <T>(
+  contenders: Iterable<Contender<T>>,
 ): Repeater<T[]>;
 ```
 ##### Parameters
-- `contenders` - An iterable of async iterables, iterables or promises. Promises are treated as an async iterable which returns the promise’s value when the promise settles.
+- `contenders` - An iterable of async iterables, iterables or promises.
 ##### Return value
-A repeater which yields a tuple of values taken from each iterable for each iteration. When any iterable finishes, the repeater returns a tuple of the final values from each iterator.
+A repeater which yields a tuple of values taken from each iterable for each iteration. When any iterable finishes, the repeater returns a tuple of values from each iterator. Promises are treated as an async iterator which returns the value when the promise fulfills.
 
 ## `Repeater.latest`
 
 ```ts
-Repeater.latest = function(
-  contenders: Iterable<AsyncIterable<T> | Iterable<T> | PromiseLike<any>>,
+type Contender<T>
+  = AsyncIterable<Promise<T> | T>
+  | Iterable<Promise<T> | T>
+  | PromiseLike<T>
+  | T;
+
+Repeater.latest = function <T>(
+  contenders: Iterable<Contender<T>>,
 ): Repeater<T[]>;
 ```
 ##### Parameters
-- `contenders` - An iterable of async iterables, iterables or promises. Promises are treated as an async iterable which returns the promise’s value when the promise settles.
+- `contenders` - An iterable of async iterables, iterables or promises.
 ##### Return value
-A repeater which yields a tuple of values taken from each iterable. The repeater yields the tuple of values whenever any of the `contenders` yields values. The repeater does not yield a value until every iterable has yielded a value at least once. When any iterable finishes, the repeater returns a tuple of the final values from each iterator.
+A repeater which yields a tuple of values taken from each iterable. The repeater yields a tuple of values whenever any of the `contenders` yields values. The repeater does not yield a value until every iterable has yielded a value at least once. When any iterable finishes, the repeater returns a tuple of the final values from each iterator. Promises are treated as an async iterator which both yields and returns the value when the promise fulfills.
 
 ## `RepeaterOverflowError`
 ```ts
