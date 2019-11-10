@@ -91,6 +91,21 @@ const rightClicks = new Repeater(async (push, stop) => {
 })();
 ```
 
+You can also pass promises to `Repeater.merge`, in which case, the repeater will yield each promise’s value as they fulfill.
+
+```js
+import { Repeater } from "@repeaterjs/repeater";
+(async function() {
+  const a = new Promise((resolve) => setTimeout(() => resolve("a"), 300));
+  const b = new Promise((resolve) => setTimeout(() => resolve("b"), 200));
+  const c = new Promise((resolve) => setTimeout(() => resolve("c"), 100));
+  const d = new Promise((resolve) => setTimeout(() => resolve("d"), 400));
+  for await (const letter of Repeater.merge([a, b, c, d])) {
+    console.log(letter); // c, b, a, d
+  }
+})();
+```
+
 ## `Repeater.zip`
 
 `Repeater.zip` takes an iterable of async iterables, awaits a result from every iterable using `Promise.all`, and yields the resulting array. This method is useful for when you want to synchronize multiple iterators, making sure that values are pulled from each iterator in lockstep motion. For instance, you can use `Repeater.zip` with the `delay` function from the `@repeaterjs/timers` package to throttle a buffered repeater.
