@@ -39,6 +39,10 @@ module.exports = {
       copyright: `Copyright © ${new Date().getFullYear()} Brian Kim`,
     },
   },
+  algolia: {
+    apiKey: '8a93db8e9eb1ba1b8055d703bd55f523',
+    indexName: 'repeater',
+  },
   presets: [
     [
       "@docusaurus/preset-classic",
