@@ -10,7 +10,7 @@ Sometimes you want to create async iterators which respond to calls to `next` as
 const timer = new Repeater(async (push, stop) => {
   const timers = [];
   let stopped = false;
-  stopped.then(() => (stopped = true));
+  stop.then(() => (stopped = true));
   try {
     while (!stopped) {
       let resolve;
