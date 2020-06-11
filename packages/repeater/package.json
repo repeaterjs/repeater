@@ -37,8 +37,7 @@
     "rollup-plugin-typescript2": "^0.24.3",
     "shx": "^0.3.2",
     "ts-jest": "^24.1.0",
-    "typescript": "^3.6.4",
-    "weak": "^1.0.1"
+    "typescript": "^3.6.4"
   },
   "publishConfig": {
     "access": "public"
