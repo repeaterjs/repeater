@@ -162,7 +162,10 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
       return value;
     });
     this.err = undefined;
-    this.execution = execution.then(() => undefined, () => undefined);
+    this.execution = execution.then(
+      () => undefined,
+      () => undefined,
+    );
     return this.pending === undefined
       ? execution
       : this.pending.then(() => execution);
@@ -266,7 +269,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
       // Explicitly return undefined to avoid typescript’s horrible void type
       return undefined;
     });
-    next.then = function(onFulfilled, onRejected): Promise<any> {
+    next.then = function (onFulfilled, onRejected): Promise<any> {
       floating = false;
       return Promise.prototype.then.call(this, onFulfilled, onRejected);
     };
@@ -338,9 +341,9 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
 
     this.onnext(value);
     if (!this.buffer.empty) {
-      const result = this.unwrap(this.buffer.remove() as Promise<
-        T | undefined
-      >);
+      const result = this.unwrap(
+        this.buffer.remove() as Promise<T | undefined>,
+      );
       if (this.pushQueue.length) {
         const push = this.pushQueue.shift()!;
         this.buffer.add(push.value);

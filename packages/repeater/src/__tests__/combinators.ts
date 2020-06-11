@@ -636,7 +636,13 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([[0, 100], [1, 101], [2, 102], [3, 103], [4, 104]]);
+      expect(nums).toEqual([
+        [0, 100],
+        [1, 101],
+        [2, 102],
+        [3, 103],
+        [4, 104],
+      ]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
@@ -789,7 +795,13 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([[-1, 1], [-1, 2], [-1, 3], [-1, 4], [-1, 5]]);
+      expect(nums).toEqual([
+        [-1, 1],
+        [-1, 2],
+        [-1, 3],
+        [-1, 4],
+        [-1, 5],
+      ]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
@@ -808,7 +820,13 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([[1, -1], [2, -1], [3, -1], [4, -1], [5, -1]]);
+      expect(nums).toEqual([
+        [1, -1],
+        [2, -1],
+        [3, -1],
+        [4, -1],
+        [5, -1],
+      ]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
@@ -827,7 +845,13 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([[-1, 10], [-1, 20], [-1, 30], [-1, 40], [-1, 50]]);
+      expect(nums).toEqual([
+        [-1, 10],
+        [-1, 20],
+        [-1, 30],
+        [-1, 40],
+        [-1, 50],
+      ]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
@@ -846,7 +870,13 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([[10, -1], [20, -1], [30, -1], [40, -1], [50, -1]]);
+      expect(nums).toEqual([
+        [10, -1],
+        [20, -1],
+        [30, -1],
+        [40, -1],
+        [50, -1],
+      ]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
@@ -865,7 +895,13 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([[-1, 1], [-1, 2], [-1, 3], [-1, 4], [-1, 5]]);
+      expect(nums).toEqual([
+        [-1, 1],
+        [-1, 2],
+        [-1, 3],
+        [-1, 4],
+        [-1, 5],
+      ]);
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
