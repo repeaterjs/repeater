@@ -239,40 +239,50 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
       return undefined;
     });
 
-    let next: Promise<TNext | undefined>;
+    let nextP: Promise<TNext | undefined>;
     if (this.pullQueue.length) {
       const pull = this.pullQueue.shift()!;
       pull.resolve(this.unwrap(valueP));
       if (this.pullQueue.length) {
-        next = Promise.resolve(this.pullQueue[0].value);
+        nextP = Promise.resolve(this.pullQueue[0].value);
       } else {
-        next = new Promise((resolve) => (this.onnext = resolve));
+        nextP = new Promise((resolve) => (this.onnext = resolve));
       }
     } else if (!this.buffer.full) {
       this.buffer.add(valueP);
-      next = Promise.resolve(undefined);
+      nextP = Promise.resolve(undefined);
     } else {
-      next = new Promise((resolve) => {
+      nextP = new Promise((resolve) => {
         this.pushQueue.push({ resolve, value: valueP });
       });
     }
 
     // This method of catching unhandled rejections is adapted from
     // https://stackoverflow.com/a/57792542/1825413
+    // NOTE: We can’t return a real promise here because await does not call then/catch/finally callbacks directly in newer versions of V8. We have to create an plain old object which does not inherit from the Promise class so that the reassigned promise methods are actually called.
     let floating = true;
     let err: any;
-    const unhandled = next.catch((err1) => {
+    let next = {} as Promise<TNext | undefined>;
+    const unhandled = nextP.catch((err1) => {
       if (floating) {
         err = err1;
       }
 
-      // Explicitly return undefined to avoid typescript’s horrible void type
       return undefined;
     });
-    next.then = function (onFulfilled, onRejected): Promise<any> {
+
+    next.then = (onfulfilled, onrejected): any => {
       floating = false;
-      return Promise.prototype.then.call(this, onFulfilled, onRejected);
+      return Promise.prototype.then.call(nextP, onfulfilled, onrejected);
     };
+
+    next.catch = (onrejected): any => {
+      floating = false;
+      return Promise.prototype.catch.call(nextP, onrejected);
+    };
+
+    next.finally = nextP.finally.bind(nextP);
+
     this.pending = valueP
       .then(() => unhandled)
       .then(() => {
@@ -284,6 +294,7 @@ class RepeaterController<T, TReturn = any, TNext = unknown>
         // Explicitly return undefined to avoid typescript’s horrible void type
         return undefined;
       });
+
     return next;
   }
 
