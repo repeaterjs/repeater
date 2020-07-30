@@ -44,7 +44,9 @@ describe("combinators", () => {
         await expect(iteration).resolves.toEqual({ value: "z", done: true });
       } catch (err) {
         // node 10
+        // eslint-disable-next-line jest/no-try-expect
         await expect(iteration).resolves.toEqual({ value: 1, done: false });
+        // eslint-disable-next-line jest/no-try-expect
         await expect(iter.next()).resolves.toEqual({ value: "z", done: true });
       }
 
@@ -267,6 +269,7 @@ describe("combinators", () => {
         expect(nums).toEqual([-1, 1, 2, 3, 4, 5]);
       } catch (err) {
         // node 10
+        // eslint-disable-next-line jest/no-try-expect
         expect(nums).toEqual([1, -1, 2, 3, 4, 5]);
       }
       await expect(iter.next()).resolves.toEqual({ done: true });
