@@ -39,8 +39,15 @@ describe("combinators", () => {
         gen([1, 2, 3, 4, 5], 6),
         Promise.resolve("z"),
       ]);
-      await expect(iter.next()).resolves.toEqual({ value: 1, done: false });
-      await expect(iter.next()).resolves.toEqual({ value: "z", done: true });
+      const iteration = iter.next();
+      try {
+        await expect(iteration).resolves.toEqual({ value: "z", done: true });
+      } catch (err) {
+        // node 10
+        await expect(iteration).resolves.toEqual({ value: 1, done: false });
+        await expect(iter.next()).resolves.toEqual({ value: "z", done: true });
+      }
+
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
@@ -256,7 +263,12 @@ describe("combinators", () => {
           nums.push(result.value);
         }
       } while (!result.done);
-      expect(nums).toEqual([1, -1, 2, 3, 4, 5]);
+      try {
+        expect(nums).toEqual([-1, 1, 2, 3, 4, 5]);
+      } catch (err) {
+        // node 10
+        expect(nums).toEqual([1, -1, 2, 3, 4, 5]);
+      }
       await expect(iter.next()).resolves.toEqual({ done: true });
     });
 
