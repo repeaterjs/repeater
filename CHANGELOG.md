@@ -1,4 +1,7 @@
 # Changelog
+## repeater@3.0.3 - 2020-08-03
+### Fixed
+- Fixed missing file in package.json.
 ## repeater@3.0.2 - 2020-08-03
 ### Fixed
 - Fixed throw method not catching promises in newer versions of v8 (node.js 12+).
