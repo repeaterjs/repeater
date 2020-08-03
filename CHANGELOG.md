@@ -1,4 +1,8 @@
 # Changelog
+## repeater@3.0.2 - 2020-08-03
+### Fixed
+- Fixed throw method not catching promises in newer versions of v8 (node.js 12+).
+- Added ESM support for newer versions of node.
 ## limiters@0.3.3 - 2019-10-13
 ### Fixed 
 - build files with target set to es5 rather than esnext
