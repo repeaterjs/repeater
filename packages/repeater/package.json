@@ -2,6 +2,7 @@
   "name": "@repeaterjs/repeater",
   "version": "3.0.1",
   "description": "The missing constructor function for creating safe async iterators",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/repeaterjs/repeater",
@@ -9,18 +10,25 @@
   },
   "license": "MIT",
   "files": [
-    "/lib"
+    "./repeater.js",
+    "*.d.ts",
+    "*.js.map",
+    "cjs"
   ],
-  "main": "lib/repeater.cjs.js",
-  "module": "lib/repeater.esm.js",
-  "types": "lib/repeater.d.ts",
+  "main": "cjs/repeater.js",
+  "module": "repeater.js",
+  "types": "repeater.d.ts",
   "scripts": {
     "prebuild": "yarn run clean",
     "build": "rollup -c ./rollup.config.js",
-    "clean": "shx rm -rf ./lib",
+    "clean": "shx rm -rf cjs dist repeater.js *.d.ts *.js.map",
     "lint": "eslint --ext ts src",
     "prepublishOnly": "yarn run test && yarn run build",
     "test": "jest --config ./jest.config.js --rootDir ./ --color"
+  },
+  "dependencies": {
+    "magic-string": "^0.25.7",
+    "ts-transform-import-path-rewrite": "^0.2.1"
   },
   "devDependencies": {
     "@types/jest": "^26.0.7",

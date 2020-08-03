@@ -1,28 +1,82 @@
+import fs from "fs";
 import path from "path";
-import typescript from "rollup-plugin-typescript2";
 
-const root = process.cwd();
-const pkg = require(path.join(root, "package.json"));
+import ts from "rollup-plugin-typescript2";
+import MagicString from "magic-string";
+import {transform} from "ts-transform-import-path-rewrite";
 
-export default {
-  input: path.join(root, "src", pkg.name.split("/")[1] + ".ts"),
-  output: [
-    {
-      file: pkg.main,
-      format: "cjs",
-      sourcemap: true,
-    },
-    {
-      file: pkg.module,
-      format: "esm",
-      sourcemap: true,
-    },
-  ],
-  plugins: [typescript()],
-  external: [
-    "@repeaterjs/repeater",
-    "@repeaterjs/timers",
-    "@repeaterjs/pubsub",
-    "@repeaterjs/limiters",
-  ],
-};
+import pkg from "./package.json";
+
+
+/** A hack to provide package.json files with "type": "commonjs" in cjs/umd subdirectories. */
+function cjs() {
+	return {
+		name: "cjs",
+		writeBundle({dir, format}) {
+			fs.writeFileSync(
+				path.join(__dirname, dir, "package.json"),
+				JSON.stringify(
+					{
+						name: `${pkg.name}-${format}`,
+						type: "commonjs",
+						private: true,
+					},
+					null,
+					2,
+				),
+			);
+		},
+	};
+}
+
+/** A hack to add triple-slash references to sibling d.ts files for deno. */
+function dts() {
+	return {
+		name: "dts",
+		renderChunk(code, info) {
+			if (info.isEntry) {
+				const dts = "./" + info.fileName.replace(/js$/, "d.ts");
+				const ms = new MagicString(code);
+				ms.prepend(`/// <reference types="${dts}" />\n`);
+				code = ms.toString();
+				const map = ms.generateMap({hires: true});
+				return {code, map};
+			}
+
+			return code;
+		},
+	};
+}
+
+/** A hack to rewrite import paths in d.ts files for deno. */
+function transformer() {
+	const rewritePath = transform({
+		rewrite(importPath) {
+			return importPath + ".js";
+		},
+	});
+
+	return {afterDeclarations: [rewritePath]};
+}
+
+export default [
+	{
+		input: "./src/repeater.ts",
+		output: {
+			format: "esm",
+			dir: "./",
+			sourcemap: true,
+			chunkFileNames: "dist/[hash].js",
+		},
+		plugins: [ts({clean: true, transformers: [transformer]}), dts()],
+	},
+	{
+		input: "./src/repeater.ts",
+		output: {
+			format: "cjs",
+			dir: "cjs",
+			sourcemap: true,
+		},
+		plugins: [ts(), cjs()],
+	},
+];
