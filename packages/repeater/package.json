@@ -1,6 +1,6 @@
 {
   "name": "@repeaterjs/repeater",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "The missing constructor function for creating safe async iterators",
   "type": "module",
   "repository": {
@@ -10,7 +10,7 @@
   },
   "license": "MIT",
   "files": [
-    "./repeater.js",
+    "repeater.js",
     "*.d.ts",
     "*.js.map",
     "cjs"
