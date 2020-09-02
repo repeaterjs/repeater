@@ -1048,3 +1048,101 @@ describe("combinators", () => {
     });
   });
 });
+
+// Testing type inference.
+function _types() {
+  /* eslint-disable */
+  let iteration1: Promise<IteratorResult<number>>;
+  let iteration2: Promise<IteratorResult<string>>;
+  let iteration3: Promise<IteratorResult<number | string>>;
+  let iteration4: Promise<IteratorResult<number | string | null>>;
+
+  const repeater1 = new Repeater<number, number>((push, stop) => {
+    push(1);
+    return -1;
+  });
+  const repeater2 = new Repeater<string, string>((push, stop) => {
+    push("hello");
+    return "goodbye";
+  });
+
+  const race1 = Repeater.race([Promise.resolve(null), repeater1]);
+  iteration1 = race1.next();
+  // @ts-expect-error
+  iteration2 = race1.next();
+  iteration3 = race1.next();
+  iteration4 = race1.next();
+
+  const race2 = Repeater.race([Promise.resolve(null), repeater1, repeater2]);
+
+  // @ts-expect-error
+  iteration1 = race2.next();
+  // @ts-expect-error
+  iteration2 = race2.next();
+  iteration3 = race2.next();
+  iteration4 = race1.next();
+
+  const merge1 = Repeater.merge([Promise.resolve("hello"), Promise.resolve(1)]);
+  // @ts-expect-error
+  iteration1 = merge1.next();
+  // @ts-expect-error
+  iteration2 = merge1.next();
+  iteration3 = merge1.next();
+  iteration4 = merge1.next();
+
+  const merge2 = Repeater.merge([Promise.resolve(null), repeater1, repeater2]);
+
+  // @ts-expect-error
+  iteration1 = merge2.next();
+  // @ts-expect-error
+  iteration2 = merge2.next();
+  // @ts-expect-error
+  iteration3 = merge2.next();
+  iteration4 = merge2.next();
+
+  let iteration5: Promise<IteratorResult<[number]>>;
+  let iteration6: Promise<IteratorResult<[string]>>;
+  let iteration7: Promise<IteratorResult<[number, string]>>;
+  let iteration8: Promise<IteratorResult<[null, number, string]>>;
+
+  const zip1 = Repeater.zip([repeater1, repeater2]);
+  // @ts-expect-error
+  iteration5 = zip1.next();
+  // @ts-expect-error
+  iteration6 = zip1.next();
+  iteration7 = zip1.next();
+  // @ts-expect-error
+  iteration8 = zip1.next();
+
+  const zip2 = Repeater.zip([Promise.resolve(null), repeater1, repeater2]);
+  // @ts-expect-error
+  iteration5 = zip2.next();
+  // @ts-expect-error
+  iteration6 = zip2.next();
+  // @ts-expect-error
+  iteration7 = zip2.next();
+  iteration8 = zip2.next();
+
+  const latest1 = Repeater.latest([repeater1, repeater2]);
+  // @ts-expect-error
+  iteration5 = latest1.next();
+  // @ts-expect-error
+  iteration6 = latest1.next();
+  iteration7 = latest1.next();
+  // @ts-expect-error
+  iteration8 = latest1.next();
+
+  const latest2 = Repeater.latest([
+    Promise.resolve(null),
+    repeater1,
+    repeater2,
+  ]);
+  // @ts-expect-error
+  iteration5 = latest2.next();
+  // @ts-expect-error
+  iteration6 = latest2.next();
+  // @ts-expect-error
+  iteration7 = latest2.next();
+  iteration8 = latest2.next();
+  /* eslint-enable */
+}
