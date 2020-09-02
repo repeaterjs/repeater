@@ -184,7 +184,7 @@ interface NextOperation<T, TReturn, TNext> {
   // The value passed to the next method.
   value: PromiseLike<TNext> | TNext | undefined;
   // The resolve function of the promise returned from next.
-  resolve(result: Promise<IteratorResult<T, TReturn>>): unknown;
+  resolve(iteration: Promise<IteratorResult<T, TReturn>>): unknown;
 }
 
 /*** REPEATER STATES ***/
@@ -755,7 +755,7 @@ type Contender<T> =
   | T;
 
 function zip(contenders: []): Repeater<never>;
-function zip<T>(contenders: Iterable<Contender<T>>): Repeater<T[]>;
+function zip<T>(contenders: Iterable<Contender<T>>): Repeater<[T]>;
 // prettier-ignore
 function zip<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Repeater<[T1, T2]>;
 // prettier-ignore
@@ -796,9 +796,9 @@ function zip(contenders: Iterable<any>) {
           (err) => stop(err),
         );
 
-        const iterations: Array<IteratorResult<unknown>> | undefined = await new Promise(
-          (resolve) => (advance = resolve),
-        );
+        const iterations:
+          | Array<IteratorResult<unknown>>
+          | undefined = await new Promise((resolve) => (advance = resolve));
         if (iterations === undefined) {
           return;
         }
@@ -818,7 +818,7 @@ function zip(contenders: Iterable<any>) {
 }
 
 function latest(contenders: []): Repeater<never>;
-function latest<T>(contenders: Iterable<Contender<T>>): Repeater<T[]>;
+function latest<T>(contenders: Iterable<Contender<T>>): Repeater<[T]>;
 // prettier-ignore
 function latest<T1, T2>(contenders: [Contender<T1>, Contender<T2>]): Repeater<[T1, T2]>;
 // prettier-ignore
@@ -850,7 +850,9 @@ function latest(contenders: Iterable<any>) {
     }
 
     let advance!: (iterations?: Array<IteratorResult<unknown>>) => unknown;
-    const advances: Array<(iteration?: IteratorResult<unknown>) => unknown> = [];
+    const advances: Array<(
+      iteration?: IteratorResult<unknown>,
+    ) => unknown> = [];
     let stopped = false;
     stop.then(() => {
       advance();
