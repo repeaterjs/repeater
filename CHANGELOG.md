@@ -1,4 +1,7 @@
 # Changelog
+## repeater@3.0.4 - 2020-09-02
+### Fixed
+- Fixed memory leaks in static combinator functions race, merge, zip and latest due to Promise.race.
 ## repeater@3.0.3 - 2020-08-03
 ### Fixed
 - Fixed missing file in package.json.
