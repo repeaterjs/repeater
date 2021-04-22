@@ -445,7 +445,7 @@ function createStop<T, TReturn, TNext>(
   r: RepeaterRecord<T, TReturn, TNext>,
 ): Stop {
   const stop1 = stop.bind(null, r) as Stop;
-  const stopP = new Promise<undefined>((resolve) => (r.onstop = resolve));
+  const stopP = new Promise<undefined>((resolve) => (r.onstop = resolve as any));
   stop1.then = stopP.then.bind(stopP);
   stop1.catch = stopP.catch.bind(stopP);
   stop1.finally = stopP.finally.bind(stopP);
