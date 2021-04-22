@@ -502,7 +502,10 @@ export class Repeater<T, TReturn = any, TNext = unknown> {
   next(
     value?: PromiseLike<TNext> | TNext,
   ): Promise<IteratorResult<T, TReturn>> {
-    swallow(value);
+    if (!(this instanceof Repeater)) {
+      throw new TypeError(`${this} is not a Repeater`);
+    }
+
     const r = records.get(this);
     if (r === undefined) {
       throw new Error("WeakMap error");
@@ -514,6 +517,7 @@ export class Repeater<T, TReturn = any, TNext = unknown> {
       );
     }
 
+    swallow(value);
     if (r.state <= Initial) {
       execute(r);
     }
@@ -546,12 +550,16 @@ export class Repeater<T, TReturn = any, TNext = unknown> {
   return(
     value?: PromiseLike<TReturn> | TReturn,
   ): Promise<IteratorResult<T, TReturn>> {
-    swallow(value);
+    if (!(this instanceof Repeater)) {
+      throw new TypeError(`${this} is not a Repeater`);
+    }
+
     const r = records.get(this);
     if (r === undefined) {
       throw new Error("WeakMap error");
     }
 
+    swallow(value);
     finish(r);
     // We override the execution because return should always return the value passed in.
     r.execution = Promise.resolve(r.execution).then(() => value);
@@ -559,6 +567,10 @@ export class Repeater<T, TReturn = any, TNext = unknown> {
   }
 
   throw(err: unknown): Promise<IteratorResult<T, TReturn>> {
+    if (!(this instanceof Repeater)) {
+      throw new TypeError(`${this} is not a Repeater`);
+    }
+
     const r = records.get(this);
     if (r === undefined) {
       throw new Error("WeakMap error");
@@ -582,6 +594,10 @@ export class Repeater<T, TReturn = any, TNext = unknown> {
   }
 
   [Symbol.asyncIterator](): this {
+    if (!(this instanceof Repeater)) {
+      throw new TypeError(`${this} is not a Repeater`);
+    }
+
     return this;
   }
 

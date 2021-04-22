@@ -1574,4 +1574,28 @@ describe("Repeater", () => {
     await expect(r.next()).resolves.toEqual({ done: true });
     await expect(r.next()).resolves.toEqual({ done: true });
   });
+
+  test("next throws an error when called without a receiver", () => {
+    const r = new Repeater(() => {});
+    const next = r.next;
+    expect(() => next()).toThrow(TypeError);
+  });
+
+  test("return throws an error when called without a receiver", () => {
+    const r = new Repeater(() => {});
+    const return1 = r.return;
+    expect(() => return1()).toThrow(TypeError);
+  });
+
+  test("throw throws an error when called without a receiver", () => {
+    const r = new Repeater(() => {});
+    const throw1 = r.throw;
+    expect(() => throw1("uhh")).toThrow(TypeError);
+  });
+
+  test("[Symbol.asyncIterator] throws an error when called without a receiver", () => {
+    const r = new Repeater(() => {});
+    const asyncIterator = r[Symbol.asyncIterator];
+    expect(() => asyncIterator()).toThrow(TypeError);
+  });
 });
