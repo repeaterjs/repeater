@@ -54,9 +54,9 @@ class Timer<T> {
 
 	clear(): void {
 		clearTimeout(this.timeout);
-		// In code below, this method is only called after the repeater is
-		// stopped. Because repeaters swallow rejections which settle after stop, we
-		// use this mechanism to make any pending call which has received the
+		// In code below, this method is only called after the repeater is stopped.
+		// Because repeaters swallow rejections which settle after stop, we use
+		// this mechanism to make any pending iteration which has received the
 		// deferred promise resolve to `{ done: true }`.
 		this.reject(new TimeoutError("Timer.clear called before stop"));
 	}

@@ -1,4 +1,7 @@
-/** An error subclass which is thrown when there are too many pending push or next operations on a single repeater. */
+/**
+ * An error subclass which is thrown when there are too many pending push or
+ * next operations on a single repeater.
+ */
 export class RepeaterOverflowError extends Error {
 	constructor(message: string) {
 		super(message);
@@ -19,7 +22,11 @@ export class RepeaterOverflowError extends Error {
 }
 
 /*** BUFFERS ***/
-/** A special queue interface which allow multiple values to be pushed onto a repeater without having pushes wait or throw overflow errors, passed as the second argument to the repeater constructor. */
+/**
+ * A special queue interface which allow multiple values to be pushed onto a
+ * repeater without having pushes wait or throw overflow errors, passed as the
+ * second argument to the repeater constructor.
+ */
 export interface RepeaterBuffer<TValue = unknown> {
 	empty: boolean;
 	full: boolean;
@@ -27,7 +34,10 @@ export interface RepeaterBuffer<TValue = unknown> {
 	remove(): TValue;
 }
 
-/** A buffer which allows you to push a set amount of values to the repeater without pushes waiting or throwing errors. */
+/**
+ * A buffer which allows you to push a set amount of values to the repeater
+ * without pushes waiting or throwing errors.
+ */
 export class FixedBuffer implements RepeaterBuffer {
 	// capacity
 	_c: number;
@@ -69,7 +79,12 @@ export class FixedBuffer implements RepeaterBuffer {
 }
 
 // TODO: Use a circular buffer here.
-/** Sliding buffers allow you to push a set amount of values to the repeater without pushes waiting or throwing errors. If the number of values exceeds the capacity set in the constructor, the buffer will discard the earliest values added. */
+/**
+ * Sliding buffers allow you to push a set amount of values to the repeater
+ * without pushes waiting or throwing errors. If the number of values exceeds
+ * the capacity set in the constructor, the buffer will discard the earliest
+ * values added.
+ */
 export class SlidingBuffer implements RepeaterBuffer {
 	// capacity
 	_c: number;
@@ -110,7 +125,12 @@ export class SlidingBuffer implements RepeaterBuffer {
 	}
 }
 
-/** Dropping buffers allow you to push a set amount of values to the repeater without the push function waiting or throwing errors. If the number of values exceeds the capacity set in the constructor, the buffer will discard the latest values added. */
+/**
+ * Dropping buffers allow you to push a set amount of values to the repeater
+ * without the push function waiting or throwing errors. If the number of
+ * values exceeds the capacity set in the constructor, the buffer will discard
+ * the latest values added.
+ */
 export class DroppingBuffer implements RepeaterBuffer {
 	// capacity
 	_c: number;
@@ -162,7 +182,10 @@ export type Push<T, TNext = unknown> = (
 	value: PromiseLike<T> | T,
 ) => Promise<TNext | undefined>;
 
-/** The type of the second argument passed to the executor callback. A callable promise. */
+/**
+ * The type of the second argument passed to the executor callback.
+ * A callable promise.
+ */
 export type Stop = ((err?: unknown) => undefined) & Promise<undefined>;
 
 /** The type of the callback passed to the Repeater constructor. */
@@ -171,7 +194,7 @@ export type RepeaterExecutor<T, TReturn = any, TNext = unknown> = (
 	stop: Stop,
 ) => PromiseLike<TReturn> | TReturn;
 
-/** The type of the object passed to the push queue. */
+/** @internal The type of the object passed to the push queue. */
 interface PushOperation<T, TNext> {
 	// The value passed to the push function.
 	value: Promise<T | undefined>;
@@ -179,7 +202,7 @@ interface PushOperation<T, TNext> {
 	resolve(next?: PromiseLike<TNext> | TNext): unknown;
 }
 
-/** The type of the object passed to the next queue. */
+/** @internal The type of the object passed to the next queue. */
 interface NextOperation<T, TReturn, TNext> {
 	// The value passed to the next method.
 	value: PromiseLike<TNext> | TNext | undefined;
@@ -188,31 +211,47 @@ interface NextOperation<T, TReturn, TNext> {
 }
 
 /*** REPEATER STATES ***/
-/** The following is an enumeration of all possible repeater states. These states are ordered, and a repeater may only advance to higher states. */
+/**
+ * The following is an enumeration of all possible repeater states. These
+ * states are ordered, and a repeater may only advance to higher states.
+ */
 
 /** The initial state of the repeater. */
 const Initial = 0;
 
-/** Repeaters advance to this state the first time the next method is called on the repeater. */
+/**
+ * Repeaters advance to this state the first time the next method is called on
+ * the repeater.
+ */
 const Started = 1;
 
 /** Repeaters advance to this state when the stop function is called. */
 const Stopped = 2;
 
-/** Repeaters advance to this state when there are no values left to be pulled from the repeater. */
+/**
+ * Repeaters advance to this state when there are no values left to be pulled
+ * from the repeater.
+ */
 const Done = 3;
 
 /** Repeaters advance to this state if an error is thrown into the repeater. */
 const Rejected = 4;
 
-/** The maximum number of push or next operations which may exist on a single repeater. */
+/**
+ * The maximum number of push or next operations which may exist on a single
+ * repeater.
+ */
 export const MAX_QUEUE_LENGTH = 1024;
 
 const NOOP = () => {};
 
-/** An interface containing the private data of repeaters, only accessible through a private WeakMap. */
+/**
+ * An interface containing the private data of repeaters, only accessible
+ * through a private WeakMap.
+ */
 interface RepeaterRecord<T, TReturn, TNext> {
-	// A number enum. States are ordered and the repeater will move through these states over the course of its lifetime. See REPEATER STATES.
+	// A number enum. States are ordered and the repeater will move through these
+	// states over the course of its lifetime. See REPEATER STATES.
 	state: number;
 
 	// The function passed to the repeater constructor.
@@ -221,14 +260,15 @@ interface RepeaterRecord<T, TReturn, TNext> {
 	// The buffer passed to the repeater constructor.
 	buffer: RepeaterBuffer | undefined;
 
+	// Both the push queue and the next queue will never contain values at the
+	// same time.
 	// A queue of values which were pushed.
 	pushes: Array<PushOperation<T, TNext>>;
 
 	// A queue of requests for values.
 	nexts: Array<NextOperation<T, TReturn, TNext>>;
-	// NOTE: both the push queue and the next queue will never contain values at the same time.
-
-	// A promise which is continuously reassigned and chained so that all repeater iterations settle in order.
+	// A promise which is continuously reassigned and chained so that all
+	// repeater iterations settle in order.
 	pending: Promise<unknown> | undefined;
 
 	// The return value of the executor.
@@ -244,7 +284,10 @@ interface RepeaterRecord<T, TReturn, TNext> {
 	onstop: () => unknown;
 }
 
-/** A helper function used to mimic the behavior of async generators where the final iteration is consumed. */
+/**
+ * A helper function used to mimic the behavior of async generators where the
+ * final iteration is consumed.
+ */
 function consumeExecution<T, TReturn, TNext>(
 	r: RepeaterRecord<T, TReturn, TNext>,
 ): Promise<TReturn | undefined> {
@@ -266,22 +309,26 @@ function consumeExecution<T, TReturn, TNext>(
 	return r.pending === undefined ? execution : r.pending.then(() => execution);
 }
 
-/** A helper function for building iterations from values. Promises are unwrapped, so that iterations never have their value property set to a promise. */
-function createIteration<T, TReturn, TNext>(
+/**
+ * A helper function for building iterations from values.
+ *
+ * Promises are unwrapped so iterations never have their value property set to
+ * a promise.
+ */
+async function createIteration<T, TReturn, TNext>(
 	r: RepeaterRecord<T, TReturn, TNext>,
 	value: Promise<T | TReturn | undefined> | T | TReturn | undefined,
 ): Promise<IteratorResult<T, TReturn>> {
 	const done = r.state >= Done;
-	return Promise.resolve(value).then((value: any) => {
-		if (!done && r.state >= Rejected) {
-			return consumeExecution<T, TReturn, TNext>(r).then((value: any) => ({
-				value,
-				done: true,
-			}));
-		}
+	const value1 = await value;
+	if (!done && r.state >= Rejected) {
+		return consumeExecution<T, TReturn, TNext>(r).then((value: any) => ({
+			value,
+			done: true,
+		}));
+	}
 
-		return {value, done};
-	});
+	return {value: value1 as any, done};
 }
 
 /**
@@ -317,7 +364,11 @@ function stop<T, TReturn, TNext>(
 }
 
 /**
- * The difference between stopping a repeater vs finishing a repeater is that stopping a repeater allows next to continue to drain values from the push queue and buffer, while finishing a repeater will clear all pending values and end iteration immediately. Once, a repeater is finished, all iterations will have the done property set to true.
+ * The difference between stopping a repeater vs finishing a repeater is that
+ * stopping a repeater allows next to continue to drain values from the push
+ * queue and buffer, while finishing a repeater will clear all pending values
+ * and end iteration immediately. Once, a repeater is finished, all iterations
+ * will have the done property set to true.
  *
  * Advances state to Done.
  */
@@ -405,8 +456,17 @@ function push<T, TReturn, TNext>(
 		nextP = new Promise((resolve) => r.pushes.push({resolve, value: valueP}));
 	}
 
-	// If an error is thrown into the repeater via the next or throw methods, we give the repeater a chance to handle this by rejecting the promise returned from push. If the push call is not immediately handled we throw the next iteration of the repeater.
-	// To check that the promise returned from push is floating, we modify the then and catch methods of the returned promise so that they flip the floating flag. The push function actually does not return a promise, because modern engines do not call the then and catch methods on native promises. By making next a plain old javascript object, we ensure that the then and catch methods will be called.
+	// If an error is thrown into the repeater via the next or throw methods, we
+	// give the repeater a chance to handle this by rejecting the promise
+	// returned from push. If the push call is not immediately handled we throw
+	// the next iteration of the repeater.
+	//
+	// To check that the promise returned from push is floating, we modify the
+	// then and catch methods of the returned promise so that they flip the
+	// floating flag. The push function actually does not return a promise,
+	// because modern engines do not call the then and catch methods on native
+	// promises. By making next a plain old javascript object, we ensure that the
+	// then and catch methods will be called.
 	let floating = true;
 	let next = {} as Promise<TNext | undefined>;
 	const unhandled = nextP.catch((err) => {
@@ -455,7 +515,8 @@ function createStop<T, TReturn, TNext>(
 }
 
 /**
- * Calls the executor passed into the constructor. This function is called the first time the next method is called on the repeater.
+ * Calls the executor passed into the constructor. This function is called the
+ * first time the next method is called on the repeater.
  *
  * Advances state to Started.
  */
@@ -481,7 +542,12 @@ type RecordMap<T, TResult, TNext> = WeakMap<
 
 const records: RecordMap<any, any, any> = new WeakMap();
 
-// NOTE: While repeaters implement and are assignable to the AsyncGenerator interface, and you can use the types interchangeably, we don’t use typescript’s implements syntax here because this would make supporting earlier versions of typescript trickier. This is because TypeScript version 3.6 changed the iterator types by adding the TReturn and TNext type parameters.
+// While repeaters implement and are assignable to the AsyncGenerator
+// interface, and you can use the types interchangeably, we don’t use
+// typescript’s implements syntax here because this would make supporting
+// earlier versions of typescript trickier. This is because TypeScript version
+// 3.6 changed the iterator types by adding the TReturn and TNext type
+// parameters.
 export class Repeater<T, TReturn = any, TNext = unknown> {
 	constructor(
 		executor: RepeaterExecutor<T, TReturn, TNext>,
@@ -584,7 +650,9 @@ export class Repeater<T, TReturn = any, TNext = unknown> {
 			(typeof r.buffer !== "undefined" && !r.buffer.empty)
 		) {
 			finish(r);
-			// If r.err is already set, that mean the repeater has already produced an error, so we throw that error rather than the error passed in, because doing so might be more informative for the caller.
+			// If r.err is already set, that mean the repeater has already produced
+			// an error, so we throw that error rather than the error passed in,
+			// because doing so might be more informative for the caller.
 			if (r.err == null) {
 				r.err = err;
 			}
@@ -640,7 +708,14 @@ function getIterators(
 	return iters;
 }
 
-// NOTE: whenever you see any variables called `advance` or `advances`, know that it is a hack to get around the fact that `Promise.race` leaks memory. These variables are intended to be set to the resolve function of a promise which is constructed and awaited as an alternative to Promise.race. For more information, see this comment in the Node.js issue tracker: https://github.com/nodejs/node/issues/17469#issuecomment-685216777.
+// Whenever you see any variables called `advance` or `advances`, know that it
+// is a technique to get around the fact that `Promise.race` leaks memory when
+// called with the same promise. These variables are intended to be set to the
+// resolve function of a promise which is constructed and awaited as an
+// alternative to Promise.race.
+//
+// For more information, see this comment in the Node.js issue tracker:
+// https://github.com/nodejs/node/issues/17469#issuecomment-685216777.
 function race<T>(
 	contenders: Iterable<T>,
 ): Repeater<
@@ -898,7 +973,8 @@ function latest(contenders: Iterable<any>) {
 				return values;
 			}
 
-			// We continuously yield and mutate the same values array so we shallow copy it each time it is pushed.
+			// We continuously yield and mutate the same values array so we shallow
+			// copy it each time it is pushed.
 			await push(values.slice());
 			return await Promise.all(
 				iters.map(async (iter, i) => {
