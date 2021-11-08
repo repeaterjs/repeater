@@ -5,6 +5,7 @@ import {
   FixedBuffer,
   MAX_QUEUE_LENGTH,
   SlidingBuffer,
+  Push,
 } from "../repeater";
 import { delayPromise } from "./_testutils";
 
@@ -1574,4 +1575,29 @@ describe("Repeater", () => {
     await expect(r.next()).resolves.toEqual({ done: true });
     await expect(r.next()).resolves.toEqual({ done: true });
   });
+});
+
+test("return method when awaiting", async () => {
+  let publish!: Push<number>;
+  const subscription = new Repeater(async (push, stop) => {
+    publish = push;
+    await stop;
+  });
+  const payload = subscription.next();
+  await subscription.return();
+  await publish(1);
+  await expect(payload).resolves.toEqual({ done: true });
+});
+
+test("throw method when awaiting", async () => {
+  const error = new Error("throw method when awaiting");
+  let publish!: Push<number>;
+  const subscription = new Repeater(async (push, stop) => {
+    publish = push;
+    await stop;
+  });
+  const payload = subscription.next();
+  await subscription.throw(error);
+  await publish(1);
+  await expect(payload).resolves.toEqual({ value: "hmmmmm", done: true });
 });
