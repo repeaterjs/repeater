@@ -14,6 +14,13 @@
   "main": "lib/timers.cjs.js",
   "module": "lib/timers.esm.js",
   "types": "lib/timers.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/timers.d.ts",
+      "require": "./lib/timers.cjs.js",
+      "default": "./lib/timers.esm.js"
+    }
+  },
   "scripts": {
     "prebuild": "yarn run clean",
     "build": "rollup -c ./rollup.config.js",

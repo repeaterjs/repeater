@@ -14,6 +14,13 @@
   "main": "lib/pubsub.cjs.js",
   "module": "lib/pubsub.esm.js",
   "types": "lib/pubsub.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/pubsub.d.ts",
+      "require": "./lib/pubsub.cjs.js",
+      "default": "./lib/pubsub.esm.js"
+    }
+  },
   "scripts": {
     "prebuild": "yarn run clean",
     "build": "rollup -c ./rollup.config.js",

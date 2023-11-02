@@ -18,6 +18,16 @@
   "main": "cjs/repeater.js",
   "module": "repeater.js",
   "types": "repeater.d.ts",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./cjs/repeater.d.ts",
+        "default": "./cjs/repeater.js"
+      },
+      "types": "./repeater.d.ts",
+      "default": "./repeater.js"
+    }
+  },
   "scripts": {
     "prebuild": "yarn run clean",
     "build": "rollup -c ./rollup.config.js",
