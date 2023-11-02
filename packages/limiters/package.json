@@ -14,6 +14,13 @@
   "main": "lib/limiters.cjs.js",
   "module": "lib/limiters.esm.js",
   "types": "lib/limiters.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/limiters.d.ts",
+      "require": "./lib/limiters.cjs.js",
+      "default": "./lib/limiters.esm.js"
+    }
+  },
   "scripts": {
     "prebuild": "yarn run clean",
     "build": "rollup -c ./rollup.config.js",
