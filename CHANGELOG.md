@@ -1,4 +1,7 @@
 # Changelog
+## repeater@3.0.5 - 2023-11-07
+### Fixed
+- Add export maps to package.json files for the TypeScript `nodenext`
 ## repeater@3.0.4 - 2020-09-02
 ### Fixed
 - Fixed memory leaks in static combinator functions race, merge, zip and latest due to Promise.race.
@@ -10,7 +13,7 @@
 - Fixed throw method not catching promises in newer versions of v8 (node.js 12+).
 - Added ESM support for newer versions of node.
 ## limiters@0.3.3 - 2019-10-13
-### Fixed 
+### Fixed
 - build files with target set to es5 rather than esnext
 ## timers@0.3.3 2019-11-10
 ### Fixed
