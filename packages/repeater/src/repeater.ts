@@ -395,6 +395,8 @@ function push<T, TReturn, TNext>(
     next.resolve(createIteration<T, TReturn, TNext>(r, valueP));
     if (r.nexts.length) {
       nextP = Promise.resolve(r.nexts[0].value);
+    } else if (typeof r.buffer !== "undefined" && !r.buffer.full) {
+      nextP = Promise.resolve(undefined);
     } else {
       nextP = new Promise((resolve) => (r.onnext = resolve));
     }
