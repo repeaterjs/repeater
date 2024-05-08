@@ -1,4 +1,6 @@
 # Changelog
+## repeater@3.0.6 - 2024-05-08
+- Fix promise returned from `push` function not resolving when using a buffer.
 ## repeater@3.0.5 - 2023-11-07
 ### Fixed
 - Add export maps to package.json files for the TypeScript `nodenext`
