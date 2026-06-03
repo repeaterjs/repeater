@@ -4,7 +4,7 @@ import {
   RepeaterOverflowError,
   MAX_QUEUE_LENGTH,
   SlidingBuffer,
-} from "@repeaterjs/repeater";
+} from "./index.js";
 
 export class TimeoutError extends Error {
   constructor(message: string) {
@@ -54,15 +54,13 @@ class Timer<T> {
 
   clear(): void {
     clearTimeout(this.timeout);
-    // In code below, this method is only called after the repeater is
-    // stopped. Because repeaters swallow rejections which settle after stop, we
-    // use this mechanism to make any pending call which has received the
-    // deferred promise resolve to `{ done: true }`.
+    // Called after the repeater is stopped. Resolving pending push calls so
+    // they settle as { done: true } rather than hanging.
     this.reject(new TimeoutError("Timer.clear called before stop"));
   }
 }
 
-export function delay(wait: number): Repeater<number> {
+export function createDelay(wait: number): Repeater<number> {
   return new Repeater(async (push, stop) => {
     const timers: Set<Timer<number>> = new Set();
     let stopped = false;
@@ -92,7 +90,7 @@ export function delay(wait: number): Repeater<number> {
   });
 }
 
-export function timeout(wait: number): Repeater<undefined> {
+export function createTimeout(wait: number): Repeater<undefined> {
   return new Repeater(async (push, stop) => {
     let timer: Timer<undefined> | undefined;
     let stopped = false;
@@ -118,7 +116,7 @@ export function timeout(wait: number): Repeater<undefined> {
   });
 }
 
-export function interval(
+export function createInterval(
   wait: number,
   buffer: RepeaterBuffer = new SlidingBuffer(1),
 ): Repeater<number> {

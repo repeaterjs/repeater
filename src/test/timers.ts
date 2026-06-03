@@ -1,10 +1,17 @@
-import { Repeater } from "@repeaterjs/repeater";
-import { delay, interval, timeout, TimeoutError } from "../timers";
+import { describe, test, expect } from "@b9g/libuild/test";
+import * as Sinon from "sinon";
+import { Repeater } from "../index.js";
+import {
+  createDelay,
+  createTimeout,
+  createInterval,
+  TimeoutError,
+} from "../timers.js";
 
 describe("timers", () => {
-  test("delay sequential", async () => {
+  test("createDelay sequential", async () => {
     const wait = 200;
-    const timer = delay(wait);
+    const timer = createDelay(wait);
     const result1 = await timer.next();
     const time1 = Date.now();
     const result2 = await timer.next();
@@ -24,11 +31,12 @@ describe("timers", () => {
     expect(result2.value - result1.value).toBeCloseTo(wait, -1.5);
     expect(result3.value - result2.value).toBeCloseTo(wait, -1.5);
     expect(result4.value - result3.value).toBeCloseTo(wait, -1.5);
+    await timer.return();
   });
 
-  test("delay concurrent", async () => {
+  test("createDelay concurrent", async () => {
     const wait = 200;
-    const timer = delay(wait);
+    const timer = createDelay(wait);
     const result1 = timer.next();
     const result2 = timer.next();
     const result3 = timer.next();
@@ -41,11 +49,12 @@ describe("timers", () => {
       expect(result.value).toBeCloseTo(end, -1.5);
       expect(result.done).toBe(false);
     }
+    await timer.return();
   });
 
-  test("delay cancels", async () => {
-    const slow = delay(100);
-    const fast = delay(50);
+  test("createDelay cancels", async () => {
+    const slow = createDelay(100);
+    const fast = createDelay(50);
     const s = slow.next();
     const f = fast.next();
     const result = await Promise.race([s, f]);
@@ -57,28 +66,30 @@ describe("timers", () => {
     await expect(fast.next()).resolves.toEqual({ done: true });
   });
 
-  test("delay does not call timer functions unnecessarily", async () => {
+  test("createDelay does not call timer functions unnecessarily", async () => {
+    const setTimeoutSpy = Sinon.spy(globalThis, "setTimeout");
+    const clearTimeoutSpy = Sinon.spy(globalThis, "clearTimeout");
     try {
-      jest.useFakeTimers();
-      const timer = delay(0);
+      const timer = createDelay(0);
       await expect(timer.return()).resolves.toEqual({ done: true });
       await expect(timer.next()).resolves.toEqual({ done: true });
-      expect(setTimeout).toHaveBeenCalledTimes(0);
-      expect(clearTimeout).toHaveBeenCalledTimes(0);
+      expect(setTimeoutSpy.callCount).toBe(0);
+      expect(clearTimeoutSpy.callCount).toBe(0);
     } finally {
-      jest.useRealTimers();
+      setTimeoutSpy.restore();
+      clearTimeoutSpy.restore();
     }
   });
 
-  test("timeout rejects", async () => {
-    const timer = timeout(50);
+  test("createTimeout rejects", async () => {
+    const timer = createTimeout(50);
     await expect(timer.next()).rejects.toBeInstanceOf(TimeoutError);
     await expect(timer.next()).resolves.toEqual({ done: true });
   });
 
-  test("timeout resolves when next is called before timeout rejects", async () => {
-    const slow = timeout(100);
-    const fast = delay(50);
+  test("createTimeout resolves when next is called before timeout rejects", async () => {
+    const slow = createTimeout(100);
+    const fast = createDelay(50);
     const s1 = slow.next();
     await fast.next();
     const s2 = slow.next();
@@ -88,25 +99,28 @@ describe("timers", () => {
     await expect(s2).resolves.toEqual({ done: false });
     await expect(s3).rejects.toBeInstanceOf(TimeoutError);
     await expect(slow.next()).resolves.toEqual({ done: true });
+    await fast.return();
   });
 
-  test("timeout does not call timer functions unnecessarily", async () => {
+  test("createTimeout does not call timer functions unnecessarily", async () => {
+    const setTimeoutSpy = Sinon.spy(globalThis, "setTimeout");
+    const clearTimeoutSpy = Sinon.spy(globalThis, "clearTimeout");
     try {
-      jest.useFakeTimers();
-      const timer = timeout(0);
+      const timer = createTimeout(0);
       await expect(timer.return()).resolves.toEqual({ done: true });
       await expect(timer.next()).resolves.toEqual({ done: true });
-      expect(setTimeout).toHaveBeenCalledTimes(0);
-      expect(clearTimeout).toHaveBeenCalledTimes(0);
+      expect(setTimeoutSpy.callCount).toBe(0);
+      expect(clearTimeoutSpy.callCount).toBe(0);
     } finally {
-      jest.useRealTimers();
+      setTimeoutSpy.restore();
+      clearTimeoutSpy.restore();
     }
   });
 
-  test("racing fast delay with slow timeout", async () => {
+  test("racing fast createDelay with slow createTimeout", async () => {
     let i = 0;
-    const slow = timeout(100);
-    const fast = delay(50);
+    const slow = createTimeout(100);
+    const fast = createDelay(50);
     for await (const t of Repeater.race([slow, fast])) {
       expect(t).toBeCloseTo(Date.now(), -1.5);
       i++;
@@ -120,17 +134,17 @@ describe("timers", () => {
     await expect(fast.next()).resolves.toEqual({ done: true });
   });
 
-  test("racing slow delay with fast timeout", async () => {
-    const slow = delay(100);
-    const fast = timeout(50);
+  test("racing slow createDelay with fast createTimeout", async () => {
+    const slow = createDelay(100);
+    const fast = createTimeout(50);
     const race = Repeater.race([slow, fast]);
     await expect(race.next()).rejects.toBeInstanceOf(TimeoutError);
     await expect(slow.next()).resolves.toEqual({ done: true });
     await expect(fast.next()).resolves.toEqual({ done: true });
   });
 
-  test("interval ticks", async () => {
-    const timer = interval(10);
+  test("createInterval ticks", async () => {
+    const timer = createInterval(10);
     let result = await timer.next();
     expect(result.value).toBeLessThanOrEqual(Date.now());
     expect(result.done).toBe(false);
@@ -148,30 +162,32 @@ describe("timers", () => {
     expect(result).toEqual({ done: true });
   });
 
-  test("interval calls clearInterval", async () => {
+  test("createInterval calls clearInterval", async () => {
+    const clearIntervalSpy = Sinon.spy(globalThis, "clearInterval");
     try {
-      jest.useFakeTimers();
-      const timer = interval(10);
+      const timer = createInterval(10);
       const result = await timer.next();
       expect(result.value).toBeLessThanOrEqual(Date.now());
       expect(result.done).toBe(false);
       await timer.return();
-      expect(clearInterval).toHaveBeenCalledTimes(1);
+      expect(clearIntervalSpy.callCount).toBe(1);
     } finally {
-      jest.useRealTimers();
+      clearIntervalSpy.restore();
     }
   });
 
-  test("interval does not call timer functions unnecessarily", async () => {
+  test("createInterval does not call timer functions unnecessarily", async () => {
+    const setIntervalSpy = Sinon.spy(globalThis, "setInterval");
+    const clearIntervalSpy = Sinon.spy(globalThis, "clearInterval");
     try {
-      jest.useFakeTimers();
-      const timer = interval(50);
+      const timer = createInterval(50);
       await expect(timer.return()).resolves.toEqual({ done: true });
       await expect(timer.next()).resolves.toEqual({ done: true });
-      expect(setInterval).toHaveBeenCalledTimes(0);
-      expect(clearInterval).toHaveBeenCalledTimes(0);
+      expect(setIntervalSpy.callCount).toBe(0);
+      expect(clearIntervalSpy.callCount).toBe(0);
     } finally {
-      jest.useRealTimers();
+      setIntervalSpy.restore();
+      clearIntervalSpy.restore();
     }
   });
 });
