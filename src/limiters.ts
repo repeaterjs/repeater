@@ -1,6 +1,7 @@
 import { Repeater, FixedBuffer } from "./index.js";
 import { race } from "./combinators.js";
 import { createDelay } from "./timers.js";
+import { safeRace } from "./_utils.js";
 
 export interface Token {
   readonly id: number;
@@ -104,7 +105,7 @@ export function createThrottle(
       let token1: ThrottleToken = { ...token, reset: start + wait };
       tokens.add(token1);
       if (cooldown && token.remaining === 0) {
-        await Promise.race([stop, leaking]);
+        await safeRace([stop, leaking]);
         token1 = { ...token1, remaining: limit };
       }
 
