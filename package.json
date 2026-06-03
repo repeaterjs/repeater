@@ -8,14 +8,15 @@
   },
   "license": "MIT",
   "type": "module",
-  "main": "dist/src/index.cjs",
-  "module": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "./dist/src/index.cjs",
+  "module": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "scripts": {
     "build": "libuild build",
     "test": "libuild test",
     "publish": "libuild publish",
-    "prepublishOnly": "echo 'ERROR: Cannot publish from root directory. Use npm run publish instead.' && exit 1"
+    "prepare": "libuild build",
+    "prepublishOnly": "echo 'ERROR: Cannot publish from root directory. Use libuild publish instead.' && exit 1"
   },
   "devDependencies": {
     "@b9g/libuild": "^0.1.24",
@@ -26,5 +27,63 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "require": "./dist/src/index.cjs"
+    },
+    "./core": {
+      "types": "./dist/src/core.d.ts",
+      "import": "./dist/src/core.js",
+      "require": "./dist/src/core.cjs"
+    },
+    "./core.js": {
+      "types": "./dist/src/core.d.ts",
+      "import": "./dist/src/core.js",
+      "require": "./dist/src/core.cjs"
+    },
+    "./index": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "require": "./dist/src/index.cjs"
+    },
+    "./index.js": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "require": "./dist/src/index.cjs"
+    },
+    "./limiters": {
+      "types": "./dist/src/limiters.d.ts",
+      "import": "./dist/src/limiters.js",
+      "require": "./dist/src/limiters.cjs"
+    },
+    "./limiters.js": {
+      "types": "./dist/src/limiters.d.ts",
+      "import": "./dist/src/limiters.js",
+      "require": "./dist/src/limiters.cjs"
+    },
+    "./static": {
+      "types": "./dist/src/static.d.ts",
+      "import": "./dist/src/static.js",
+      "require": "./dist/src/static.cjs"
+    },
+    "./static.js": {
+      "types": "./dist/src/static.d.ts",
+      "import": "./dist/src/static.js",
+      "require": "./dist/src/static.cjs"
+    },
+    "./timers": {
+      "types": "./dist/src/timers.d.ts",
+      "import": "./dist/src/timers.js",
+      "require": "./dist/src/timers.cjs"
+    },
+    "./timers.js": {
+      "types": "./dist/src/timers.d.ts",
+      "import": "./dist/src/timers.js",
+      "require": "./dist/src/timers.cjs"
+    },
+    "./package.json": "./dist/package.json"
   }
 }
