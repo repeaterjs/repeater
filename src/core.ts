@@ -592,6 +592,15 @@ export class Repeater<T, TReturn = any, TNext = unknown> {
   }
 }
 
+// The disposal methods are installed on the prototype below, guarded by feature
+// detection so the class still defines in environments without the symbols.
+// They are declared here via interface merging so `using`/`await using` type
+// check for consumers.
+export interface Repeater<T, TReturn = any, TNext = unknown> {
+  [Symbol.asyncDispose](): Promise<IteratorResult<T, TReturn>>;
+  [Symbol.dispose](): void;
+}
+
 if (typeof Symbol.asyncDispose === "symbol") {
   (Repeater.prototype as any)[Symbol.asyncDispose] = function (
     this: Repeater<any, any, any>,
