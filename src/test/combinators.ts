@@ -1,4 +1,6 @@
-import { Repeater } from "../repeater";
+import { describe, test, expect } from "@b9g/libuild/test";
+import * as Sinon from "sinon";
+import { Repeater } from "../index.js";
 import {
   AssertTypeEquals,
   deferredGen,
@@ -6,9 +8,8 @@ import {
   delayPromise,
   gen,
   hangingGen,
-} from "./_testutils";
+} from "./_testutils.js";
 
-// TODO: maybe use timer mocks to make this test suite execute faster
 describe("combinators", () => {
   describe("Repeater.race", () => {
     test("empty", async () => {
@@ -43,10 +44,7 @@ describe("combinators", () => {
       try {
         await expect(iteration).resolves.toEqual({ value: "z", done: true });
       } catch (err) {
-        // node 10
-        // eslint-disable-next-line jest/no-try-expect
         await expect(iteration).resolves.toEqual({ value: 1, done: false });
-        // eslint-disable-next-line jest/no-try-expect
         await expect(iter.next()).resolves.toEqual({ value: "z", done: true });
       }
 
@@ -135,14 +133,14 @@ describe("combinators", () => {
       const iter1 = hangingGen();
       const iter2 = delayRepeater<number>(1000, [1, 2, 3], -1);
       const iter3 = delayRepeater<number>(250, [], -2);
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.race([hanging, iter1, iter2, iter3]);
       await expect(iter.next()).resolves.toEqual({ done: true, value: -2 });
-      expect(spy1).toHaveBeenCalledTimes(1);
-      expect(spy2).toHaveBeenCalledTimes(1);
-      expect(spy3).toHaveBeenCalledTimes(1);
+      expect(spy1.callCount).toBe(1);
+      expect(spy2.callCount).toBe(1);
+      expect(spy3.callCount).toBe(1);
     });
 
     test("return methods called on all iterators when parent return called", async () => {
@@ -150,15 +148,15 @@ describe("combinators", () => {
       const iter1 = hangingGen();
       const iter2 = new Repeater(() => {});
       const iter3 = delayRepeater(250, []);
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.race([hanging, iter1, iter2, iter3]);
       iter.next();
       await expect(iter.return()).resolves.toEqual({ done: true });
-      expect(spy1).toHaveBeenCalledTimes(1);
-      expect(spy2).toHaveBeenCalledTimes(1);
-      expect(spy3).toHaveBeenCalledTimes(1);
+      expect(spy1.callCount).toBe(1);
+      expect(spy2.callCount).toBe(1);
+      expect(spy3.callCount).toBe(1);
     });
 
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
@@ -166,16 +164,16 @@ describe("combinators", () => {
       const iter1 = hangingGen();
       const iter2 = new Repeater(() => {});
       const iter3 = delayRepeater(250, []);
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.race([hanging, iter1, iter2, iter3]);
       await expect(iter.return()).resolves.toEqual({
         done: true,
       });
-      expect(spy1).toHaveBeenCalledTimes(0);
-      expect(spy2).toHaveBeenCalledTimes(0);
-      expect(spy3).toHaveBeenCalledTimes(0);
+      expect(spy1.callCount).toBe(0);
+      expect(spy2.callCount).toBe(0);
+      expect(spy3.callCount).toBe(0);
     });
 
     test("one iterator errors", async () => {
@@ -188,9 +186,9 @@ describe("combinators", () => {
       });
       const error = new Error("Repeater.race error");
       const iter3 = delayRepeater<number>(100, [1, 2, 3], undefined, error);
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.race([hanging, iter1, iter2, iter3]);
 
       await expect(iter.next()).resolves.toEqual({ value: "a", done: false });
@@ -198,9 +196,9 @@ describe("combinators", () => {
       await expect(iter.next()).resolves.toEqual({ value: 3, done: false });
       await expect(iter.next()).rejects.toBe(error);
       await expect(iter.next()).resolves.toEqual({ done: true });
-      expect(spy1).toHaveBeenCalledTimes(1);
-      expect(spy2).toHaveBeenCalledTimes(1);
-      expect(spy3).toHaveBeenCalledTimes(1);
+      expect(spy1.callCount).toBe(1);
+      expect(spy2.callCount).toBe(1);
+      expect(spy3.callCount).toBe(1);
     });
 
     test("type inference", async () => {
@@ -268,8 +266,6 @@ describe("combinators", () => {
       try {
         expect(nums).toEqual([-1, 1, 2, 3, 4, 5]);
       } catch (err) {
-        // node 10
-        // eslint-disable-next-line jest/no-try-expect
         expect(nums).toEqual([1, -1, 2, 3, 4, 5]);
       }
       await expect(iter.next()).resolves.toEqual({ done: true });
@@ -427,15 +423,15 @@ describe("combinators", () => {
       const iter1 = delayRepeater(100, [1]);
       const iter2 = delayRepeater(10000, [2]);
       const iter3 = new Repeater<number>(() => {});
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.merge([iter1, iter2, iter3]);
       iter.next();
       await expect(iter.return()).resolves.toEqual({ done: true });
-      expect(spy1).toHaveBeenCalledTimes(1);
-      expect(spy2).toHaveBeenCalledTimes(1);
-      expect(spy3).toHaveBeenCalledTimes(1);
+      expect(spy1.callCount).toBe(1);
+      expect(spy2.callCount).toBe(1);
+      expect(spy3.callCount).toBe(1);
     });
 
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
@@ -443,16 +439,16 @@ describe("combinators", () => {
       const iter1 = hangingGen();
       const iter2 = new Repeater<number>(() => {});
       const iter3 = delayRepeater(10000, [1]);
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.merge([hanging, iter1, iter2, iter3]);
       await expect(iter.return()).resolves.toEqual({
         done: true,
       });
-      expect(spy1).toHaveBeenCalledTimes(0);
-      expect(spy2).toHaveBeenCalledTimes(0);
-      expect(spy3).toHaveBeenCalledTimes(0);
+      expect(spy1.callCount).toBe(0);
+      expect(spy2.callCount).toBe(0);
+      expect(spy3.callCount).toBe(0);
     });
 
     test("one iterator errors", async () => {
@@ -463,9 +459,9 @@ describe("combinators", () => {
       });
       const error = new Error("Repeater.merge error");
       const iter3 = delayRepeater<number>(250, [1, 2, 3], undefined, error);
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.merge([iter1, iter2, iter3]);
 
       let result: IteratorResult<number | string | boolean>;
@@ -495,9 +491,9 @@ describe("combinators", () => {
         true,
       ]);
       await expect(iter.next()).resolves.toEqual({ done: true });
-      expect(spy1).toHaveBeenCalledTimes(1);
-      expect(spy2).toHaveBeenCalledTimes(1);
-      expect(spy3).toHaveBeenCalledTimes(1);
+      expect(spy1.callCount).toBe(1);
+      expect(spy2.callCount).toBe(1);
+      expect(spy3.callCount).toBe(1);
     });
 
     test("type inference", async () => {
@@ -665,33 +661,33 @@ describe("combinators", () => {
       const iter1 = gen(["a", "b", "c", "d", "e"], "f");
       const iter2 = delayRepeater(100, [false], true);
       const iter3 = delayRepeater<number>(250, [], -3000);
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.zip([iter1, iter2, iter3]);
       await expect(iter.next()).resolves.toEqual({
         value: ["a", false, -3000],
         done: true,
       });
       await expect(iter.next()).resolves.toEqual({ done: true });
-      expect(spy1).toHaveBeenCalledTimes(1);
-      expect(spy2).toHaveBeenCalledTimes(1);
-      expect(spy3).toHaveBeenCalledTimes(1);
+      expect(spy1.callCount).toBe(1);
+      expect(spy2.callCount).toBe(1);
+      expect(spy3.callCount).toBe(1);
     });
 
     test("return methods called on all iterators when parent return called", async () => {
       const iter1 = delayRepeater(2500, [1]);
       const iter2 = delayRepeater(10000, [2]);
       const iter3 = new Repeater<string>(() => {});
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.zip([iter1, iter2, iter3]);
       iter.next();
       await expect(iter.return()).resolves.toEqual({ done: true });
-      expect(spy1).toHaveBeenCalledTimes(1);
-      expect(spy2).toHaveBeenCalledTimes(1);
-      expect(spy3).toHaveBeenCalledTimes(1);
+      expect(spy1.callCount).toBe(1);
+      expect(spy2.callCount).toBe(1);
+      expect(spy3.callCount).toBe(1);
     });
 
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
@@ -699,16 +695,16 @@ describe("combinators", () => {
       const iter2 = new Repeater<number>(() => {});
       const iter3 = delayRepeater<boolean>(250, []);
       const hanging = new Promise(() => {});
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.zip([hanging, iter1, iter2, iter3]);
       await expect(iter.return()).resolves.toEqual({
         done: true,
       });
-      expect(spy1).toHaveBeenCalledTimes(0);
-      expect(spy2).toHaveBeenCalledTimes(0);
-      expect(spy3).toHaveBeenCalledTimes(0);
+      expect(spy1.callCount).toBe(0);
+      expect(spy2.callCount).toBe(0);
+      expect(spy3.callCount).toBe(0);
     });
 
     test("one iterator errors", async () => {
@@ -721,9 +717,9 @@ describe("combinators", () => {
       });
       const error = new Error("Repeater.zip error");
       const iter3 = delayRepeater<number>(150, [1, 2, 3], undefined, error);
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.zip([iter1, iter2, iter3]);
 
       let result: IteratorResult<[boolean, string, number]>;
@@ -743,9 +739,9 @@ describe("combinators", () => {
         [false, "c", 3],
       ]);
       await expect(iter.next()).resolves.toEqual({ done: true });
-      expect(spy1).toHaveBeenCalledTimes(1);
-      expect(spy2).toHaveBeenCalledTimes(1);
-      expect(spy3).toHaveBeenCalledTimes(1);
+      expect(spy1.callCount).toBe(1);
+      expect(spy2.callCount).toBe(1);
+      expect(spy3.callCount).toBe(1);
     });
 
     test("type inference", async () => {
@@ -954,15 +950,15 @@ describe("combinators", () => {
       const iter1 = delayRepeater(250, [1]);
       const iter2 = delayRepeater(10000, [2]);
       const iter3 = new Repeater<string>(() => {});
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.latest([iter1, iter2, iter3]);
       iter.next();
       await expect(iter.return()).resolves.toEqual({ done: true });
-      expect(spy1).toHaveBeenCalledTimes(1);
-      expect(spy2).toHaveBeenCalledTimes(1);
-      expect(spy3).toHaveBeenCalledTimes(1);
+      expect(spy1.callCount).toBe(1);
+      expect(spy2.callCount).toBe(1);
+      expect(spy3.callCount).toBe(1);
     });
 
     test("return methods on all iterators not called when parent iterator return called prematurely", async () => {
@@ -970,14 +966,14 @@ describe("combinators", () => {
       const iter2 = new Repeater<number>(() => {});
       const iter3 = delayRepeater(250, []);
       const hanging = new Promise(() => {});
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.latest([hanging, iter1, iter2, iter3]);
       await expect(iter.return()).resolves.toEqual({ done: true });
-      expect(spy1).toHaveBeenCalledTimes(0);
-      expect(spy2).toHaveBeenCalledTimes(0);
-      expect(spy3).toHaveBeenCalledTimes(0);
+      expect(spy1.callCount).toBe(0);
+      expect(spy2.callCount).toBe(0);
+      expect(spy3.callCount).toBe(0);
     });
 
     test("one iterator errors", async () => {
@@ -990,9 +986,9 @@ describe("combinators", () => {
       });
       const error = new Error("Repeater.latest error");
       const iter3 = delayRepeater<number>(150, [1, 2, 3], undefined, error);
-      const spy1 = jest.spyOn(iter1, "return");
-      const spy2 = jest.spyOn(iter2, "return");
-      const spy3 = jest.spyOn(iter3, "return");
+      const spy1 = Sinon.spy(iter1, "return");
+      const spy2 = Sinon.spy(iter2, "return");
+      const spy3 = Sinon.spy(iter3, "return");
       const iter = Repeater.latest([iter1, iter2, iter3]);
 
       let result: IteratorResult<[boolean, string, number]>;
@@ -1018,9 +1014,9 @@ describe("combinators", () => {
         [true, "d", 3],
       ]);
       await expect(iter.next()).resolves.toEqual({ done: true });
-      expect(spy1).toHaveBeenCalledTimes(1);
-      expect(spy2).toHaveBeenCalledTimes(1);
-      expect(spy3).toHaveBeenCalledTimes(1);
+      expect(spy1.callCount).toBe(1);
+      expect(spy2.callCount).toBe(1);
+      expect(spy3.callCount).toBe(1);
     });
 
     test("type inference", async () => {

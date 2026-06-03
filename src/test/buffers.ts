@@ -1,4 +1,5 @@
-import { DroppingBuffer, FixedBuffer, SlidingBuffer } from "../repeater";
+import { describe, test, expect } from "@b9g/libuild/test";
+import { DroppingBuffer, FixedBuffer, SlidingBuffer } from "../index.js";
 
 describe("RepeaterBuffer", () => {
   test("FixedBuffer", () => {

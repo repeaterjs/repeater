@@ -1,5 +1,6 @@
-import { Repeater, FixedBuffer } from "@repeaterjs/repeater";
-import { delay } from "@repeaterjs/timers";
+import { Repeater, FixedBuffer } from "./index.js";
+import { race } from "./static.js";
+import { createDelay } from "./timers.js";
 
 export interface Token {
   readonly id: number;
@@ -8,7 +9,7 @@ export interface Token {
   release(): void;
 }
 
-export function semaphore(limit: number): Repeater<Token> {
+export function createSemaphore(limit: number): Repeater<Token> {
   if (limit < 1) {
     throw new RangeError("limit cannot be less than 1");
   }
@@ -42,29 +43,28 @@ export function semaphore(limit: number): Repeater<Token> {
       push(token);
     }
   }, new FixedBuffer(limit));
+
   return new Repeater<Token>(async (push, stop) => {
     let stopped = false;
     stop.then(() => (stopped = true));
-    for await (let token of Repeater.race([bucket, stop])) {
+    for await (const token of race([bucket, stop])) {
       if (stopped) {
         break;
       }
 
       remaining--;
-      token = { ...token, remaining };
-      tokens[token.id] = token;
-      await push(token);
+      const token1 = { ...token, remaining };
+      tokens[token1.id] = token1;
+      await push(token1);
     }
   });
 }
-
-// TODO: implement a resource pool
 
 export interface ThrottleToken extends Token {
   readonly reset: number;
 }
 
-export function throttler(
+export function createThrottle(
   wait: number,
   options: { limit?: number; cooldown?: boolean } = {},
 ): Repeater<ThrottleToken> {
@@ -74,7 +74,7 @@ export function throttler(
   }
 
   return new Repeater<ThrottleToken>(async (push, stop) => {
-    const timer = delay(wait);
+    const timer = createDelay(wait);
     const tokens = new Set<Token>();
     let start = Date.now();
     let leaking: Promise<void> | undefined;
@@ -95,7 +95,7 @@ export function throttler(
 
     let stopped = false;
     stop.then(() => (stopped = true));
-    for await (const token of Repeater.race([semaphore(limit), stop])) {
+    for await (const token of race([createSemaphore(limit), stop])) {
       if (stopped) {
         break;
       }

@@ -1,14 +1,30 @@
 {
-  "private": true,
-  "workspaces": [
-    "packages/repeater",
-    "packages/timers",
-    "packages/limiters",
-    "packages/pubsub"
-  ],
+  "name": "@repeaterjs/repeater",
+  "version": "3.0.6",
+  "description": "The missing constructor function for creating safe async iterators",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/repeaterjs/repeater"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/src/index.cjs",
+  "module": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "scripts": {
-    "build": "yarn workspaces run build",
-    "lint": "yarn workspaces run lint",
-    "test": "yarn workspaces run test"
+    "build": "libuild build",
+    "test": "libuild test",
+    "publish": "libuild publish",
+    "prepublishOnly": "echo 'ERROR: Cannot publish from root directory. Use npm run publish instead.' && exit 1"
+  },
+  "devDependencies": {
+    "@b9g/libuild": "^0.1.24",
+    "@types/sinon": "^21.0.1",
+    "bun-types": "^1.3.14",
+    "sinon": "^22.0.0",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
