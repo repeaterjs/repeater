@@ -1,11 +1,9 @@
 import { Repeater } from "./core.js";
 import { safeRace } from "./_utils.js";
 
-// NOTE: whenever you see any variables called `advance` or `advances`, know
-// that it is a hack to get around the fact that `Promise.race` leaks memory.
-// These variables are intended to be set to the resolve function of a promise
-// which is constructed and awaited as an alternative to Promise.race. For more
-// information, see: https://github.com/nodejs/node/issues/17469#issuecomment-685216777
+// These combinators race each iterator's next() against the stop promise using
+// safeRace (a memory-safe Promise.race; see ./_utils.ts). stop resolves to
+// undefined, which doubles as the signal to break out of the iteration loop.
 
 function getIterators(
   values: Iterable<any>,
@@ -51,40 +49,40 @@ export function race<T>(
       return;
     }
 
-    let advance!: (value?: IteratorYieldResult<unknown>) => unknown;
-    let stopped = false;
-    stop.then(() => {
-      advance();
-      stopped = true;
-    });
-
     let finalIteration: IteratorReturnResult<unknown> | undefined;
     try {
-      let iteration: IteratorYieldResult<unknown> | undefined;
-      let i = 0;
-      while (!stopped) {
-        const j = i;
-        for (const iter of iters) {
+      while (true) {
+        // Re-pull every iterator each turn and take the fastest value, dropping
+        // the others. A done observer is attached to every next() (not just the
+        // race winner) so that any contender finishing stops the race and
+        // records its return value, even one that never wins a value.
+        const tagged = iters.map((iter) =>
           Promise.resolve(iter.next()).then(
-            (iteration) => {
+            (iteration: IteratorResult<unknown>) => {
               if (iteration.done) {
                 stop();
                 if (finalIteration === undefined) {
                   finalIteration = iteration;
                 }
-              } else if (i === j) {
-                i++;
-                advance(iteration);
               }
+
+              return iteration;
             },
-            (err) => stop(err),
-          );
+            (err) => {
+              stop(err);
+              return undefined;
+            },
+          ),
+        );
+
+        const iteration = await safeRace<any>([...tagged, stop]);
+        // stop resolves to undefined; a rejected next resolves to undefined; a
+        // done winner ends the race below.
+        if (iteration === undefined || iteration.done) {
+          break;
         }
 
-        iteration = await new Promise((resolve) => (advance = resolve));
-        if (iteration !== undefined) {
-          await push(iteration.value as any);
-        }
+        await push(iteration.value as any);
       }
 
       return finalIteration && finalIteration.value;
@@ -113,39 +111,30 @@ export function merge<T>(
       return;
     }
 
-    const advances: Array<(value?: IteratorResult<unknown>) => unknown> = [];
-    let stopped = false;
-    stop.then(() => {
-      stopped = true;
-      for (const advance of advances) {
-        advance();
-      }
-    });
-
     let finalIteration: IteratorReturnResult<unknown> | undefined;
     try {
       await Promise.all(
-        iters.map(async (iter, i) => {
+        iters.map(async (iter) => {
           try {
-            while (!stopped) {
-              Promise.resolve(iter.next()).then(
-                (iteration) => advances[i](iteration),
-                (err) => stop(err),
-              );
-              const iteration:
-                | IteratorResult<unknown>
-                | undefined = await new Promise((resolve) => {
-                advances[i] = resolve;
-              });
-
-              if (iteration !== undefined) {
-                if (iteration.done) {
-                  finalIteration = iteration;
-                  return;
-                }
-
-                await push(iteration.value as any);
+            while (true) {
+              // Race this iterator's next value against stop. stop resolves to
+              // undefined, which signals us to break out of the loop.
+              let iteration: IteratorResult<unknown> | undefined;
+              try {
+                iteration = await safeRace([Promise.resolve(iter.next()), stop]);
+              } catch (err) {
+                stop(err);
+                return;
               }
+
+              if (iteration === undefined) {
+                return;
+              } else if (iteration.done) {
+                finalIteration = iteration;
+                return;
+              }
+
+              await push(iteration.value as any);
             }
           } finally {
             iter.return && (await iter.return());
@@ -193,23 +182,20 @@ export function zip(contenders: Iterable<any>) {
       return [];
     }
 
-    let advance!: (iterations?: Array<IteratorResult<unknown>>) => unknown;
-    let stopped = false;
-    stop.then(() => {
-      advance();
-      stopped = true;
-    });
-
     try {
-      while (!stopped) {
-        Promise.all(iters.map((iter) => iter.next())).then(
-          (iterations) => advance(iterations),
-          (err) => stop(err),
-        );
+      while (true) {
+        let iterations: Array<IteratorResult<unknown>> | undefined;
+        try {
+          iterations = await safeRace([
+            Promise.all(iters.map((iter) => iter.next())),
+            stop,
+          ]);
+        } catch (err) {
+          stop(err);
+          return;
+        }
 
-        const iterations:
-          | Array<IteratorResult<unknown>>
-          | undefined = await new Promise((resolve) => (advance = resolve));
+        // stop resolves to undefined.
         if (iterations === undefined) {
           return;
         }
@@ -260,28 +246,19 @@ export function latest(contenders: Iterable<any>) {
       return [];
     }
 
-    let advance!: (iterations?: Array<IteratorResult<unknown>>) => unknown;
-    const advances: Array<(
-      iteration?: IteratorResult<unknown>,
-    ) => unknown> = [];
-    let stopped = false;
-    stop.then(() => {
-      advance();
-      for (const advance1 of advances) {
-        advance1();
-      }
-      stopped = true;
-    });
-
     try {
-      Promise.all(iters.map((iter) => iter.next())).then(
-        (iterations) => advance(iterations),
-        (err) => stop(err),
-      );
+      let iterations: Array<IteratorResult<unknown>> | undefined;
+      try {
+        iterations = await safeRace([
+          Promise.all(iters.map((iter) => iter.next())),
+          stop,
+        ]);
+      } catch (err) {
+        stop(err);
+        return;
+      }
 
-      const iterations:
-        | Array<IteratorResult<unknown>>
-        | undefined = await new Promise((resolve) => (advance = resolve));
+      // stop resolves to undefined.
       if (iterations === undefined) {
         return;
       }
@@ -294,23 +271,24 @@ export function latest(contenders: Iterable<any>) {
       await push(values.slice());
       return await Promise.all(
         iters.map(async (iter, i) => {
-          if (iterations[i].done) {
-            return iterations[i].value;
+          if (iterations![i].done) {
+            return iterations![i].value;
           }
 
-          while (!stopped) {
-            Promise.resolve(iter.next()).then(
-              (iteration) => advances[i](iteration),
-              (err) => stop(err),
-            );
+          while (true) {
+            let iteration: IteratorResult<unknown> | undefined;
+            try {
+              iteration = await safeRace([
+                Promise.resolve(iter.next()),
+                stop,
+              ]);
+            } catch (err) {
+              stop(err);
+              return iterations![i].value;
+            }
 
-            const iteration:
-              | IteratorResult<unknown>
-              | undefined = await new Promise(
-              (resolve) => (advances[i] = resolve),
-            );
             if (iteration === undefined) {
-              return iterations[i].value;
+              return iterations![i].value;
             } else if (iteration.done) {
               return iteration.value;
             }
