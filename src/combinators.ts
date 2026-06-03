@@ -1,4 +1,5 @@
 import { Repeater } from "./core.js";
+import { safeRace } from "./_utils.js";
 
 // NOTE: whenever you see any variables called `advance` or `advances`, know
 // that it is a hack to get around the fact that `Promise.race` leaks memory.
@@ -89,7 +90,7 @@ export function race<T>(
       return finalIteration && finalIteration.value;
     } finally {
       stop();
-      await Promise.race(iters.map((iter) => iter.return && iter.return()));
+      await safeRace(iters.map((iter) => iter.return && iter.return()));
     }
   });
 }
