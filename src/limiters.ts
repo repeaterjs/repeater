@@ -1,5 +1,5 @@
 import { Repeater, FixedBuffer } from "./index.js";
-import { race } from "./static.js";
+import { race } from "./combinators.js";
 import { createDelay } from "./timers.js";
 
 export interface Token {

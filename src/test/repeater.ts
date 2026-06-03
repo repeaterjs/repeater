@@ -8,7 +8,7 @@ import {
   MAX_QUEUE_LENGTH,
   SlidingBuffer,
 } from "../index.js";
-import { delayPromise, rejection } from "./_testutils.js";
+import { delayPromise } from "./_testutils.js";
 
 describe("Repeater", () => {
   test("push", async () => {
@@ -180,7 +180,7 @@ describe("Repeater", () => {
 
     expect(await r.next()).toEqual({ value: 1, done: false });
     expect(await r.next()).toEqual({ value: 2, done: false });
-    expect(await rejection(r.next())).toBe(error);
+    await expect(r.next()).rejects.toBe(error);
     expect(await r.next()).toEqual({ done: true });
     expect(await r.next()).toEqual({ done: true });
     expect(await r.next()).toEqual({ done: true });
@@ -198,7 +198,7 @@ describe("Repeater", () => {
 
     expect(await r.next()).toEqual({ value: 1, done: false });
     expect(await r.next()).toEqual({ value: 2, done: false });
-    expect(await rejection(r.next())).toBe(error);
+    await expect(r.next()).rejects.toBe(error);
     expect(await r.next()).toEqual({ done: true });
     expect(await r.next()).toEqual({ done: true });
     expect(await r.next()).toEqual({ done: true });
@@ -580,7 +580,7 @@ describe("Repeater", () => {
     });
     expect(await r.next()).toEqual({ value: 1, done: false });
     expect(await r.next()).toEqual({ value: 2, done: false });
-    expect(await rejection(r.next())).toBe(error2);
+    await expect(r.next()).rejects.toBe(error2);
     expect(await r.next()).toEqual({ done: true });
     expect(await r.next()).toEqual({ done: true });
     expect(await r.next()).toEqual({ done: true });
@@ -624,7 +624,7 @@ describe("Repeater", () => {
     });
     expect(await r.next()).toEqual({ value: 1, done: false });
     expect(await r.next()).toEqual({ value: 2, done: false });
-    expect(await rejection(r.next())).toBe(error3);
+    await expect(r.next()).rejects.toBe(error3);
     expect(await r.next()).toEqual({ done: true });
     expect(await r.next()).toEqual({ done: true });
     expect(await r.next()).toEqual({ done: true });
@@ -1352,7 +1352,7 @@ describe("Repeater", () => {
     expect(await next2).toEqual({ value: 2, done: false });
     expect(await next3).toEqual({ value: 3, done: false });
     expect(await next4).toEqual({ value: 4, done: false });
-    expect(await rejection(thrown)).toBe(error);
+    await expect(thrown).rejects.toBe(error);
     expect(fn.callCount).toBe(1);
     expect(await r.next()).toEqual({ done: true });
     expect(await r.next()).toEqual({ done: true });
@@ -1424,7 +1424,7 @@ describe("Repeater", () => {
     const returned = r.return(-2);
     const thrown = r.throw(error);
     expect(await returned).toEqual({ value: -2, done: true });
-    expect(await rejection(thrown)).toBe(error);
+    await expect(thrown).rejects.toBe(error);
     expect(await r.next()).toEqual({ done: true });
     expect(await r.next()).toEqual({ done: true });
     expect(await r.next()).toEqual({ done: true });
@@ -1527,7 +1527,7 @@ describe("Repeater", () => {
     const race4 = Promise.race([r5, r4]);
     expect(await race1).toEqual({ value: 1, done: false });
     expect(await race2).toEqual({ value: 2, done: false });
-    expect(await rejection(race3)).toBe(error);
+    await expect(race3).rejects.toBe(error);
     expect(await race4).toEqual({ done: true });
     expect(await r5).toEqual({ done: true });
     expect(await r.next()).toEqual({ done: true });

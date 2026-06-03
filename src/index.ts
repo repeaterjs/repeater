@@ -12,10 +12,10 @@ export type {
   RepeaterExecutor,
 } from "./core.js";
 
-export { race, merge, zip, latest } from "./static.js";
+export { race, merge, zip, latest } from "./combinators.js";
 
 import { Repeater as RepeaterCore } from "./core.js";
-import { race, merge, zip, latest } from "./static.js";
+import { race, merge, zip, latest } from "./combinators.js";
 
 export class Repeater<T, TReturn = any, TNext = unknown> extends RepeaterCore<T, TReturn, TNext> {
   static race = race;
