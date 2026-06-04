@@ -4,7 +4,7 @@ import {
   RepeaterOverflowError,
   MAX_QUEUE_LENGTH,
   SlidingBuffer,
-} from "./index.js";
+} from "./core.js";
 
 export class TimeoutError extends Error {
   constructor(message: string) {

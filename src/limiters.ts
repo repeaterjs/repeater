@@ -1,4 +1,4 @@
-import { Repeater, FixedBuffer } from "./index.js";
+import { Repeater, FixedBuffer } from "./core.js";
 import { race } from "./combinators.js";
 import { createDelay } from "./timers.js";
 import { safeRace } from "./_utils.js";
