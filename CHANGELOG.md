@@ -1,4 +1,48 @@
 # Changelog
+## repeater@3.1.0 (beta)
+This release flattens the monorepo into a single package, adds explicit resource
+management, and migrates the build to [`@b9g/libuild`](https://github.com/bikeshaving/libuild).
+**It is non-breaking for the common case:** if you only `import { Repeater } from
+"@repeaterjs/repeater"`, nothing changes. The breaking-sounding items below only
+affect code that imported the separate `@repeaterjs/timers` / `@repeaterjs/limiters`
+packages, which are now folded in and renamed.
+
+### Added
+- **Subpath entry points.** In addition to the default export you can now import
+  narrower surfaces:
+  - `@repeaterjs/repeater/core` — the `Repeater` class and buffers only, without
+    the static combinators (smaller when you don't need race/merge/zip/latest).
+  - `@repeaterjs/repeater/combinators` — `race`, `merge`, `zip`, `latest` as plain
+    functions (the same logic backing `Repeater.race` etc.).
+  - `@repeaterjs/repeater/timers` — `createDelay`, `createInterval`, `createTimeout`.
+  - `@repeaterjs/repeater/limiters` — `createSemaphore`, `createThrottle`.
+- **Explicit Resource Management.** `Repeater` now implements `Symbol.asyncDispose`
+  and `Symbol.dispose` (both call `return()`), so `await using` / `using` clean up
+  the repeater on scope exit. The handlers are installed defensively and are no-ops
+  on runtimes that lack the symbols.
+- Dual ESM + CJS output with an `exports` map for every entry point.
+
+### Changed
+- `@repeaterjs/timers` and `@repeaterjs/limiters` are now part of this package, and
+  their helpers gained a `create` prefix: `delay` → `createDelay`, `interval` →
+  `createInterval`, `timeout` → `createTimeout`, `semaphore` → `createSemaphore`,
+  `throttle` → `createThrottle`.
+- The combinators were rewritten to race against the stop promise with a memory-safe
+  `Promise.race` alternative (replacing the previous `Promise.race` work-arounds).
+  Behavior is unchanged.
+
+### Deprecated
+- The standalone `@repeaterjs/timers`, `@repeaterjs/limiters`, `@repeaterjs/pubsub`,
+  and `@repeaterjs/react-hooks` packages are deprecated on npm. `timers` and
+  `limiters` are replaced by the subpath exports above; `pubsub` and `react-hooks`
+  are not carried forward.
+
+### Migration
+- Default `import { Repeater } from "@repeaterjs/repeater"` users: no action needed.
+- `@repeaterjs/timers` / `@repeaterjs/limiters` users: switch the import to
+  `@repeaterjs/repeater/timers` / `/limiters` and add the `create` prefix to the
+  helper names.
+
 ## repeater@3.0.6 - 2024-05-08
 - Fix promise returned from `push` function not resolving when using a buffer.
 ## repeater@3.0.5 - 2023-11-07
