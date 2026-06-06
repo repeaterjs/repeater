@@ -1,27 +1,27 @@
 {
-  "name": "website",
-  "version": "0.0.0",
+  "name": "@repeaterjs/website",
   "private": true,
+  "type": "module",
   "scripts": {
-    "docusaurus": "docusaurus",
-    "start": "docusaurus start",
-    "build": "docusaurus build",
-    "swizzle": "docusaurus swizzle",
-    "deploy": "docusaurus deploy",
-    "lint": "eslint . --ignore-path .gitignore"
+    "develop": "shovel develop src/server.ts --platform bun --port 1338",
+    "static": "MODE=production shovel build src/server.ts --platform bun --lifecycle",
+    "pagefind": "pagefind --site dist/public",
+    "predeploy": "npm run static",
+    "deploy": "gh-pages -d dist/public --nojekyll --cname repeater.js.org"
   },
   "dependencies": {
-    "@docusaurus/core": "^2.0.0-alpha.27",
-    "@docusaurus/preset-classic": "^2.0.0-alpha.27",
-    "react": "^16.10.2",
-    "react-dom": "^16.10.2"
-  },
-  "devDependencies": {
-    "eslint": "^6.5.1",
-    "eslint-config-prettier": "^6.4.0",
-    "eslint-plugin-prettier": "^3.1.1",
-    "eslint-plugin-react": "^7.16.0",
-    "jest": "^24.9.0",
-    "prettier": "^1.18.2"
+    "@b9g/crank": "^0.7.9",
+    "@b9g/filesystem": "^0.2.0",
+    "@b9g/platform": "^0.1.19",
+    "@b9g/platform-bun": "^0.1.17",
+    "@b9g/router": "^0.2.5",
+    "@b9g/shovel": "^0.2.19",
+    "@emotion/css": "^11.13.5",
+    "@emotion/server": "^11.11.0",
+    "front-matter": "^4.0.2",
+    "gh-pages": "^6.3.0",
+    "marked": "^4.3.0",
+    "normalize.css": "^8.0.1",
+    "pagefind": "^1.4.0"
   }
 }
