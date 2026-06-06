@@ -1,0 +1,18 @@
+{
+  "directories": {
+    "docs": {
+      "module": "@b9g/filesystem/node-fs",
+      "export": "NodeFSDirectory",
+      "path": "../docs"
+    },
+    "public": {},
+    "pagefind": {
+      "module": "@b9g/filesystem/node-fs",
+      "export": "NodeFSDirectory",
+      "path": "./dist/public/pagefind"
+    }
+  },
+  "logging": {
+    "loggers": [{ "category": "shovel", "level": "info" }]
+  }
+}
