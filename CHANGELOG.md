@@ -1,5 +1,5 @@
 # Changelog
-## repeater@3.1.0 (beta)
+## repeater@3.1.0 - 2026-06-07
 This release flattens the monorepo into a single package, adds explicit resource
 management, and migrates the build to [`@b9g/libuild`](https://github.com/bikeshaving/libuild).
 **It is non-breaking for the common case:** if you only `import { Repeater } from
