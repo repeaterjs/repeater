@@ -63,13 +63,13 @@ async function* positions(clicks) {
 })();
 ```
 
-The `positions` async generator takes an async iterator of click events and yields x/y coordinates. However, because the example code calls `pos.return` immediately, the `for await…of` loop inside the `positions` generator never runs. Consequently, `clicks.return` is never called and the event listener registered inside `listen` is never cleaned up. To make the code safe, we would have to make sure that either every `positions` generator is iterated at least once, or that every `listen` iterator is manually returned. This logic is difficult to enforce and indicative of a leaky abstraction in that we have to treat `listen`-based async iterators differently than async generator objects, which can be safely created and ignored.
+The `positions` async generator takes an async iterator of click events and yields x/y coordinates. However, because the example code calls `pos.return` immediately, the `for await…of` loop inside the `positions` generator never runs. Consequently, `clicks.return` is never called and the event listener registered inside `listen` is never cleaned up. To make this safe, we’d have to guarantee that either every `positions` generator runs at least once, or every `listen` iterator is manually returned. That’s hard to enforce, and it’s a leaky abstraction: we have to treat `listen`-based iterators differently from async generators, which you can safely create and ignore.
 
 Repeaters solve this problem by executing lazily. In other words, the executor passed to the `Repeater` constructor does not run until the first time `next` is called. Here’s the same `listen` function written with repeaters:
 
 ```js
 function listen(target, name) {
-  return new Repeater(async (push, _, stop) => {
+  return new Repeater(async (push, stop) => {
     const listener = (ev) => push(ev);
     console.log("adding listener!");
     target.addEventListener(name, listener);
@@ -85,7 +85,7 @@ If we swap in this repeater-based `listen` function for the one above, neither `
 Because repeaters execute lazily, the contract for safely consuming repeaters is simple: **if you call `next`, you must call `return`**. This happens automatically when using `for await…of` loops and is easy to enforce when calling `next` manually using `try/finally`.
 
 ## Repeaters respond to backpressure
-The naive `listen` function has an additional, more insidious problem, which is that it pushes events onto an unbounded array. Imagine for instance, using the naive `listen` function to create an async iterator which listens for scroll events. It is easy to think of a situation where the rate at which these scroll events are pushed outpaces the rate at which they are pulled from the iterator. In this situation, the `events` array created by the naive `listen` function would continue to grow unbounded, eventually causing application performance to degrade. This is often referred to as the “fast producer, slow consumer” problem and while it might not seem like a big issue for short-lived browser sessions, it is crucial to deal with when writing long-running server processes with Node.js.
+The naive `listen` function has a subtler problem: it pushes events onto an unbounded array. Suppose you use it to listen for scroll events. If those events arrive faster than the consumer pulls them, the `events` array grows without bound and performance eventually degrades. This is the “fast producer, slow consumer” problem — minor for a short-lived browser session, but crucial to handle in long-running Node.js server processes.
 
 Inspired by Clojure’s `core.async` library, repeaters provide three solutions for dealing with slow consumers:
 
