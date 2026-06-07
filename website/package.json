@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "develop": "shovel develop src/server.ts --platform bun --port 1338",
-    "static": "MODE=production shovel build src/server.ts --platform bun --lifecycle",
+    "develop": "shovel develop src/server.ts --platform node --port 1338",
+    "clean": "rm -rf dist",
+    "static": "npm run clean && MODE=production shovel build src/server.ts --platform node --lifecycle",
     "pagefind": "pagefind --site dist/public",
     "predeploy": "npm run static",
     "deploy": "gh-pages -d dist/public --nojekyll --cname repeater.js.org"
@@ -22,6 +23,10 @@
     "gh-pages": "^6.3.0",
     "marked": "^4.3.0",
     "normalize.css": "^8.0.1",
-    "pagefind": "^1.4.0"
+    "pagefind": "^1.4.0",
+    "prismjs": "^1.30.0"
+  },
+  "devDependencies": {
+    "@types/prismjs": "^1.26.6"
   }
 }

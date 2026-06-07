@@ -31,7 +31,7 @@ router.route("/").get(async (request) => {
   return renderView(HomeView, url.pathname);
 });
 
-router.route("/guides/:slug/").get(async (request, context) => {
+router.route("/docs/:slug/").get(async (request, context) => {
   const url = new URL(request.url);
   return renderView(GuideView, url.pathname, context.params);
 });
@@ -108,7 +108,7 @@ async function generateStaticSite() {
 
   const docsDir = await self.directories.open("docs");
   const guidesDir = await docsDir.getDirectoryHandle("guides");
-  const guideDocs = await collectDocuments(guidesDir, "guides");
+  const guideDocs = await collectDocuments(guidesDir);
 
   const routes = ["/", ...guideDocs.map((doc) => doc.url)];
   logger.info(`Pre-rendering ${routes.length} routes...`);
