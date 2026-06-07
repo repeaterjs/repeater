@@ -3,7 +3,7 @@ id: error_handling
 title: Error Handling
 ---
 
-Because error handling is an important part of creating robust applications, repeaters catch and propagate any errors they receive in a predictable, well-specified manner. Every promise which is passed to a repeater is preemptively caught to prevent unhandled promise rejections.
+Repeaters catch and propagate any errors they receive in a predictable, well-specified way — important for building robust applications. Every promise passed to a repeater is caught preemptively to prevent unhandled rejections.
 
 ## The four ways a repeater can error
 
@@ -69,7 +69,7 @@ const repeater = new Repeater(async (push, stop) => {
 })();
 ```
 
-Repeaters unwrap promises passed to `push` before sending them along to consumers. If a promise passed to `push` rejects, the repeater finishes and any further values which were pushed before the promise rejected are dropped, regardless of when those values settled. If the rejection settles *before* the repeater stops, the final iteration rejects with the pushed rejection. However, if it settles *after* the repeater has stopped, the rejection is dropped. This behavior is useful when creating [inverted repeaters](/docs/inverted-repeaters).
+Repeaters unwrap promises passed to `push` before handing them to consumers. If a pushed promise rejects, the repeater finishes and drops any values pushed after it, no matter when they settle. A rejection that settles *before* the repeater stops rejects the final iteration; one that settles *after* is dropped. This behavior is useful when creating [inverted repeaters](/docs/inverted-repeaters).
 
 ### 3. The executor throws an error
 
@@ -99,7 +99,7 @@ const repeater = new Repeater((push, stop) => {
 })();
 ```
 
-When an error occurs in the executor, the repeater is stopped and the final iteration rejects with the error. Because errors thrown by the executor are usually indicative of programmer error, they take precedence over all other errors passed to the repeater.  
+When the executor throws, the repeater stops and the final iteration rejects with the error. Because executor errors usually signal a bug, they take precedence over all other errors passed to the repeater.  
 
 ### 4. Calling the `throw` method
 

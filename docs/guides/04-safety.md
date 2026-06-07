@@ -43,7 +43,7 @@ function listen(target, name) {
 }
 ```
 
-The `listen` function returns an async iterator of events and cleans up after itself when `return` is called. However, there is no guarantee that `return` will be called in normal usage, causing a memory leak in the form of unremoved event listeners. Consider the following usage of `listen` above with an async generator:
+The `listen` function returns an async iterator of events and cleans up after itself when `return` is called. But nothing guarantees `return` ever gets called, and an un-returned iterator leaks its event listener. Consider the following usage of `listen` above with an async generator:
 
 ```js
 async function* positions(clicks) {
