@@ -775,6 +775,12 @@ describe("combinators", () => {
       await expect(iter.next()).resolves.toEqual({ value: [], done: true });
     });
 
+    test("rejects when a contender throws on the first pull", async () => {
+      const error = new Error("boom");
+      const iter = Repeater.latest([gen([], undefined, error), gen([1, 2, 3])]);
+      await expect(iter.next()).rejects.toBe(error);
+    });
+
     test("single iterator", async () => {
       const iter = Repeater.latest([delayRepeater(100, [1, 2, 3], 4)]);
       let result: IteratorResult<number[]>;
