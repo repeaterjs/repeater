@@ -12,7 +12,7 @@ interface ViewProps {
 export default async function Guide({ url }: ViewProps) {
   const docsDir = await self.directories.open("docs");
   const guidesDir = await docsDir.getDirectoryHandle("guides");
-  const docs = await collectDocuments(guidesDir, "guides");
+  const docs = await collectDocuments(guidesDir);
 
   const norm = (u: string) => u.replace(/\/$/, "");
   const doc = docs.find((d) => norm(d.url) === norm(url));

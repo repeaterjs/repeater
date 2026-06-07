@@ -26,18 +26,23 @@ async function* walk(
 
 export interface DocInfo {
   attributes: {
+    id?: string;
     title: string;
     description?: string;
     publish?: boolean;
   };
+  id: string;
   url: string;
   filename: string;
   body: string;
 }
 
+// The canonical URL is /docs/<id>/, where <id> is the document's frontmatter
+// `id` — preserving the existing Docusaurus URLs (cool URIs don't change),
+// including ids that keep underscores like `error_handling`. The numeric
+// filename prefix only orders the files; it never appears in the URL.
 export async function collectDocuments(
   dir: FileSystemDirectoryHandle,
-  prefix?: string,
 ): Promise<Array<DocInfo>> {
   const docs: Array<DocInfo> = [];
   for await (const { filename } of walk(dir)) {
@@ -53,14 +58,13 @@ export async function collectDocuments(
       attributes.publish = true;
     }
 
-    const urlBase = prefix ? `/${prefix}` : "";
-    const url =
-      `${urlBase}/${filename}`
+    const id =
+      attributes.id ||
+      filename
         .replace(/\.md$/, "")
-        .replace(/([0-9]+-)+/, "")
-        .replace(/\/index$/, "") + "/";
-    const docsRelativeFilename = prefix ? `${prefix}/${filename}` : filename;
-    docs.push({ url, filename: docsRelativeFilename, body, attributes });
+        .replace(/^([0-9]+[-_])+/, "")
+        .replace(/\//g, "-");
+    docs.push({ id, url: `/docs/${id}/`, filename, body, attributes });
   }
 
   return docs;
