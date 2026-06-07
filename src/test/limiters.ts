@@ -146,4 +146,12 @@ describe("limiters", () => {
       clearTimeoutSpy.restore();
     }
   });
+
+  test("createSemaphore throws for limit < 1", () => {
+    expect(() => createSemaphore(0)).toThrow(RangeError);
+  });
+
+  test("createThrottle throws for limit < 1", () => {
+    expect(() => createThrottle(100, { limit: 0 })).toThrow(RangeError);
+  });
 });
