@@ -161,3 +161,26 @@ ys.next();
 ```
 
 The `@repeaterjs/repeater` module exports three buffer classes: `FixedBuffer`, `DroppingBuffer` and `SlidingBuffer`. `FixedBuffer` allows repeaters to push a set number of values without pushes waiting or throwing errors, but preserves the waiting/error throwing behavior described above when the buffer is full. Alternatively, `DroppingBuffer` drops the *latest* values when the buffer is full and `SlidingBuffer` drops the *earliest* values. Because `DroppingBuffer` and `SlidingBuffer` instances never fill up, pushes to repeaters with these buffers never throw overflow errors, and the promises returned from `push` always resolve immediately. You can define custom buffer classes to give repeaters more complex buffering behaviors.
+
+## Disposing repeaters
+
+Repeaters implement the [explicit resource management](https://github.com/tc39/proposal-explicit-resource-management) protocol, so `using` and `await using` can clean them up for you. When a repeater declared with `await using` goes out of scope, its `return` method is called automatically, which runs the executor’s cleanup and stops the repeater.
+
+```js
+import { Repeater } from "@repeaterjs/repeater";
+
+async function untilFirstClick() {
+  await using clicks = new Repeater(async (push, stop) => {
+    const listener = () => push("click");
+    window.addEventListener("click", listener);
+    await stop;
+    window.removeEventListener("click", listener);
+  });
+
+  for await (const click of clicks) {
+    return click; // `await using` calls clicks.return() on the way out
+  }
+}
+```
+
+`Repeater` defines both `[Symbol.asyncDispose]` (which awaits `return`) and `[Symbol.dispose]` (which calls `return` synchronously), so it works with `await using` and `using` respectively. On runtimes that don’t yet support these symbols, the handlers are simply absent and repeaters behave exactly as before — you call `return` yourself.

@@ -7,11 +7,11 @@ Combining async iterators is a [non-trivial task](https://stackoverflow.com/ques
 
 ## `Repeater.race`
 
-`Repeater.race` takes an iterable of async iterables and races results from each iterable using `Promise.race`, yielding the value which fulfilled first. One important use-case is using `Promise.race` with `timeout` to place a fixed upper bound on how long each iteration of an async iterator can take:
+`Repeater.race` takes an iterable of async iterables and races results from each iterable using `Promise.race`, yielding the value which fulfilled first. One important use-case is using `Repeater.race` with `createTimeout` to place a fixed upper bound on how long each iteration of an async iterator can take:
 
 ```js
 import { Repeater } from "@repeaterjs/repeater";
-import { timeout } from "@repeaterjs/timers";
+import { createTimeout } from "@repeaterjs/repeater/timers";
 
 const numbers = new Repeater(async (push) => {
   await push(1);
@@ -22,7 +22,7 @@ const numbers = new Repeater(async (push) => {
 
 (async () => {
   try {
-    for await (const num of Repeater.race([numbers, timeout(1000)])) {
+    for await (const num of Repeater.race([numbers, createTimeout(1000)])) {
       console.log(num); // 1, 2
     }
   } catch (err) {
@@ -31,13 +31,13 @@ const numbers = new Repeater(async (push) => {
 })();
 ```
 
-The `timeout` function is a useful repeater-based utility which errors if `next` is not called within a specified period of time. In the above example, each iteration of `numbers` has one second to fulfill before the returned iterator throws.
+The `createTimeout` function is a useful repeater-based utility which errors if `next` is not called within a specified period of time. In the above example, each iteration of `numbers` has one second to fulfill before the returned iterator throws.
 
 You can also pass a promise to `Repeater.race`, in which case the entire iteration will be raced against the promise:
 
 ```js
 import { Repeater } from "@repeaterjs/repeater";
-import { timeout } from "@repeaterjs/timers";
+import { createTimeout } from "@repeaterjs/repeater/timers";
 
 const numbers = new Repeater(async (push) => {
   await new Promise((resolve) => setTimeout(resolve, 800));
@@ -48,7 +48,7 @@ const numbers = new Repeater(async (push) => {
   await push(3);
 });
 
-const timer = timeout(2000);
+const timer = createTimeout(2000);
 
 (async function() {
   try {
@@ -108,11 +108,11 @@ import { Repeater } from "@repeaterjs/repeater";
 
 ## `Repeater.zip`
 
-`Repeater.zip` takes an iterable of async iterables, awaits a result from every iterable using `Promise.all`, and yields the resulting array. This method is useful for when you want to synchronize multiple iterators, making sure that values are pulled from each iterator in lockstep motion. For instance, you can use `Repeater.zip` with the `delay` function from the `@repeaterjs/timers` package to throttle a buffered repeater.
+`Repeater.zip` takes an iterable of async iterables, awaits a result from every iterable using `Promise.all`, and yields the resulting array. This method is useful for when you want to synchronize multiple iterators, making sure that values are pulled from each iterator in lockstep motion. For instance, you can use `Repeater.zip` with the `createDelay` function from `@repeaterjs/repeater/timers` to throttle a buffered repeater.
 
 ```js
 import { Repeater, SlidingBuffer } from "@repeaterjs/repeater";
-import { delay } from "@repeaterjs/timers";
+import { createDelay } from "@repeaterjs/repeater/timers";
 const keys = new Repeater(async (push, stop) => {
   const listener = (ev) => push(ev.key);
   window.addEventListener("keydown", listener);
@@ -120,7 +120,7 @@ const keys = new Repeater(async (push, stop) => {
   window.removeEventListener("keydown", listener);
 }, new SlidingBuffer(1));
 (async function() {
-  for await (const [key] of Repeater.zip([keys, delay(1000)])) {
+  for await (const [key] of Repeater.zip([keys, createDelay(1000)])) {
     console.log(key); // will log the latest key every second
   }
 })();
