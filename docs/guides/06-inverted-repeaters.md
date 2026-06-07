@@ -43,4 +43,4 @@ In the example above, we create a promise and retain its `resolve` and `reject` 
 
 Finally, to cleanup the repeater, we reject any pending promises and call `clearTimeout` on all outstanding timeouts. Because pushed promises which reject after `stop` are dropped, the repeater finishes instead of producing new values.
 
-The [`@repeaterjs/timer` package](https://github.com/repeaterjs/repeater/blob/master/packages/timers) exports the `delay` and `timeout` utility functions, which use this inverted repeater pattern described above.
+The [`@repeaterjs/repeater/timers` module](/docs/utilities/) exports the `createDelay` and `createTimeout` utility functions, which use the inverted repeater pattern described above.

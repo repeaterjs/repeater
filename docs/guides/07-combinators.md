@@ -1,5 +1,5 @@
 ---
-id: combinators 
+id: combinators
 title: Combining Async Iterators
 ---
 

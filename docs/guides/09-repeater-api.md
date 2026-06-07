@@ -1,5 +1,5 @@
 ---
-id: "repeater"
+id: repeater
 title: "@repeaterjs/repeater"
 ---
 
@@ -91,7 +91,7 @@ A promise which fulfills to an object with the following properties:
 
 The `next` function synchronously throws an error if there are too many pending calls to `next` on the repeater.
 
-### `Repeater.protoype.return`
+### `Repeater.prototype.return`
 ```ts
 class Repeater {
   return(value?: PromiseLike<TReturn> | TReturn): Promise<IteratorResult<T>>;
@@ -116,7 +116,7 @@ class Repeater {
 }
 ```
 
-The `throw` method causes the previous `push` call to reject with the given error. If the executor fails to handle the `error`, the `throw` method rethrows the error and finish the repeater. A `throw` method call is detected as unhandled in the following situations:
+The `throw` method causes the previous `push` call to reject with the given error. If the executor fails to handle the `error`, the `throw` method rethrows the error and finishes the repeater. A `throw` method call is detected as unhandled in the following situations:
 
 - The repeater has not started (`Repeater.prototype.next` has never been called).
 - The repeater has stopped.
