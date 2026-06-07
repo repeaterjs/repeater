@@ -128,6 +128,16 @@ The `throw` method causes the previous `push` call to reject with the given erro
 ##### Return value
 A promise which fulfills to the next iteration result if the repeater handles the `error`, and otherwise rejects with the given `error`.
 
+### `Repeater.prototype[Symbol.asyncDispose]` / `Repeater.prototype[Symbol.dispose]`
+```ts
+class Repeater {
+  [Symbol.asyncDispose](): Promise<IteratorResult<T, TReturn>>;
+  [Symbol.dispose](): void;
+}
+```
+
+Added in 3.1. These implement the [explicit resource management](https://github.com/tc39/proposal-explicit-resource-management) protocol so that `await using` and `using` automatically call `return` when a repeater goes out of scope. `[Symbol.asyncDispose]` awaits `return`; `[Symbol.dispose]` calls it synchronously. The handlers are installed only on runtimes where `Symbol.asyncDispose`/`Symbol.dispose` exist, so older environments are unaffected.
+
 ## The `RepeaterBuffer` interface
 The `Repeater` constructor optionally takes a `RepeaterBuffer` object as its second argument. Buffers allow multiple values to be pushed onto a repeater without having pushes wait.
 
@@ -272,3 +282,17 @@ const MAX_QUEUE_LENGTH = 1024;
 ```
 
 A constant which represents the maximum number of pending push or next operations which can be enqueued on a single repeater.
+
+## Module entry points
+
+As of 3.1 the package publishes several entry points so you can import only what you need:
+
+```ts
+import { Repeater } from "@repeaterjs/repeater";              // class, buffers, and the static combinators
+import { Repeater } from "@repeaterjs/repeater/core";         // class and buffers only (no combinators)
+import { race, merge, zip, latest } from "@repeaterjs/repeater/combinators";
+import { createDelay, createInterval, createTimeout } from "@repeaterjs/repeater/timers";
+import { createSemaphore, createThrottle } from "@repeaterjs/repeater/limiters";
+```
+
+The default `@repeaterjs/repeater` export is unchanged from 3.0 — `Repeater.race`, `Repeater.merge`, `Repeater.zip`, and `Repeater.latest` remain available as static methods. The `/combinators` entry simply exposes the same functions standalone, and `/core` omits them for the smallest possible surface.
