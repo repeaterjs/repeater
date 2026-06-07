@@ -53,7 +53,7 @@ The `push` function returns a promise which fulfills or rejects depending on the
 1. If the repeater is stopped, the returned promise resolves to `undefined`.
 2. If the repeater has a non-empty buffer, the returned promise resolves to `undefined`.
 3. `Repeater.prototype.next` resolves the previous `push` call to the value passed to the `next` method. If the repeater is consumed using a `for await…of` loop, this promise resolves to `undefined`.
-4. If `Repeater.prototype.throw` is called, the previous `push` call rejects. It is not necessary to use or catch the returned promise because repeaters detects when the promise is unhandled and rethrow its rejection to the caller of the `throw` method.
+4. If `Repeater.prototype.throw` is called, the previous `push` call rejects. You don’t need to use or catch the returned promise — the repeater detects when the rejection is unhandled and rethrows it to the caller of the `throw` method.
 
 #### The `stop` argument
 ```ts
@@ -86,8 +86,8 @@ A promise which fulfills to an object with the following properties:
 
 - `done` - a boolean which indicates whether there are more values to be pulled.
 - `value`
-  - If `done` is true, `value` is either be `undefined` or the return value of the `executor`.
-  - If `done` is false the `value` is a value passed to `push`.
+  - If `done` is true, `value` is either `undefined` or the return value of the `executor`.
+  - If `done` is false, `value` is a value passed to `push`.
 
 The `next` function synchronously throws an error if there are too many pending calls to `next` on the repeater.
 

@@ -78,7 +78,7 @@ const repeater = new Repeater(async (push, stop) => {
 })();
 ```
 
-These two arguments make it easy to setup and teardown callbacks within the executor, and they can be exposed to parent closures to model architectural patterns like generic pubsub classes and [semaphores](/docs/utilities/).
+These two arguments make it easy to set up and tear down callbacks inside the executor. You can also hand them to outer functions to build patterns like pub/sub classes and [semaphores](/docs/utilities/).
 
 ## Acknowledgments
 
