@@ -5,6 +5,7 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
 jobs:
   typecheck:
@@ -55,3 +56,51 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: npm ci
       - run: npx libuild test --platform bun
+
+  # Deploy the website to GitHub Pages on push to master when website/ or docs/
+  # change — mirroring the crank/shovel flow (CI runs `npm run deploy`, which
+  # gh-pages-pushes dist/public, authenticated with GITHUB_TOKEN). Node, not bun:
+  # bun mis-handles unicode in the JSX template tags the site uses.
+  changes:
+    name: Detect Changes
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    outputs:
+      website: ${{ steps.check.outputs.website }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "website=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -qE '^(website|docs)/'; then
+            echo "website=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "website=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    name: Deploy Website
+    needs: [typecheck, build, test-node, changes]
+    if: github.ref == 'refs/heads/master' && needs.changes.outputs.website == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+        working-directory: website
+      - name: Deploy website
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+          npm run deploy
+        working-directory: website
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
