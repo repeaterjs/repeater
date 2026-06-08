@@ -1,46 +1,167 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<script type="text/javascript">/*<![CDATA[*/window.__chunkMapping={"main":["/main.27a1c8e041044031ca5c.css","/main.57aaf8a38b8f061a2dd2.js"],"component---site-src-pages-index-jsc-4-f-f99":["/component---site-src-pages-index-jsc-4-f-f99.1b9fe914239bd1cd0c1e.js"],"component---theme-doc-page-1-be-9be":[],"docsMetadata---docse-05-22b":["/docsMetadata---docse-05-22b.d099b2432b232ad76b19.js"],"component---theme-doc-item-178-a40":["/component---theme-doc-item-178-a40.de2648345892298aff25.css","/component---theme-doc-item-178-a40.99e9ba8a355adb351e37.js"],"content---docs-quickstartb-41-711":["/content---docs-quickstartb-41-711.72351856d60841abc14b.js"],"metadata---docs-quickstarta-34-501":["/metadata---docs-quickstarta-34-501.f4b47b68be3fe911121d.js"],"content---docs-rationale-208-6dc":["/content---docs-rationale-208-6dc.c723888e70fa0d2ba24d.js"],"metadata---docs-rationalec-2-a-d80":["/metadata---docs-rationalec-2-a-d80.58ad36d1001afbe70591.js"],"content---docs-error-handling-880-ff7":["/content---docs-error-handling-880-ff7.5aa5ba0c6f795c8467ff.js"],"metadata---docs-error-handling-220-d94":["/metadata---docs-error-handling-220-d94.b095ae90e3544a4b90bd.js"],"content---docs-overview-6-e-9-dc0":["/content---docs-overview-6-e-9-dc0.4b7e934e87019f5215f6.js"],"metadata---docs-overview-860-433":["/metadata---docs-overview-860-433.75ce4a95797b16d85987.js"],"content---docs-combinatorseed-31a":["/content---docs-combinatorseed-31a.812ffd8a1876c00fda48.js"],"metadata---docs-combinators-249-f40":["/metadata---docs-combinators-249-f40.a9b5a4d773bc659f3ac2.js"],"content---docs-inverted-repeatersbfa-2de":["/content---docs-inverted-repeatersbfa-2de.0244db518fd3ac1049a3.js"],"metadata---docs-inverted-repeaters-1-d-7-dfa":["/metadata---docs-inverted-repeaters-1-d-7-dfa.fdeb0e0c188d239fe05e.js"],"content---docs-utilities-949-f80":["/content---docs-utilities-949-f80.f36cf6a9b0f8aff404e8.js"],"metadata---docs-utilities-635-7d0":["/metadata---docs-utilities-635-7d0.24bfec981a70507894e5.js"],"content---docs-safety-89-e-e1e":["/content---docs-safety-89-e-e1e.5484c95f1a2f1e4bda12.js"],"metadata---docs-safety-39-c-6c0":["/metadata---docs-safety-39-c-6c0.270d5107a6c85728935d.js"],"content---docs-repeaterf-77-c45":["/content---docs-repeaterf-77-c45.c8f8e1dc1f388a52d46e.js"],"metadata---docs-repeater-288-89e":["/metadata---docs-repeater-288-89e.11f3cfae1fd0a0608c39.js"]};/*]]>*/</script>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Timers and Limiters · Repeater.js</title><meta name="description" content=""><meta property="og:title" content="Timers and Limiters · Repeater.js"><meta property="og:type" content="website"><meta property="og:url" content="https://repeater.js.org/docs/utilities/"><meta property="og:description" content=""><style>
+:root {
+  --bg: #fff; --fg: #1a1a2e; --muted: #5b6472; --accent: #c1272d;
+  --sidebar-bg: #faf9f7; --border: #e7e3dc; --code-bg: #f6f5f2; --nav-bg: #fff;
+  --sidebar-w: 17rem; --content-w: 46rem;
+  --tok-comment: #6a737d; --tok-keyword: #d73a49; --tok-string: #032f62;
+  --tok-function: #6f42c1; --tok-number: #005cc5; --tok-punct: #24292e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14151a; --fg: #e7e6e3; --muted: #9aa0aa; --accent: #ff6b6b;
+    --sidebar-bg: #1b1c22; --border: #2a2c34; --code-bg: #1f2027; --nav-bg: #14151a;
+    --tok-comment: #8b949e; --tok-keyword: #ff7b72; --tok-string: #a5d6ff;
+    --tok-function: #d2a8ff; --tok-number: #79c0ff; --tok-punct: #c9d1d9;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
+pre { background: var(--code-bg); padding: 1rem 1.2rem; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); }
+pre code { background: none; padding: 0; }
+.token.comment, .token.prolog, .token.doctype, .token.cdata { color: var(--tok-comment); font-style: italic; }
+.token.keyword, .token.boolean, .token.tag { color: var(--tok-keyword); }
+.token.string, .token.char, .token.attr-value, .token.regex, .token.template-string { color: var(--tok-string); }
+.token.function, .token.class-name { color: var(--tok-function); }
+.token.number, .token.constant, .token.symbol { color: var(--tok-number); }
+.token.operator, .token.punctuation { color: var(--tok-punct); }
 
-<title data-react-helmet="true">Additional Repeater-Based Utilities</title>
+/* Navbar */
+.navbar {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center;
+  justify-content: space-between; gap: 1rem; padding: 0.75rem 1.5rem;
+  background: var(--nav-bg); border-bottom: 1px solid var(--border);
+}
+.navbar-brand { font-weight: 700; font-size: 1.15rem; color: var(--fg); }
+.navbar-links { display: flex; gap: 1.25rem; }
+.navbar-links a { color: var(--muted); font-weight: 500; }
+.navbar-links a:hover { color: var(--accent); text-decoration: none; }
 
-<meta data-react-helmet="true" charset="utf-8"/><meta data-react-helmet="true" http-equiv="x-ua-compatible" content="ie=edge"/><meta data-react-helmet="true" name="viewport" content="width=device-width"/><meta data-react-helmet="true" property="og:title" content="Repeater.js · The missing constructor for creating safe async iterators"/><meta data-react-helmet="true" name="twitter:card" content="summary"/><meta data-react-helmet="true" name="description" content="In addition to the `@repeaterjs/repeater` package, the [repeater repository](https://github.com/repeaterjs/repeater), [github organization](https://github.com/repeaterjs) and [package scope](https://www.npmjs.com/org/repeater) contain various async utilities implemented with repeaters."/><meta data-react-helmet="true" property="og:description" content="In addition to the `@repeaterjs/repeater` package, the [repeater repository](https://github.com/repeaterjs/repeater), [github organization](https://github.com/repeaterjs) and [package scope](https://www.npmjs.com/org/repeater) contain various async utilities implemented with repeaters."/><meta data-react-helmet="true" property="og:url" content="https://repeater.js.org/docs/utilities"/>
+/* Docs layout */
+.layout { display: flex; align-items: flex-start; max-width: 80rem; margin: 0 auto; }
+.sidebar {
+  width: var(--sidebar-w); flex: none; position: sticky; top: 3.25rem;
+  height: calc(100vh - 3.25rem); overflow-y: auto; padding: 1.5rem 1rem;
+  border-right: 1px solid var(--border);
+}
+.sidebar-section { margin-bottom: 1.5rem; }
+.sidebar-section h3 {
+  font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); margin: 0 0 0.4rem 0.5rem;
+}
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.sidebar li { margin: 0.1rem 0; }
+.sidebar a { display: block; padding: 0.3rem 0.5rem; border-radius: 6px; color: var(--muted); }
+.sidebar a:hover { background: var(--border); text-decoration: none; }
+.sidebar a.active { color: var(--accent); font-weight: 600; background: var(--border); }
+.content { flex: 1 1 auto; max-width: var(--content-w); padding: 2.5rem 2rem 6rem; min-width: 0; }
+.content h1 { font-size: 2rem; line-height: 1.2; margin-top: 0; }
+.content h2 { margin-top: 2.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
 
-<link data-react-helmet="true" rel="shortcut icon" href="/img/favicon.ico"/>
+/* Home hero + features */
+.hero { text-align: center; padding: 5rem 1.5rem 3rem; max-width: 50rem; margin: 0 auto; }
+.hero h1 { font-size: 3.5rem; margin: 0; }
+.hero-tagline { font-size: 1.4rem; color: var(--muted); margin: 0.5rem 0 2rem; }
+.hero-actions { display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem; }
+.button {
+  display: inline-block; padding: 0.6rem 1.4rem; border-radius: 8px;
+  background: var(--accent); color: #fff; font-weight: 600;
+}
+.button:hover { text-decoration: none; opacity: 0.9; }
+.button-ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.hero-install { display: inline-block; text-align: left; }
+.features {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
+  max-width: 70rem; margin: 0 auto; padding: 2rem 1.5rem 5rem;
+}
+.feature h2 { margin-top: 0; }
 
+/* Footer */
+.footer {
+  border-top: 1px solid var(--border); padding: 2rem 1.5rem; text-align: center;
+  color: var(--muted);
+}
+.footer div { display: flex; gap: 1.25rem; justify-content: center; margin-bottom: 0.5rem; }
+.footer a { color: var(--muted); }
 
-<link rel="stylesheet" type="text/css" href="/main.27a1c8e041044031ca5c.css" />
+@media (max-width: 50rem) {
+  .layout { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); }
+  .features { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 2.5rem; }
+}
+</style></head><body><header class="navbar"><a class="navbar-brand" href="/">Repeater.js</a><nav class="navbar-links"><a href="/docs/quickstart/">Docs</a><a href="/docs/repeater/">API</a><a href="https://github.com/repeaterjs/repeater">GitHub</a><a href="https://www.npmjs.com/package/@repeaterjs/repeater">NPM</a></nav></header><div class="layout"><nav class="sidebar"><div class="sidebar-section"><h3>Getting Started</h3><ul><li><a href="/docs/quickstart/" class="">Quickstart</a></li><li><a href="/docs/overview/" class="">Overview</a></li><li><a href="/docs/rationale/" class="">Rationale</a></li></ul></div><div class="sidebar-section"><h3>Guides</h3><ul><li><a href="/docs/safety/" class="">How are Repeaters “Safe”?</a></li><li><a href="/docs/error_handling/" class="">Error Handling</a></li><li><a href="/docs/inverted_repeaters/" class="">Inverted Repeaters</a></li><li><a href="/docs/combinators/" class="">Combining Async Iterators</a></li><li><a href="/docs/utilities/" class="active">Timers and Limiters</a></li></ul></div><div class="sidebar-section"><h3>API Reference</h3><ul><li><a href="/docs/repeater/" class="">@repeaterjs/repeater</a></li></ul></div></nav><main class="content" data-pagefind-body><p>As of 3.1, the timer and limiter utilities ship as part of the
+<code>@repeaterjs/repeater</code> package, available from dedicated subpath exports. You no
+longer install a separate package — just import from <code>@repeaterjs/repeater/timers</code>
+or <code>@repeaterjs/repeater/limiters</code>.</p>
+<blockquote>
+<p><strong>Migrating from the standalone packages?</strong> The old <code>@repeaterjs/timers</code> and
+<code>@repeaterjs/limiters</code> packages are deprecated in favor of these subpaths, and
+the helpers gained a <code>create</code> prefix: <code>delay</code> → <code>createDelay</code>, <code>interval</code> →
+<code>createInterval</code>, <code>timeout</code> → <code>createTimeout</code>, <code>semaphore</code> → <code>createSemaphore</code>,
+<code>throttle</code> → <code>createThrottle</code>. The <code>@repeaterjs/pubsub</code> and
+<code>@repeaterjs/react-hooks</code> packages are not carried forward.</p>
+</blockquote>
+<h2 id="timers">Timers</h2>
+<pre><code class="language-js"><span class="token keyword">import</span> <span class="token punctuation">{</span>
+  createDelay<span class="token punctuation">,</span>
+  createInterval<span class="token punctuation">,</span>
+  createTimeout<span class="token punctuation">,</span>
+<span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">"@repeaterjs/repeater/timers"</span><span class="token punctuation">;</span>
+</code></pre>
+<ul>
+<li><strong><code>createDelay(wait)</code></strong> — a repeater that yields the current timestamp <code>wait</code>
+milliseconds after each call to <code>next</code>. Useful for throttling another iterator
+with <code>Repeater.zip</code> (see <a href="/docs/combinators/">Combining Async Iterators</a>).</li>
+<li><strong><code>createInterval(wait)</code></strong> — yields the current timestamp every <code>wait</code>
+milliseconds, like <code>setInterval</code> exposed as an async iterator.</li>
+<li><strong><code>createTimeout(wait)</code></strong> — throws a <code>TimeoutError</code> if <code>next</code> is not called
+within <code>wait</code> milliseconds of the previous pull. Raced against another iterator
+with <code>Repeater.race</code>, it places an upper bound on each iteration.</li>
+</ul>
+<pre><code class="language-js"><span class="token keyword">import</span> <span class="token punctuation">{</span> createInterval <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">"@repeaterjs/repeater/timers"</span><span class="token punctuation">;</span>
 
-<link rel="stylesheet" type="text/css" href="/0.add06bacee42896fe32a.css" />
+<span class="token punctuation">(</span><span class="token keyword">async</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+  <span class="token keyword">let</span> count <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+  <span class="token keyword">for</span> <span class="token keyword">await</span> <span class="token punctuation">(</span><span class="token keyword">const</span> _ <span class="token keyword">of</span> <span class="token function">createInterval</span><span class="token punctuation">(</span><span class="token number">1000</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token template-string"><span class="token template-punctuation string">`</span><span class="token string">tick </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>count<span class="token operator">++</span><span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">`</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>count <span class="token operator">>=</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token keyword">break</span><span class="token punctuation">;</span> <span class="token comment">// breaking cleans up the underlying timer</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>Because these are repeaters, calling <code>return</code> (or breaking out of a <code>for await</code>
+loop) clears the underlying <code>setTimeout</code>/<code>setInterval</code> for you.</p>
+<h2 id="limiters">Limiters</h2>
+<pre><code class="language-js"><span class="token keyword">import</span> <span class="token punctuation">{</span> createSemaphore<span class="token punctuation">,</span> createThrottle <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">"@repeaterjs/repeater/limiters"</span><span class="token punctuation">;</span>
+</code></pre>
+<ul>
+<li><strong><code>createSemaphore(limit)</code></strong> — yields up to <code>limit</code> tokens at a time, capping
+concurrency. Each token exposes <code>release()</code>; call it to return capacity so the
+next waiter can proceed.</li>
+<li><strong><code>createThrottle(wait, options?)</code></strong> — yields up to <code>options.limit</code> tokens per
+<code>wait</code>-millisecond window, capping the <em>rate</em> of work rather than its
+concurrency.</li>
+</ul>
+<pre><code class="language-js"><span class="token keyword">import</span> <span class="token punctuation">{</span> createSemaphore <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">"@repeaterjs/repeater/limiters"</span><span class="token punctuation">;</span>
 
-<link rel="stylesheet" type="text/css" href="/24.a13d5366f603c53bbb59.css" />
-
-<link rel="stylesheet" type="text/css" href="/component---theme-doc-item-178-a40.de2648345892298aff25.css" />
-
-</head>
-<body >
-<div id="__docusaurus">
-<nav class="navbar navbar--light navbar--fixed-top"><div class="navbar__inner"><div class="navbar__items"><div aria-label="Navigation bar toggle" class="navbar__toggle" role="button" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" role="img" focusable="false"><title>Menu</title><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></div><a aria-current="page" class="navbar__brand active" href="/"><strong class="">Repeater.js</strong></a><a class="navbar__item navbar__link" label="Docs" position="left" href="/docs/quickstart">Docs</a><a class="navbar__item navbar__link" label="API" position="left" href="/docs/repeater">API</a></div><div class="navbar__items navbar__items--right"><a class="navbar__item navbar__link" href="https://github.com/repeaterjs/repeater" label="GitHub" position="right" target="_blank" rel="noopener noreferrer">GitHub</a><a class="navbar__item navbar__link" href="https://www.npmjs.com/package/@repeaterjs/repeater" label="NPM" position="right" target="_blank" rel="noopener noreferrer">NPM</a><div class="react-toggle displayOnlyInLargeViewport_1gtM"><div class="react-toggle-track"><div class="react-toggle-track-check"><span class="toggle_16vC moon_1N64"></span></div><div class="react-toggle-track-x"><span class="toggle_16vC sun_3CZP"></span></div></div><div class="react-toggle-thumb"></div><input type="checkbox" aria-label="Dark mode toggle" class="react-toggle-screenreader-only"/></div></div></div><div role="presentation" class="navbar__sidebar__backdrop"></div><div class="navbar__sidebar"><div class="navbar__sidebar__brand"><a aria-current="page" class="navbar__brand active" href="/"><strong>Repeater.js</strong></a></div><div class="navbar__sidebar__items"><div class="menu"><ul class="menu__list"><li class="menu__list-item"><a class="menu__link" label="Docs" position="left" href="/docs/quickstart">Docs</a></li><li class="menu__list-item"><a class="menu__link" label="API" position="left" href="/docs/repeater">API</a></li><li class="menu__list-item"><a class="menu__link" href="https://github.com/repeaterjs/repeater" label="GitHub" position="right" target="_blank" rel="noopener noreferrer">GitHub</a></li><li class="menu__list-item"><a class="menu__link" href="https://www.npmjs.com/package/@repeaterjs/repeater" label="NPM" position="right" target="_blank" rel="noopener noreferrer">NPM</a></li></ul></div></div></div></nav><div class="docPage_1kjD"><div class="docSidebarContainer_1cYp"><div class="sidebar_1kLs"><div class="menu menu--responsive"><button aria-label="Open Menu" class="button button--secondary button--sm menu__button" type="button"><svg class="sidebarMenuIcon_2vk4" xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 0 32 32" role="img" focusable="false"><title>Menu</title><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><ul class="menu__list"><li class="menu__list-item menu__list-item--collapsed"><a class="menu__link menu__link--sublist" href="#!">Getting Started</a><ul class="menu__list"><li class="menu__list-item"><a class="menu__link" href="/docs/quickstart">Quickstart</a></li><li class="menu__list-item"><a class="menu__link" href="/docs/overview">Overview</a></li><li class="menu__list-item"><a class="menu__link" href="/docs/rationale">Rationale</a></li></ul></li><li class="menu__list-item"><a class="menu__link menu__link--sublist menu__link--active" href="#!">Guides</a><ul class="menu__list"><li class="menu__list-item"><a class="menu__link" href="/docs/safety">How are Repeaters “Safe”?</a></li><li class="menu__list-item"><a class="menu__link" href="/docs/error_handling">Error Handling</a></li><li class="menu__list-item"><a class="menu__link" href="/docs/inverted_repeaters">Inverted Repeaters</a></li><li class="menu__list-item"><a class="menu__link" href="/docs/combinators">Combining Async Iterators</a></li><li class="menu__list-item"><a aria-current="page" class="menu__link menu__link--active" href="/docs/utilities">Additional Repeater-Based Utilities</a></li></ul></li><li class="menu__list-item menu__list-item--collapsed"><a class="menu__link menu__link--sublist" href="#!">API Reference</a><ul class="menu__list"><li class="menu__list-item"><a class="menu__link" href="/docs/repeater">@repeaterjs/repeater</a></li></ul></li></ul></div></div></div><main class="docMainContainer_FFX1"><div><div class="padding-vert--lg"><div class="container"><div class="row"><div class="col"><div class="docItemContainer_2cwg"><header><h1 class="docTitle_1vWb">Additional Repeater-Based Utilities</h1></header><article><div class="markdown"><p>In addition to the <code>@repeaterjs/repeater</code> package, the <a href="https://github.com/repeaterjs/repeater">repeater repository</a>, <a href="https://github.com/repeaterjs">github organization</a> and <a href="https://www.npmjs.com/org/repeater">package scope</a> contain various async utilities implemented with repeaters.</p><ul><li><a href="https://github.com/repeaterjs/repeater/tree/master/packages/timers"><code>@repeaterjs/timers</code></a> - Cancelable timers using <code>setTimeout</code> and <code>setInterval</code></li><li><a href="https://github.com/repeaterjs/repeater/tree/master/packages/limiters"><code>@repeaterjs/limiters</code></a> - Async semaphores and throttlers for limiting concurrency</li><li><a href="https://github.com/repeaterjs/repeater/tree/master/packages/pubsub"><code>@repeaterjs/pubsub</code></a> - A generic pubsub class</li><li><a href="https://github.com/repeaterjs/react-hooks"><code>@repeaterjs/react-hooks</code></a> - React hooks for working with async generators and repeaters</li></ul><p>These packages are experimental and will probably be changed more frequently than the base <code>@repeaterjs/repeater</code> package, which is more or less stable. If you need greater stability, you are encouraged to copy the code from these packages directly into your codebase. Report back on what works and what doesn’t! Hopefully, the <code>repeaterjs</code> github organization and npm scope become a place for useful, repeater-based async utilities discovered by the community.</p></div></article><div class="margin-vert--lg"><nav class="pagination-nav"><div class="pagination-nav__item"><a class="pagination-nav__link" href="/docs/combinators"><h5 class="pagination-nav__link--sublabel">Previous</h5><h4 class="pagination-nav__link--label">« <!-- -->Combining Async Iterators</h4></a></div><div class="pagination-nav__item pagination-nav__item--next"><a class="pagination-nav__link" href="/docs/repeater"><h5 class="pagination-nav__link--sublabel">Next</h5><h4 class="pagination-nav__link--label">@repeaterjs/repeater<!-- --> »</h4></a></div></nav></div></div></div><div class="col col--3"><div class="tableOfContents_TbNY"></div></div></div></div></div></div></main></div>
-</div>
-
-<script type="text/javascript" src="/runtime~main.d44a56e236d2a706393d.js"></script>
-
-<script type="text/javascript" src="/main.57aaf8a38b8f061a2dd2.js"></script>
-
-<script type="text/javascript" src="/0.b97f1e13fa8cce40b3c9.js"></script>
-
-<script type="text/javascript" src="/24.562e94530420e2fe578b.js"></script>
-
-<script type="text/javascript" src="/docsMetadata---docse-05-22b.d099b2432b232ad76b19.js"></script>
-
-<script type="text/javascript" src="/component---theme-doc-item-178-a40.99e9ba8a355adb351e37.js"></script>
-
-<script type="text/javascript" src="/content---docs-utilities-949-f80.f36cf6a9b0f8aff404e8.js"></script>
-
-<script type="text/javascript" src="/metadata---docs-utilities-635-7d0.24bfec981a70507894e5.js"></script>
-
-</body>
-</html>
+<span class="token comment">// Run at most two `fetch`es concurrently.</span>
+<span class="token keyword">const</span> sem <span class="token operator">=</span> <span class="token function">createSemaphore</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">fetchThrottled</span><span class="token punctuation">(</span><span class="token parameter">url</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">const</span> <span class="token punctuation">{</span> <span class="token literal-property property">value</span><span class="token operator">:</span> token <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token keyword">await</span> sem<span class="token punctuation">.</span><span class="token function">next</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">try</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token keyword">await</span> <span class="token function">fetch</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{</span>
+    token<span class="token punctuation">.</span><span class="token function">release</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>A token carries <code>{ id, limit, remaining, release() }</code>; throttle tokens also
+include a <code>reset</code> timestamp indicating when the rate window next opens.</p>
+</main></div><footer class="footer"><div><a href="https://github.com/repeaterjs/repeater">GitHub</a><a href="https://www.npmjs.com/package/@repeaterjs/repeater">NPM</a><a href="/docs/quickstart/">Docs</a></div><small>Copyright © 2026 Brian Kim</small></footer></body></html>

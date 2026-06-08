@@ -1,34 +1,100 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<script type="text/javascript">/*<![CDATA[*/window.__chunkMapping={"main":["/main.27a1c8e041044031ca5c.css","/main.57aaf8a38b8f061a2dd2.js"],"component---site-src-pages-index-jsc-4-f-f99":["/component---site-src-pages-index-jsc-4-f-f99.1b9fe914239bd1cd0c1e.js"],"component---theme-doc-page-1-be-9be":[],"docsMetadata---docse-05-22b":["/docsMetadata---docse-05-22b.d099b2432b232ad76b19.js"],"component---theme-doc-item-178-a40":["/component---theme-doc-item-178-a40.de2648345892298aff25.css","/component---theme-doc-item-178-a40.99e9ba8a355adb351e37.js"],"content---docs-quickstartb-41-711":["/content---docs-quickstartb-41-711.72351856d60841abc14b.js"],"metadata---docs-quickstarta-34-501":["/metadata---docs-quickstarta-34-501.f4b47b68be3fe911121d.js"],"content---docs-rationale-208-6dc":["/content---docs-rationale-208-6dc.c723888e70fa0d2ba24d.js"],"metadata---docs-rationalec-2-a-d80":["/metadata---docs-rationalec-2-a-d80.58ad36d1001afbe70591.js"],"content---docs-error-handling-880-ff7":["/content---docs-error-handling-880-ff7.5aa5ba0c6f795c8467ff.js"],"metadata---docs-error-handling-220-d94":["/metadata---docs-error-handling-220-d94.b095ae90e3544a4b90bd.js"],"content---docs-overview-6-e-9-dc0":["/content---docs-overview-6-e-9-dc0.4b7e934e87019f5215f6.js"],"metadata---docs-overview-860-433":["/metadata---docs-overview-860-433.75ce4a95797b16d85987.js"],"content---docs-combinatorseed-31a":["/content---docs-combinatorseed-31a.812ffd8a1876c00fda48.js"],"metadata---docs-combinators-249-f40":["/metadata---docs-combinators-249-f40.a9b5a4d773bc659f3ac2.js"],"content---docs-inverted-repeatersbfa-2de":["/content---docs-inverted-repeatersbfa-2de.0244db518fd3ac1049a3.js"],"metadata---docs-inverted-repeaters-1-d-7-dfa":["/metadata---docs-inverted-repeaters-1-d-7-dfa.fdeb0e0c188d239fe05e.js"],"content---docs-utilities-949-f80":["/content---docs-utilities-949-f80.f36cf6a9b0f8aff404e8.js"],"metadata---docs-utilities-635-7d0":["/metadata---docs-utilities-635-7d0.24bfec981a70507894e5.js"],"content---docs-safety-89-e-e1e":["/content---docs-safety-89-e-e1e.5484c95f1a2f1e4bda12.js"],"metadata---docs-safety-39-c-6c0":["/metadata---docs-safety-39-c-6c0.270d5107a6c85728935d.js"],"content---docs-repeaterf-77-c45":["/content---docs-repeaterf-77-c45.c8f8e1dc1f388a52d46e.js"],"metadata---docs-repeater-288-89e":["/metadata---docs-repeater-288-89e.11f3cfae1fd0a0608c39.js"]};/*]]>*/</script>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Repeater.js — The missing constructor for creating safe async iterators</title><meta name="description" content="The missing constructor for creating safe async iterators."><meta property="og:title" content="Repeater.js — The missing constructor for creating safe async iterators"><meta property="og:type" content="website"><meta property="og:url" content="https://repeater.js.org/"><meta property="og:description" content="The missing constructor for creating safe async iterators."><style>
+:root {
+  --bg: #fff; --fg: #1a1a2e; --muted: #5b6472; --accent: #c1272d;
+  --sidebar-bg: #faf9f7; --border: #e7e3dc; --code-bg: #f6f5f2; --nav-bg: #fff;
+  --sidebar-w: 17rem; --content-w: 46rem;
+  --tok-comment: #6a737d; --tok-keyword: #d73a49; --tok-string: #032f62;
+  --tok-function: #6f42c1; --tok-number: #005cc5; --tok-punct: #24292e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14151a; --fg: #e7e6e3; --muted: #9aa0aa; --accent: #ff6b6b;
+    --sidebar-bg: #1b1c22; --border: #2a2c34; --code-bg: #1f2027; --nav-bg: #14151a;
+    --tok-comment: #8b949e; --tok-keyword: #ff7b72; --tok-string: #a5d6ff;
+    --tok-function: #d2a8ff; --tok-number: #79c0ff; --tok-punct: #c9d1d9;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
+pre { background: var(--code-bg); padding: 1rem 1.2rem; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); }
+pre code { background: none; padding: 0; }
+.token.comment, .token.prolog, .token.doctype, .token.cdata { color: var(--tok-comment); font-style: italic; }
+.token.keyword, .token.boolean, .token.tag { color: var(--tok-keyword); }
+.token.string, .token.char, .token.attr-value, .token.regex, .token.template-string { color: var(--tok-string); }
+.token.function, .token.class-name { color: var(--tok-function); }
+.token.number, .token.constant, .token.symbol { color: var(--tok-number); }
+.token.operator, .token.punctuation { color: var(--tok-punct); }
 
-<title data-react-helmet="true">Repeater.js · The missing constructor for creating safe async iterators</title>
+/* Navbar */
+.navbar {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center;
+  justify-content: space-between; gap: 1rem; padding: 0.75rem 1.5rem;
+  background: var(--nav-bg); border-bottom: 1px solid var(--border);
+}
+.navbar-brand { font-weight: 700; font-size: 1.15rem; color: var(--fg); }
+.navbar-links { display: flex; gap: 1.25rem; }
+.navbar-links a { color: var(--muted); font-weight: 500; }
+.navbar-links a:hover { color: var(--accent); text-decoration: none; }
 
-<meta data-react-helmet="true" charset="utf-8"/><meta data-react-helmet="true" http-equiv="x-ua-compatible" content="ie=edge"/><meta data-react-helmet="true" name="viewport" content="width=device-width"/><meta data-react-helmet="true" property="og:title" content="Repeater.js · The missing constructor for creating safe async iterators"/><meta data-react-helmet="true" name="twitter:card" content="summary"/>
+/* Docs layout */
+.layout { display: flex; align-items: flex-start; max-width: 80rem; margin: 0 auto; }
+.sidebar {
+  width: var(--sidebar-w); flex: none; position: sticky; top: 3.25rem;
+  height: calc(100vh - 3.25rem); overflow-y: auto; padding: 1.5rem 1rem;
+  border-right: 1px solid var(--border);
+}
+.sidebar-section { margin-bottom: 1.5rem; }
+.sidebar-section h3 {
+  font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); margin: 0 0 0.4rem 0.5rem;
+}
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.sidebar li { margin: 0.1rem 0; }
+.sidebar a { display: block; padding: 0.3rem 0.5rem; border-radius: 6px; color: var(--muted); }
+.sidebar a:hover { background: var(--border); text-decoration: none; }
+.sidebar a.active { color: var(--accent); font-weight: 600; background: var(--border); }
+.content { flex: 1 1 auto; max-width: var(--content-w); padding: 2.5rem 2rem 6rem; min-width: 0; }
+.content h1 { font-size: 2rem; line-height: 1.2; margin-top: 0; }
+.content h2 { margin-top: 2.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
 
-<link data-react-helmet="true" rel="shortcut icon" href="/img/favicon.ico"/>
+/* Home hero + features */
+.hero { text-align: center; padding: 5rem 1.5rem 3rem; max-width: 50rem; margin: 0 auto; }
+.hero h1 { font-size: 3.5rem; margin: 0; }
+.hero-tagline { font-size: 1.4rem; color: var(--muted); margin: 0.5rem 0 2rem; }
+.hero-actions { display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem; }
+.button {
+  display: inline-block; padding: 0.6rem 1.4rem; border-radius: 8px;
+  background: var(--accent); color: #fff; font-weight: 600;
+}
+.button:hover { text-decoration: none; opacity: 0.9; }
+.button-ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.hero-install { display: inline-block; text-align: left; }
+.features {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
+  max-width: 70rem; margin: 0 auto; padding: 2rem 1.5rem 5rem;
+}
+.feature h2 { margin-top: 0; }
 
+/* Footer */
+.footer {
+  border-top: 1px solid var(--border); padding: 2rem 1.5rem; text-align: center;
+  color: var(--muted);
+}
+.footer div { display: flex; gap: 1.25rem; justify-content: center; margin-bottom: 0.5rem; }
+.footer a { color: var(--muted); }
 
-<link rel="stylesheet" type="text/css" href="/main.27a1c8e041044031ca5c.css" />
-
-<link rel="stylesheet" type="text/css" href="/0.add06bacee42896fe32a.css" />
-
-</head>
-<body >
-<div id="__docusaurus">
-<nav class="navbar navbar--light navbar--fixed-top"><div class="navbar__inner"><div class="navbar__items"><div aria-label="Navigation bar toggle" class="navbar__toggle" role="button" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" role="img" focusable="false"><title>Menu</title><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></div><a aria-current="page" class="navbar__brand active" href="/"><strong class="">Repeater.js</strong></a><a class="navbar__item navbar__link" label="Docs" position="left" href="/docs/quickstart">Docs</a><a class="navbar__item navbar__link" label="API" position="left" href="/docs/repeater">API</a></div><div class="navbar__items navbar__items--right"><a class="navbar__item navbar__link" href="https://github.com/repeaterjs/repeater" label="GitHub" position="right" target="_blank" rel="noopener noreferrer">GitHub</a><a class="navbar__item navbar__link" href="https://www.npmjs.com/package/@repeaterjs/repeater" label="NPM" position="right" target="_blank" rel="noopener noreferrer">NPM</a><div class="react-toggle displayOnlyInLargeViewport_1gtM"><div class="react-toggle-track"><div class="react-toggle-track-check"><span class="toggle_16vC moon_1N64"></span></div><div class="react-toggle-track-x"><span class="toggle_16vC sun_3CZP"></span></div></div><div class="react-toggle-thumb"></div><input type="checkbox" aria-label="Dark mode toggle" class="react-toggle-screenreader-only"/></div></div></div><div role="presentation" class="navbar__sidebar__backdrop"></div><div class="navbar__sidebar"><div class="navbar__sidebar__brand"><a aria-current="page" class="navbar__brand active" href="/"><strong>Repeater.js</strong></a></div><div class="navbar__sidebar__items"><div class="menu"><ul class="menu__list"><li class="menu__list-item"><a class="menu__link" label="Docs" position="left" href="/docs/quickstart">Docs</a></li><li class="menu__list-item"><a class="menu__link" label="API" position="left" href="/docs/repeater">API</a></li><li class="menu__list-item"><a class="menu__link" href="https://github.com/repeaterjs/repeater" label="GitHub" position="right" target="_blank" rel="noopener noreferrer">GitHub</a></li><li class="menu__list-item"><a class="menu__link" href="https://www.npmjs.com/package/@repeaterjs/repeater" label="NPM" position="right" target="_blank" rel="noopener noreferrer">NPM</a></li></ul></div></div></div></nav><header class="hero"><div class="container margin-vert--lg"><h1 class="hero__title">Repeater.js</h1><p class="hero__subtitle">The missing constructor for creating safe async iterators</p><a class="button button--primary button--outline button--lg" href="/docs/quickstart">Get Started</a><div class="button button--link"><iframe src="https://ghbtns.com/github-btn.html?user=repeaterjs&amp;repo=repeater&amp;type=star&amp;count=true&amp;size=large" frameBorder="0" scrolling="0" width="160px" height="30px"></iframe></div></div></header><main class="container"><div class="row margin-vert--xl"><div class="col"><h2 class="text--center text--primary" style="color:primary">Convenient</h2><p class="text--justify">The <code>Repeater</code> class provides a memorable promise-based API for creating async iterators. You can reuse the same constructor to convert event targets, websockets or any other callback-based data source into a format which can be read using <code>async/await</code> <!-- -->and <code>for await…of</code> syntax.</p></div><div class="col"><h2 class="text--center text--#BA00AC" style="color:#BA00AC">Safe</h2><p class="text--justify">Repeaters prevent common mistakes people make when rolling async iterators by hand. By executing lazily, dealing with backpressure, and propagating errors in a predictable manner, repeaters ensure that event handlers are cleaned up and that bottlenecks and deadlocks are discovered quickly.</p></div><div class="col"><h2 class="text--center text--#00B100" style="color:#00B100">Powerful</h2><p class="text--justify">You can use repeaters to implement architectural patterns like cancelable timers, semaphores, and generic pubsub classes. The Repeater class also defines static methods like<!-- --> <code>Repeater.race</code> and <code>Repeater.merge</code> which allow you to use async iterators for reactive programming purposes.</p></div></div></main><footer class="footer"><div class="container"><div class="text--center">Copyright © 2020 Brian Kim</div></div></footer>
-</div>
-
-<script type="text/javascript" src="/runtime~main.d44a56e236d2a706393d.js"></script>
-
-<script type="text/javascript" src="/main.57aaf8a38b8f061a2dd2.js"></script>
-
-<script type="text/javascript" src="/0.b97f1e13fa8cce40b3c9.js"></script>
-
-<script type="text/javascript" src="/component---site-src-pages-index-jsc-4-f-f99.1b9fe914239bd1cd0c1e.js"></script>
-
-</body>
-</html>
+@media (max-width: 50rem) {
+  .layout { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); }
+  .features { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 2.5rem; }
+}
+</style></head><body><header class="navbar"><a class="navbar-brand" href="/">Repeater.js</a><nav class="navbar-links"><a href="/docs/quickstart/">Docs</a><a href="/docs/repeater/">API</a><a href="https://github.com/repeaterjs/repeater">GitHub</a><a href="https://www.npmjs.com/package/@repeaterjs/repeater">NPM</a></nav></header><section class="hero"><h1>Repeater.js</h1><p class="hero-tagline">The missing constructor for creating safe async iterators.</p><div class="hero-actions"><a class="button" href="/docs/quickstart/">Get Started</a><a class="button button-ghost" href="https://github.com/repeaterjs/repeater">GitHub</a></div><pre class="hero-install"><code>npm install @repeaterjs/repeater</code></pre></section><section class="features"><div class="feature"><h2 style="color: var(--accent)">Convenient</h2><p>The <code>Repeater</code> class provides a memorable promise-based APIfor creating async iterators. You can reuse the same constructor toconvert event targets, websockets or any other callback-based datasource into a format which can be read using <code>async/await</code>and <code>for await…of</code> syntax.</p></div><div class="feature"><h2 style="color: #BA00AC">Safe</h2><p>Repeaters prevent common mistakes people make when rolling asynciterators by hand. By executing lazily, dealing with backpressure, andpropagating errors in a predictable manner, repeaters ensure that eventhandlers are cleaned up and that bottlenecks and deadlocks arediscovered quickly.</p></div><div class="feature"><h2 style="color: #00B100">Powerful</h2><p>You can use repeaters to implement architectural patterns likecancelable timers, semaphores, and generic pubsub classes. The<code>Repeater</code> class also defines static methods like<code>Repeater.race</code> and <code>Repeater.merge</code> which allowyou to use async iterators for reactive programming purposes.</p></div></section><footer class="footer"><div><a href="https://github.com/repeaterjs/repeater">GitHub</a><a href="https://www.npmjs.com/package/@repeaterjs/repeater">NPM</a><a href="/docs/quickstart/">Docs</a></div><small>Copyright © 2026 Brian Kim</small></footer></body></html>
