@@ -26,33 +26,15 @@ export default function Home({ url }: ViewProps) {
       <section class="features">
         <div class="feature">
           <h2 style="color: var(--accent)">Convenient</h2>
-          <p>
-            The <code>Repeater</code> class provides a memorable promise-based API
-            for creating async iterators. You can reuse the same constructor to
-            convert event targets, websockets or any other callback-based data
-            source into a format which can be read using <code>async/await</code>
-            and <code>for await…of</code> syntax.
-          </p>
+          <p>The <code>Repeater</code> class provides a memorable promise-based API for creating async iterators. You can reuse the same constructor to convert event targets, websockets or any other callback-based data source into a format which can be read using <code>async/await</code> and <code>for await…of</code> syntax.</p>
         </div>
         <div class="feature">
           <h2 style="color: #BA00AC">Safe</h2>
-          <p>
-            Repeaters prevent common mistakes people make when rolling async
-            iterators by hand. By executing lazily, dealing with backpressure, and
-            propagating errors in a predictable manner, repeaters ensure that event
-            handlers are cleaned up and that bottlenecks and deadlocks are
-            discovered quickly.
-          </p>
+          <p>Repeaters prevent common mistakes people make when rolling async iterators by hand. By executing lazily, dealing with backpressure, and propagating errors in a predictable manner, repeaters ensure that event handlers are cleaned up and that bottlenecks and deadlocks are discovered quickly.</p>
         </div>
         <div class="feature">
           <h2 style="color: #00B100">Powerful</h2>
-          <p>
-            You can use repeaters to implement architectural patterns like
-            cancelable timers, semaphores, and generic pubsub classes. The
-            <code>Repeater</code> class also defines static methods like
-            <code>Repeater.race</code> and <code>Repeater.merge</code> which allow
-            you to use async iterators for reactive programming purposes.
-          </p>
+          <p>You can use repeaters to implement architectural patterns like cancelable timers, semaphores, and generic pubsub classes. The <code>Repeater</code> class also defines static methods like <code>Repeater.race</code> and <code>Repeater.merge</code> which allow you to use async iterators for reactive programming purposes.</p>
         </div>
       </section>
     </${Root}>
