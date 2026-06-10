@@ -123,11 +123,11 @@ import { Subject } from "rxjs";
 import { Repeater } from "@repeaterjs/repeater";
 
 const observable = new Subject();
-const repeater = new Repeater(async (push, stop) => {
+const repeater = new Repeater(async (next, stop) => {
   const subscription = observable.subscribe({
-    next: (value) => push(value),
-    error: (err) => stop(err),
-    complete: () => stop(),
+    next,
+    error: stop,
+    complete: stop,
   });
   await stop;
   subscription.unsubscribe();
